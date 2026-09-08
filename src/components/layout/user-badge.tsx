@@ -1,7 +1,8 @@
 'use client';
 
 import { useSession } from '@/lib/client/session';
-import { Avatar, AvatarFallback, AvatarImage, initials } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { initials } from '@/lib/text';
 
 const ROLE_LABEL = {
   ADMIN: 'Администратор',

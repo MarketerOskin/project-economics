@@ -5,7 +5,8 @@ import * as Popover from '@radix-ui/react-popover';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 import { apiFetch } from '@/lib/client/api';
 import { cn } from '@/lib/cn';
-import { Avatar, AvatarFallback, AvatarImage, initials } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { initials } from '@/lib/text';
 
 interface UserOption {
   id: string;

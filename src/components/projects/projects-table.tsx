@@ -5,7 +5,8 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatRubStr, formatPercentStr } from '@/lib/format';
 import { StatusBadge } from './status-badge';
-import { Avatar, AvatarFallback, AvatarImage, initials } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { initials } from '@/lib/text';
 import type { ProjectListRow } from '@/server/services/project-read';
 
 type SortKey = 'name' | 'income' | 'expense' | 'profit' | 'margin';
