@@ -111,8 +111,8 @@ var PROJECTS = [
   {
     name: "\u041C\u0438\u0433\u0440\u0430\u0446\u0438\u044F \u0441 \xAB\u041C\u0435\u0433\u0430\u043F\u043B\u0430\u043D\u0430\xBB",
     clientName: "\u041E\u041E\u041E \xAB\u0414\u043E\u043C \u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\xBB",
-    description: "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u0441\u0434\u0435\u043B\u043E\u043A, \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u043E\u0432 \u0438 \u0437\u0430\u0434\u0430\u0447 \u0438\u0437 \u041C\u0435\u0433\u0430\u043F\u043B\u0430\u043D\u0430 \u0432 Bitrix24.",
-    status: "ARCHIVED",
+    description: "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u0441\u0434\u0435\u043B\u043E\u043A, \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u043E\u0432 \u0438 \u0437\u0430\u0434\u0430\u0447 \u0438\u0437 \u041C\u0435\u0433\u0430\u043F\u043B\u0430\u043D\u0430 \u0432 Bitrix24. \u0421\u0434\u0430\u043D \u0438 \u043E\u043F\u043B\u0430\u0447\u0435\u043D.",
+    status: "COMPLETED",
     startDate: "2025-10-01",
     endDate: "2025-12-20",
     members: [2],
@@ -121,6 +121,21 @@ var PROJECTS = [
       { category: "income", direction: "INCOME", budget: "FACT", date: "2025-11-01", amount: "450000", counterpartyName: "\u041E\u041E\u041E \xAB\u0414\u043E\u043C \u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\xBB", invoiceNumber: "\u0421\u0427-201" },
       { category: "external", direction: "EXPENSE", budget: "FACT", date: "2025-11-10", hours: "90", rate: "2100", employee: 2, description: "\u0421\u043A\u0440\u0438\u043F\u0442\u044B \u043C\u0438\u0433\u0440\u0430\u0446\u0438\u0438, \u0441\u0432\u0435\u0440\u043A\u0430" },
       { category: "server", direction: "EXPENSE", budget: "FACT", date: "2025-11-01", amount: "9000" }
+    ]
+  },
+  {
+    name: "\u041E\u043D\u0431\u043E\u0440\u0434\u0438\u043D\u0433-\u043F\u043E\u0440\u0442\u0430\u043B \xAB\u041B\u0435\u043D\u043C\u0430\u0440\xBB",
+    clientName: "\u041E\u041E\u041E \xAB\u041B\u0435\u043D\u043C\u0430\u0440\xBB",
+    description: "\u041F\u0440\u043E\u0435\u043A\u0442 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u043D\u0430 \u044D\u0442\u0430\u043F\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u043F\u043E \u0440\u0435\u0448\u0435\u043D\u0438\u044E \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u2014 \u0447\u0430\u0441\u0442\u044C \u0437\u0430\u0442\u0440\u0430\u0442 \u0443\u0436\u0435 \u043F\u043E\u043D\u0435\u0441\u0435\u043D\u0430.",
+    status: "ARCHIVED",
+    startDate: "2025-09-01",
+    endDate: "2025-10-05",
+    members: [1],
+    entries: [
+      { category: "income", direction: "INCOME", budget: "PLAN", date: "2025-09-15", amount: "800000" },
+      { category: "external", direction: "EXPENSE", budget: "PLAN", date: "2025-09-01", amount: "300000" },
+      { category: "external", direction: "EXPENSE", budget: "FACT", date: "2025-09-20", hours: "40", rate: "2200", employee: 1, description: "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0435\u043A\u0442\u043D\u044B\u0439 \u0430\u043D\u0430\u043B\u0438\u0437, \u0438\u043D\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u043E\u043D\u043D\u0430\u044F \u043A\u0430\u0440\u0442\u0430" },
+      { category: "server", direction: "EXPENSE", budget: "FACT", date: "2025-09-05", amount: "4000" }
     ]
   }
 ];
@@ -208,7 +223,7 @@ async function seedDemoPortal(tx) {
         startDate: new Date(p.startDate),
         endDate: p.endDate ? new Date(p.endDate) : null,
         createdById: manager.id,
-        archivedAt: p.status === "ARCHIVED" ? /* @__PURE__ */ new Date("2025-12-21") : null,
+        archivedAt: p.status === "ARCHIVED" ? new Date(p.endDate ?? "2025-12-21") : null,
         archivedById: p.status === "ARCHIVED" ? admin.id : null
       }
     });
