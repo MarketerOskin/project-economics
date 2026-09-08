@@ -44,14 +44,14 @@
     Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Category accent palette (ТЗ §29) — micro-accents only (dot / badge / chart segment). */
-  --cat-blue: #2f6fed;
-  --cat-violet: #7c5cff;
-  --cat-orange: #e8863b;
-  --cat-green: #1f9d63;
-  --cat-graphite: #5b6270;
-  --cat-burgundy: #a63d57;
-  --cat-cyan: #1f9fb2;
+  /* Category accent palette (ТЗ §29) — validated data-viz categorical theme. */
+  --cat-blue: #2a78d6;
+  --cat-orange: #eb6834;
+  --cat-cyan: #1baf7a;
+  --cat-graphite: #eda100;
+  --cat-burgundy: #e87ba4;
+  --cat-green: #008300;
+  --cat-violet: #4a3aa7;
 }
 
 @theme inline {
