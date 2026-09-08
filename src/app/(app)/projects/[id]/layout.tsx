@@ -1,4 +1,5 @@
 import { requirePageSession } from '@/server/page-session';
+import { loadOr404 } from '@/server/page-guards';
 import { getProjectDetail } from '@/server/services/project-read';
 import { ProjectHeader } from '@/components/projects/project-header';
 import { ProjectKpi } from '@/components/projects/project-kpi';
@@ -16,7 +17,7 @@ export default async function ProjectLayout({
 }) {
   const { session, scope } = await requirePageSession();
   const { id } = await params;
-  const project = await getProjectDetail(scope, session.actor, id);
+  const project = await loadOr404(() => getProjectDetail(scope, session.actor, id));
 
   return (
     <>
