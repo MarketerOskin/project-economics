@@ -29,7 +29,7 @@ export default async function ProjectFinancePage({
   return (
     <div className="flex flex-col gap-4 px-8 py-6">
       <div className="flex items-center justify-between">
-        <FinanceFilters basePath={basePath} />
+        <FinanceFilters basePath={basePath} lockedProject />
         {canMutate ? <EntryFormDialog lockedProjectId={id} label="Операция" /> : null}
       </div>
       {rows.length === 0 ? (

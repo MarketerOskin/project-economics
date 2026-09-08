@@ -4,11 +4,21 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Segmented } from '@/components/ui/segmented';
+import { FilterMenu, type FilterGroup } from '@/components/common/filter-menu';
+import { useFilterOptions } from '@/lib/client/filter-options';
 
-export function FinanceFilters({ basePath = '/finance' }: { basePath?: string }) {
+export function FinanceFilters({
+  basePath = '/finance',
+  lockedProject = false,
+}: {
+  basePath?: string;
+  /** True on the project finance tab — hide the project filter. */
+  lockedProject?: boolean;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get('q') ?? '');
+  const { projects, users, categories } = useFilterOptions();
 
   const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -23,8 +33,17 @@ export function FinanceFilters({ basePath = '/finance' }: { basePath?: string })
   const direction = params.get('direction') ?? '';
   const budgetType = params.get('budgetType') ?? '';
 
+  const groups: FilterGroup[] = [
+    ...(lockedProject
+      ? []
+      : [{ key: 'projectId', label: 'Проект', allLabel: 'Все проекты', options: projects }]),
+    { key: 'categoryId', label: 'Статья', allLabel: 'Все статьи', options: categories },
+    { key: 'employeeId', label: 'Исполнитель', allLabel: 'Все исполнители', options: users },
+    { key: 'authorId', label: 'Автор', allLabel: 'Все авторы', options: users },
+  ];
+
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2.5">
       <Segmented
         value={direction}
         onChange={(v) => set({ direction: v || null })}
@@ -43,6 +62,11 @@ export function FinanceFilters({ basePath = '/finance' }: { basePath?: string })
           { value: 'FACT', label: 'Факт' },
         ]}
       />
+      <FilterMenu
+        basePath={basePath}
+        groups={groups}
+        dateRange={{ fromKey: 'from', toKey: 'to', label: 'Период' }}
+      />
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-tertiary" />
         <input
@@ -51,7 +75,7 @@ export function FinanceFilters({ basePath = '/finance' }: { basePath?: string })
           onKeyDown={(e) => e.key === 'Enter' && set({ q: q || null })}
           onBlur={() => set({ q: q || null })}
           placeholder="Поиск по описанию"
-          className="h-9 w-60 rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+          className="h-9 w-52 rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
         />
       </div>
     </div>
