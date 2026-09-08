@@ -4,132 +4,25 @@ import { withPortal } from '@/lib/db/with-portal';
 import { writeAudit } from '@/lib/audit';
 import { badRequest } from '@/lib/errors';
 import { can, requirePermission } from '@/lib/permissions';
-import { loadProjectEconomics } from '@/server/economics';
-import { economicsToJson } from '@/server/serialize';
-import {
-  createProjectSchema,
-  listProjectsQuerySchema,
-  setMembersSchema,
-  updateProjectSchema,
-} from '@/server/dto/project';
+import { createProjectSchema, listProjectsQuerySchema, setMembersSchema, updateProjectSchema } from '@/server/dto/project';
+import { getProjectDetail, queryProjects } from '@/server/services/project-read';
 import type { HandlerContext } from '@/server/handler';
 
 function actorName(user: { firstName: string; lastName: string }): string {
   return `${user.firstName} ${user.lastName}`.trim();
 }
 
-function memberDto(m: {
-  user: { id: string; firstName: string; lastName: string; photoUrl: string | null; position: string | null };
-}) {
-  return {
-    id: m.user.id,
-    fullName: `${m.user.firstName} ${m.user.lastName}`.trim(),
-    photoUrl: m.user.photoUrl,
-    position: m.user.position,
-  };
-}
-
-const projectInclude = {
-  members: { include: { user: true } },
-  createdBy: true,
-  updatedBy: true,
-} satisfies Prisma.ProjectInclude;
-
-function crmDto(p: {
-  sourceType: string;
-  crmEntityType: string | null;
-  crmEntityId: string | null;
-  crmEntityTitle: string | null;
-  crmEntityUrl: string | null;
-}) {
-  if (p.sourceType !== 'BITRIX_CRM' || !p.crmEntityId) return null;
-  return {
-    type: p.crmEntityType,
-    id: p.crmEntityId,
-    title: p.crmEntityTitle,
-    url: p.crmEntityUrl,
-  };
-}
-
 // ─── GET /api/projects ──────────────────────────────────────────────────────
 
 export async function listProjects({ req, session, scope }: HandlerContext) {
-  const q = listProjectsQuerySchema.parse(
-    Object.fromEntries(new URL(req.url).searchParams),
-  );
-  const { actor } = session;
-
-  const where: Prisma.ProjectWhereInput = {};
-  if (q.status !== 'ALL') where.status = q.status;
-  if (q.q) where.name = { contains: q.q, mode: 'insensitive' };
-  if (q.memberId) where.members = { some: { userId: q.memberId } };
-  if (!can.viewAllProjects(actor)) {
-    where.members = { some: { userId: actor.appUserId } };
-  }
-
-  const projects = await scope.project.findMany({ where, include: projectInclude });
-  const economics = await loadProjectEconomics(
-    scope,
-    projects.map((p) => p.id),
-    { from: q.from, to: q.to },
-  );
-
-  const rows = projects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    status: p.status,
-    clientName: p.clientName,
-    startDate: p.startDate,
-    endDate: p.endDate,
-    members: p.members.map(memberDto),
-    crm: crmDto(p),
-    economics: economicsToJson(economics.get(p.id)!),
-  }));
-
-  const bySort = (a: (typeof rows)[number], b: (typeof rows)[number]): number => {
-    const dir = q.dir === 'asc' ? 1 : -1;
-    if (q.sort === 'name') return a.name.localeCompare(b.name) * dir;
-    const key = (
-      { income: 'factIncome', expense: 'factExpense', profit: 'factProfit', margin: 'factMargin' } as const
-    )[q.sort];
-    const av = a.economics[key];
-    const bv = b.economics[key];
-    if (av === null) return 1;
-    if (bv === null) return -1;
-    return (Number(av) - Number(bv)) * dir;
-  };
-  rows.sort(bySort);
-
-  return { projects: rows };
+  const q = listProjectsQuerySchema.parse(Object.fromEntries(new URL(req.url).searchParams));
+  return { projects: await queryProjects(scope, session.actor, q) };
 }
 
 // ─── GET /api/projects/:id ──────────────────────────────────────────────────
 
 export async function getProject({ params, session, scope }: HandlerContext<{ id: string }>) {
-  const project = await scope.project.findByIdOrThrow(params.id, { include: projectInclude });
-  const memberUserIds = project.members.map((m) => m.userId);
-
-  requirePermission(can.viewProject(session.actor, { memberUserIds }));
-
-  const economics = await loadProjectEconomics(scope, [project.id]);
-
-  return {
-    id: project.id,
-    name: project.name,
-    description: project.description,
-    clientName: project.clientName,
-    internalComment: can.viewAllProjects(session.actor) ? project.internalComment : null,
-    status: project.status,
-    startDate: project.startDate,
-    endDate: project.endDate,
-    members: project.members.map(memberDto),
-    crm: crmDto(project),
-    createdBy: project.createdBy ? actorName(project.createdBy) : null,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
-    canEdit: can.mutateProject(session.actor),
-    economics: economicsToJson(economics.get(project.id)!),
-  };
+  return getProjectDetail(scope, session.actor, params.id);
 }
 
 // ─── POST /api/projects ─────────────────────────────────────────────────────
