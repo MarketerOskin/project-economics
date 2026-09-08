@@ -23,7 +23,7 @@
     "test:unit": "vitest run --project unit --project components",
     "test:integration": "vitest run --project integration",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "npm run build && npx esbuild prisma/seed.ts --bundle --platform=node --format=esm --outfile=prisma/seed.mjs --packages=external && playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

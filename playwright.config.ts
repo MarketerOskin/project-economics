@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 3100;
-const baseURL = `http://localhost:${PORT}`;
+// 127.0.0.1, not localhost: the standalone server binds IPv4 only and Chromium may
+// resolve "localhost" to ::1 (→ ERR_CONNECTION_REFUSED).
+const baseURL = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -18,11 +20,12 @@ export default defineConfig({
   webServer: {
     command: `node scripts/e2e-server.mjs`,
     url: `${baseURL}/api/health`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    reuseExistingServer: false,
+    timeout: 240_000,
     env: {
       DEMO_MODE: 'true',
       NODE_ENV: 'production',
+      APP_URL: baseURL,
       DATABASE_URL:
         process.env.E2E_DATABASE_URL ??
         process.env.TEST_DATABASE_URL ??

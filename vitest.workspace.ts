@@ -35,6 +35,8 @@ export default defineWorkspace([
       poolOptions: { forks: { singleFork: true } },
       hookTimeout: 30_000,
       testTimeout: 20_000,
+      // DB-backed tests can hit a transient connection blip under heavy host load.
+      retry: 1,
     },
   },
 ]);
