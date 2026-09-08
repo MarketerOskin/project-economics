@@ -1,4 +1,4 @@
-import type { Decimal } from '@/domain/finance/money';
+import { m, type Decimal } from '@/domain/finance/money';
 import { DASH, MINUS, NBSP } from './number';
 
 const ruFixed1 = new Intl.NumberFormat('ru-RU', {
@@ -32,4 +32,16 @@ export function formatPoints(value: Decimal | null | undefined): string {
   const body = ruFixed1.format(value.abs().toNumber());
   const sign = value.isZero() ? '' : value.isNegative() ? MINUS : '+';
   return `${sign}${body}${NBSP}п.п.`;
+}
+
+/** formatPercent from an API string value. */
+export function formatPercentStr(value: string | null | undefined, opts?: { digits?: number }): string {
+  if (value === null || value === undefined) return DASH;
+  return formatPercent(m(value), opts);
+}
+
+/** formatPoints from an API string value. */
+export function formatPointsStr(value: string | null | undefined): string {
+  if (value === null || value === undefined) return DASH;
+  return formatPoints(m(value));
 }

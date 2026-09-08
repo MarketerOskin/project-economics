@@ -1,4 +1,4 @@
-import type { Decimal } from '@/domain/finance/money';
+import { m, type Decimal } from '@/domain/finance/money';
 import { DASH, NBSP, formatNumber } from './number';
 
 /**
@@ -8,4 +8,10 @@ import { DASH, NBSP, formatNumber } from './number';
 export function formatRub(value: Decimal | null | undefined): string {
   if (value === null || value === undefined) return DASH;
   return `${formatNumber(value)}${NBSP}₽`;
+}
+
+/** Same, from an API string value (economics are serialised as strings; null stays null). */
+export function formatRubStr(value: string | null | undefined): string {
+  if (value === null || value === undefined) return DASH;
+  return formatRub(m(value));
 }
