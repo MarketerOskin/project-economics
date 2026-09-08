@@ -3,8 +3,10 @@
 # `-f docker-compose.yml -f docker-compose.prod.yml`, which skips this file).
 services:
   db:
+    # Bind to loopback only — the dev database uses a fixed throwaway password and
+    # must never be reachable from outside this machine.
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
   app:
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'

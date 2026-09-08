@@ -32,6 +32,7 @@ function toInitial(e: EntryRow): EntryFormInitial {
     amount: e.amount,
     hours: e.hours,
     hourlyRate: e.hourlyRate,
+    employeeId: e.employeeId,
     description: e.description,
     comment: e.comment,
     contractorName: e.contractorName,

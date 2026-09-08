@@ -52,6 +52,11 @@ export async function updateCategory({ req, params, session, scope }: HandlerCon
   const input = updateCategorySchema.parse(await req.json());
   const { portal, user } = session;
 
+  if (input.name !== undefined && input.name !== existing.name) {
+    const dupe = await scope.category.findMany({ where: { kind: existing.kind, name: input.name } });
+    if (dupe.some((c) => c.id !== existing.id)) throw conflict('Статья с таким названием уже есть');
+  }
+
   const archiving = input.isArchived === true && !existing.isArchived;
 
   await db.$transaction(async (tx) => {

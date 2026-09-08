@@ -16,6 +16,7 @@ export interface EntryRow {
   hours: string | null;
   hourlyRate: string | null;
   category: { id: string; name: string; accentColor: string };
+  employeeId: string | null;
   employee: string | null;
   contractorName: string | null;
   counterpartyName: string | null;
@@ -50,6 +51,7 @@ function toRow(e: Loaded): EntryRow {
     hours: e.hours?.toString() ?? null,
     hourlyRate: e.hourlyRate?.toString() ?? null,
     category: e.category,
+    employeeId: e.employeeId,
     employee: e.employee ? `${e.employee.firstName} ${e.employee.lastName}`.trim() : null,
     contractorName: e.contractorName,
     counterpartyName: e.counterpartyName,

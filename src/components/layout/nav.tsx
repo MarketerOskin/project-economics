@@ -11,6 +11,8 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: AppRole[];
+  /** Match the pathname exactly rather than by prefix (avoids /settings lighting up on /settings/categories). */
+  exact?: boolean;
 }
 
 const ITEMS: NavItem[] = [
@@ -19,7 +21,7 @@ const ITEMS: NavItem[] = [
   { href: '/finance', label: 'Финансы', icon: Receipt },
   { href: '/settings/categories', label: 'Статьи', icon: Tags, roles: ['ADMIN', 'MANAGER'] },
   { href: '/history', label: 'История', icon: History, roles: ['ADMIN', 'MANAGER'] },
-  { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN'] },
+  { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN'], exact: true },
 ];
 
 export function Nav({ role }: { role: AppRole }) {
@@ -29,7 +31,9 @@ export function Nav({ role }: { role: AppRole }) {
     <nav className="flex flex-col gap-0.5">
       {ITEMS.filter((i) => !i.roles || i.roles.includes(role)).map((item) => {
         const active =
-          item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+          item.href === '/' || item.exact
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
         const Icon = item.icon;
         return (
           <Link

@@ -40,15 +40,23 @@ function CategoryRow({ cat, onChanged }: { cat: CategoryDto; onChanged: () => vo
   const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   const save = async () => {
-    await apiFetch(`/api/categories/${cat.id}`, { method: 'PATCH', body: { name, accentColor: color } });
-    toast('Статья обновлена');
-    setEditing(false);
-    onChanged();
+    try {
+      await apiFetch(`/api/categories/${cat.id}`, { method: 'PATCH', body: { name, accentColor: color } });
+      toast('Статья обновлена');
+      setEditing(false);
+      onChanged();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось сохранить статью', 'error');
+    }
   };
   const toggleArchive = async () => {
-    await apiFetch(`/api/categories/${cat.id}`, { method: 'PATCH', body: { isArchived: !cat.isArchived } });
-    toast(cat.isArchived ? 'Статья восстановлена' : 'Статья архивирована');
-    onChanged();
+    try {
+      await apiFetch(`/api/categories/${cat.id}`, { method: 'PATCH', body: { isArchived: !cat.isArchived } });
+      toast(cat.isArchived ? 'Статья восстановлена' : 'Статья архивирована');
+      onChanged();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось изменить статью', 'error');
+    }
   };
   const remove = async () => {
     try {
@@ -139,11 +147,15 @@ function AddCategory({ kind, onChanged }: { kind: 'INCOME' | 'EXPENSE'; onChange
 
   const create = async () => {
     if (!name.trim()) return;
-    await apiFetch('/api/categories', { method: 'POST', body: { kind, name, accentColor: color } });
-    toast('Статья создана');
-    setName('');
-    setOpen(false);
-    onChanged();
+    try {
+      await apiFetch('/api/categories', { method: 'POST', body: { kind, name, accentColor: color } });
+      toast('Статья создана');
+      setName('');
+      setOpen(false);
+      onChanged();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось создать статью', 'error');
+    }
   };
 
   if (!open) {

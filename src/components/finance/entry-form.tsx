@@ -40,6 +40,7 @@ export interface EntryFormInitial {
   amount: string;
   hours: string | null;
   hourlyRate: string | null;
+  employeeId: string | null;
   description: string | null;
   comment: string | null;
   contractorName: string | null;
@@ -72,9 +73,16 @@ export function EntryForm({
   const [amount, setAmount] = React.useState(initial && initial.calculationMode === 'FIXED' ? initial.amount : '');
   const [hours, setHours] = React.useState(initial?.hours ?? '');
   const [rate, setRate] = React.useState(initial?.hourlyRate ?? '');
-  const [employeeId, setEmployeeId] = React.useState('');
+  const [employeeId, setEmployeeId] = React.useState(initial?.employeeId ?? '');
   const [showExtra, setShowExtra] = React.useState(
-    Boolean(initial?.description || initial?.comment || initial?.invoiceNumber || initial?.contractorName),
+    Boolean(
+      initial?.description ||
+        initial?.comment ||
+        initial?.invoiceNumber ||
+        initial?.contractorName ||
+        initial?.counterpartyName ||
+        initial?.documentUrl,
+    ),
   );
   const [extra, setExtra] = React.useState({
     contractorName: initial?.contractorName ?? '',
