@@ -1,0 +1,13 @@
+# Quick public demo on a VPS WITHOUT a domain / nginx — publishes the app directly.
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+# Then open http://<server-ip>:${APP_PORT:-8080}
+#
+# For a real Bitrix24 install use docker-compose.prod.yml + nginx + TLS instead
+# (Bitrix24 will not embed an http:// iframe).
+services:
+  db:
+    restart: always
+  app:
+    restart: always
+    ports:
+      - '${APP_PORT:-8080}:3000'
