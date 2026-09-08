@@ -150,7 +150,7 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
         <Input id="clientName" {...register('clientName')} placeholder="ООО «Альфа-Трейд»" />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Дата начала" htmlFor="startDate" error={errors.startDate?.message}>
           <Input id="startDate" type="date" {...register('startDate')} />
         </Field>

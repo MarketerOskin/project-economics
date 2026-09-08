@@ -24,7 +24,7 @@ export default async function ProjectHistoryPage({
   const basePath = `/projects/${id}/history`;
 
   return (
-    <div className="flex flex-col gap-4 px-8 py-6">
+    <div className="flex flex-col gap-4 px-4 sm:px-8 py-6">
       <HistoryFeed entries={entries} />
       <Pagination page={page} pageSize={pageSize} total={total} basePath={basePath} />
     </div>

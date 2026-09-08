@@ -10,7 +10,7 @@ export default async function ProjectTeamPage({ params }: { params: Promise<{ id
   const project = await getProjectDetail(scope, session.actor, id);
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-4 sm:px-8 py-6">
       <TeamManager
         projectId={project.id}
         members={project.members}

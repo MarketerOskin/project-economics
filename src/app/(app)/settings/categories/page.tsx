@@ -19,7 +19,7 @@ export default async function CategoriesPage() {
         title="Статьи доходов и расходов"
         subtitle="Управляйте статьями, их цветом и порядком"
       />
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-8 py-6">
         <CategoriesManager initial={categories} />
       </div>
     </>

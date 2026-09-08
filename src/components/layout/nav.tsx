@@ -24,7 +24,7 @@ const ITEMS: NavItem[] = [
   { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN'], exact: true },
 ];
 
-export function Nav({ role }: { role: AppRole }) {
+export function Nav({ role, onNavigate }: { role: AppRole; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -39,6 +39,7 @@ export function Nav({ role }: { role: AppRole }) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
               'flex items-center gap-3 rounded-[10px] px-3 py-2 text-sm transition-colors',

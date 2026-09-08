@@ -18,7 +18,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
   return (
     <>
       <PageHeader title="Редактирование проекта" subtitle={project.name} />
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-8 py-6">
         <ProjectForm
           initial={{
             id: project.id,

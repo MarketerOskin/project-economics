@@ -201,7 +201,7 @@ export function EntryForm({
         </Field>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Статья" error={errors.categoryId}>
           <Select value={categoryId} onValueChange={pickCategory}>
             <SelectTrigger>
@@ -243,7 +243,7 @@ export function EntryForm({
           />
         </Field>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Количество часов" htmlFor="hours" error={errors.hours}>
             <Input
               id="hours"
@@ -304,7 +304,7 @@ export function EntryForm({
       </button>
 
       {showExtra ? (
-        <div className="grid grid-cols-2 gap-4 rounded-[12px] border border-border p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-[12px] border border-border p-4">
           {direction === 'EXPENSE' ? (
             <Field label="Подрядчик">
               <Input

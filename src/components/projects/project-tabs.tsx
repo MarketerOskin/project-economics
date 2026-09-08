@@ -15,8 +15,8 @@ export function ProjectTabs({ projectId, canViewHistory }: { projectId: string; 
   ];
 
   return (
-    <div className="border-b border-border px-8">
-      <nav className="flex gap-6">
+    <div className="overflow-x-auto border-b border-border px-4 sm:px-8">
+      <nav className="flex gap-5 sm:gap-6">
         {tabs.map((t) => {
           const active = t.href === base ? pathname === base : pathname === t.href;
           return (

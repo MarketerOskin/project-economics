@@ -48,7 +48,7 @@ export default async function SettingsPage() {
     <>
       <PageHeader title="Настройки" subtitle="Интеграция с Bitrix24, данные портала и команда" />
 
-      <div className="flex flex-col gap-8 px-8 py-6">
+      <div className="flex flex-col gap-8 px-4 sm:px-8 py-6">
         <section className="max-w-2xl">
           <h2 className="mb-3 text-sm font-semibold text-fg">Интеграция и портал</h2>
           <dl className="divide-y divide-border rounded-xl border border-border bg-surface">

@@ -13,7 +13,7 @@ export default async function NewProjectPage() {
   return (
     <>
       <PageHeader title="Новый проект" subtitle="Заполните основные данные проекта" />
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-8 py-6">
         <ProjectForm />
       </div>
     </>

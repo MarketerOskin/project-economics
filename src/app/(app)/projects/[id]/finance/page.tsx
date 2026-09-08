@@ -27,7 +27,7 @@ export default async function ProjectFinancePage({
   const basePath = `/projects/${id}/finance`;
 
   return (
-    <div className="flex flex-col gap-4 px-8 py-6">
+    <div className="flex flex-col gap-4 px-4 sm:px-8 py-6">
       <div className="flex items-center justify-between">
         <FinanceFilters basePath={basePath} lockedProject />
         {canMutate ? <EntryFormDialog lockedProjectId={id} label="Операция" /> : null}

@@ -72,7 +72,7 @@ export default async function DashboardPage({
         }
       />
 
-      <div className="flex flex-col gap-6 px-8 py-6">
+      <div className="flex flex-col gap-6 px-4 sm:px-8 py-6">
         {!hasData ? (
           <EmptyState
             title="Нет данных за период"

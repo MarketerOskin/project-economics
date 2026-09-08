@@ -17,11 +17,11 @@ export function ProjectHeader({ project }: { project: ProjectDetail }) {
       : null;
 
   return (
-    <div className="border-b border-border px-8 pb-5 pt-6">
+    <div className="border-b border-border px-4 sm:px-8 pb-5 pt-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{project.name}</h1>
             <StatusBadge status={project.status} />
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">

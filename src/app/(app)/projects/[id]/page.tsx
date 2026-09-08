@@ -29,7 +29,7 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
   ]);
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-6">
+    <div className="flex flex-col gap-6 px-4 sm:px-8 py-6">
       {project.description ? (
         <p className="max-w-3xl text-sm text-fg-secondary">{project.description}</p>
       ) : null}

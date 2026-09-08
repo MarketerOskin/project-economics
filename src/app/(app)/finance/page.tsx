@@ -32,7 +32,7 @@ export default async function FinancePage({
         subtitle="Все доступные операции по проектам"
         actions={canMutate ? <EntryFormDialog /> : null}
       />
-      <div className="flex flex-col gap-4 px-8 py-6">
+      <div className="flex flex-col gap-4 px-4 sm:px-8 py-6">
         <FinanceFilters />
         {rows.length === 0 ? (
           <EmptyState

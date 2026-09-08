@@ -24,7 +24,7 @@ export default async function HistoryPage({
   return (
     <>
       <PageHeader title="История изменений" subtitle="Кто, что и когда менял" />
-      <div className="flex flex-col gap-4 px-8 py-6">
+      <div className="flex flex-col gap-4 px-4 sm:px-8 py-6">
         <HistoryFeed entries={entries} />
         <Pagination page={page} pageSize={pageSize} total={total} basePath="/history" />
       </div>

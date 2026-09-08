@@ -42,7 +42,7 @@ export default async function ProjectsPage({
           ) : null
         }
       />
-      <div className="flex flex-col gap-4 px-8 py-6">
+      <div className="flex flex-col gap-4 px-4 sm:px-8 py-6">
         <ProjectFilters />
         {rows.length === 0 ? (
           <EmptyState

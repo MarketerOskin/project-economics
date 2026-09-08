@@ -67,7 +67,7 @@ export function FinanceFilters({
         groups={groups}
         dateRange={{ fromKey: 'from', toKey: 'to', label: 'Период' }}
       />
-      <div className="relative">
+      <div className="relative w-full sm:w-auto">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-tertiary" />
         <input
           value={q}
@@ -75,7 +75,7 @@ export function FinanceFilters({
           onKeyDown={(e) => e.key === 'Enter' && set({ q: q || null })}
           onBlur={() => set({ q: q || null })}
           placeholder="Поиск по описанию"
-          className="h-9 w-52 rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+          className="h-9 w-full rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30 sm:w-52"
         />
       </div>
     </div>
