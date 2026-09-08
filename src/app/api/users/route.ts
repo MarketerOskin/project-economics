@@ -1,12 +1,18 @@
 import { route } from '@/server/handler';
+import { isDemoMode } from '@/lib/auth/demo';
+import { syncUsersIfStale } from '@/lib/bitrix/users';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Portal employees for member pickers / filters. Reads the local snapshot (ТЗ §6);
- * a background Bitrix sync is wired in Phase 10. In demo mode these are the seeded users.
+ * Portal employees for member pickers / filters. Reads the local snapshot (ТЗ §6).
+ * In production a stale snapshot (> 1h) triggers a background Bitrix user_brief sync.
+ * In demo mode these are the seeded users, no Bitrix call.
  */
-export const GET = route(async ({ req, scope }) => {
+export const GET = route(async ({ req, scope, session }) => {
+  if (!isDemoMode() && !session.demo) {
+    await syncUsersIfStale(session.portal);
+  }
   const q = new URL(req.url).searchParams.get('q')?.trim().toLowerCase();
 
   const users = await scope.user.findMany({

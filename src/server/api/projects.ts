@@ -39,19 +39,42 @@ export async function createProject({ req, session, scope }: HandlerContext) {
     }
   }
 
+  // Resolve the CRM entity snapshot (title / client / url) when importing from Bitrix24.
+  let crm: {
+    crmEntityType: 'DEAL' | 'COMPANY' | null;
+    crmEntityTitle: string | null;
+    crmEntityUrl: string | null;
+    clientName: string | null;
+  } = { crmEntityType: null, crmEntityTitle: null, crmEntityUrl: null, clientName: input.clientName ?? null };
+
+  if (input.source === 'BITRIX_CRM' && input.crmEntityTypeId && input.crmEntityId) {
+    const { resolveCrmItem } = await import('@/server/services/crm');
+    const item = await resolveCrmItem(session, input.crmEntityTypeId, input.crmEntityId);
+    if (!item) throw badRequest('CRM-сущность не найдена в Bitrix24');
+    crm = {
+      crmEntityType: input.crmEntityTypeId === 4 ? 'COMPANY' : 'DEAL',
+      crmEntityTitle: item.title,
+      crmEntityUrl: item.url,
+      clientName: input.clientName ?? item.clientName ?? null,
+    };
+  }
+
   const created = await db.$transaction(async (tx) => {
     const p = withPortal(portal.id, tx);
     const project = await p.project.create({
       name: input.name,
       description: input.description,
-      clientName: input.clientName,
+      clientName: crm.clientName,
       internalComment: input.internalComment,
       status: input.status,
       startDate: input.startDate ?? null,
       endDate: input.endDate ?? null,
       sourceType: input.source,
+      crmEntityType: crm.crmEntityType,
       crmEntityTypeId: input.crmEntityTypeId ?? null,
       crmEntityId: input.crmEntityId ?? null,
+      crmEntityTitle: crm.crmEntityTitle,
+      crmEntityUrl: crm.crmEntityUrl,
       createdById: user.id,
       updatedById: user.id,
     });

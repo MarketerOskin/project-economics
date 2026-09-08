@@ -9,7 +9,9 @@ import { apiFetch, ApiError } from '@/lib/client/api';
 import { useToast } from '@/lib/client/toast';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Textarea } from '@/components/ui/field';
+import { Segmented } from '@/components/ui/segmented';
 import { MemberSelect } from './member-select';
+import { CrmImport, type CrmSelection } from './crm-import';
 
 const formSchema = z
   .object({
@@ -44,11 +46,14 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
   const isEdit = Boolean(initial?.id);
   const [members, setMembers] = React.useState<string[]>(initial?.memberIds ?? []);
   const [submitting, setSubmitting] = React.useState(false);
+  const [source, setSource] = React.useState<'MANUAL' | 'BITRIX_CRM'>('MANUAL');
+  const [crm, setCrm] = React.useState<CrmSelection | null>(null);
 
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -62,6 +67,14 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
     },
   });
 
+  const pickCrm = (v: CrmSelection | null) => {
+    setCrm(v);
+    if (v) {
+      setValue('name', v.title);
+      if (v.clientName) setValue('clientName', v.clientName);
+    }
+  };
+
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
     const payload = {
@@ -72,6 +85,9 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
       startDate: values.startDate || undefined,
       endDate: values.endDate || undefined,
       ...(isEdit ? {} : { memberIds: members }),
+      ...(!isEdit && source === 'BITRIX_CRM' && crm
+        ? { source: 'BITRIX_CRM', crmEntityTypeId: crm.entityTypeId, crmEntityId: crm.id }
+        : {}),
     };
     try {
       if (isEdit && initial?.id) {
@@ -106,6 +122,26 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-5">
+      {!isEdit ? (
+        <Segmented
+          value={source}
+          onChange={(v) => {
+            setSource(v);
+            if (v === 'MANUAL') pickCrm(null);
+          }}
+          options={[
+            { value: 'MANUAL', label: 'Создать вручную' },
+            { value: 'BITRIX_CRM', label: 'Выбрать из Bitrix24' },
+          ]}
+        />
+      ) : null}
+
+      {!isEdit && source === 'BITRIX_CRM' ? (
+        <Field label="CRM-сущность" error={undefined} hint="Сделка или компания из Bitrix24">
+          <CrmImport value={crm} onChange={pickCrm} />
+        </Field>
+      ) : null}
+
       <Field label="Название" htmlFor="name" error={errors.name?.message}>
         <Input id="name" {...register('name')} placeholder="Внедрение CRM «Альфа»" />
       </Field>
