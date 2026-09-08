@@ -19,11 +19,13 @@ function resolveAmount(input: {
   hourlyRate?: string;
 }): { amount: Prisma.Decimal; hours: Prisma.Decimal | null; hourlyRate: Prisma.Decimal | null } {
   if (input.calculationMode === 'HOURS_RATE') {
-    const hours = m(input.hours!);
-    const rate = m(input.hourlyRate!);
+    // Round to the storage precision (Decimal(10,2)) BEFORE multiplying, so the stored
+    // amount always equals stored(hours) × stored(rate) rounded — no drift (ТЗ §14, §17).
+    const hours = m(input.hours!).toDecimalPlaces(2);
+    const rate = m(input.hourlyRate!).toDecimalPlaces(2);
     return { amount: hoursRateAmount(hours, rate), hours, hourlyRate: rate };
   }
-  return { amount: m(input.amount!), hours: null, hourlyRate: null };
+  return { amount: m(input.amount!).toDecimalPlaces(2), hours: null, hourlyRate: null };
 }
 
 async function assertProjectAndCategory(
@@ -115,7 +117,10 @@ export async function updateEntry(
 
   const direction = input.direction ?? existing.direction;
   const categoryId = input.categoryId ?? existing.categoryId;
-  if (input.categoryId || input.direction) {
+  // Always re-validate against the portal when the entry's project / category / direction
+  // is being changed — a client must not be able to move an entry onto another portal's
+  // project or an incompatible category (portal isolation, ТЗ §54).
+  if (input.projectId || input.categoryId || input.direction) {
     await assertProjectAndCategory(scope, input.projectId ?? existing.projectId, categoryId, direction);
   }
   if (input.employeeId) await scope.user.findByIdOrThrow(input.employeeId);

@@ -147,6 +147,32 @@ describe('finance API', () => {
     expect(empList.rows.every((r: { projectId: string }) => r.projectId === project.id)).toBe(true);
   });
 
+  it('PATCH cannot move an entry onto another portal’s project (portal isolation, ТЗ §54)', async () => {
+    const { s, project } = await setup();
+    const cookie = await ck(s.portalId, s.managerId, 'MANAGER');
+    const created = await createRoute(
+      req('/api/finance', {
+        method: 'POST',
+        cookie,
+        body: { projectId: project.id, categoryId: s.expenseCategoryId, direction: 'EXPENSE', budgetType: 'FACT', operationDate: '2026-03-01', amount: '1000' },
+      }),
+    );
+    const { id } = await created.json();
+
+    // A second, unrelated portal with its own project.
+    const other = await seedPortal();
+    const otherProject = await testDb.project.create({ data: { portalId: other.portalId, name: 'Чужой портал' } });
+
+    const res = await patchRoute(
+      req(`/api/finance/${id}`, { method: 'PATCH', cookie, body: { projectId: otherProject.id } }),
+      P(id),
+    );
+    expect(res.status).toBe(404);
+
+    const entry = await testDb.financialEntry.findUnique({ where: { id } });
+    expect(entry?.projectId).toBe(project.id);
+  });
+
   it('list hides deleted entries by default, shows them for admin with includeDeleted', async () => {
     const { s, project } = await setup();
     const admin = await ck(s.portalId, s.adminId, 'ADMIN');

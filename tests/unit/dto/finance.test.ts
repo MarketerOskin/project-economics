@@ -71,6 +71,18 @@ describe('createEntrySchema (ТЗ §51)', () => {
   it('rejects a non-numeric amount', () => {
     expect(createEntrySchema.safeParse({ ...base, amount: 'abc' }).success).toBe(false);
   });
+
+  it('rejects more than 2 decimal places — a 3rd digit would be silently truncated on storage (ТЗ §14)', () => {
+    expect(createEntrySchema.safeParse({ ...base, amount: '100.001' }).success).toBe(false);
+    expect(
+      createEntrySchema.safeParse({
+        ...base,
+        calculationMode: 'HOURS_RATE',
+        hours: '12.555',
+        hourlyRate: '2000',
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe('listEntriesQuerySchema', () => {

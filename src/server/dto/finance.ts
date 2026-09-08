@@ -1,11 +1,16 @@
 import { z } from 'zod';
 import { m } from '@/domain/finance/money';
 
-/** A positive decimal amount as a string ("125000", "125000.50"). Kept as string for Decimal. */
+/**
+ * A decimal amount as a string ("125000", "125000.50"). Kept as string for Decimal.
+ * At most 2 decimal places — money and hours are stored as Decimal(_,2), so a 3rd
+ * digit would be silently truncated and the stored hours×rate would stop matching
+ * the stored amount.
+ */
 const decimalString = z
   .union([z.string(), z.number()])
   .transform((v) => String(v).trim())
-  .refine((s) => /^-?\d+(\.\d+)?$/.test(s), 'Введите число')
+  .refine((s) => /^-?\d+(\.\d{1,2})?$/.test(s), 'Число, не более 2 знаков после запятой')
   .refine((s) => {
     try {
       return m(s).isFinite();
@@ -89,10 +94,23 @@ export const updateEntrySchema = baseEntry
     budgetType: true,
     operationDate: true,
     categoryId: true,
+    calculationMode: true,
   })
   .superRefine((v, ctx) => {
-    // Only validate mode consistency when the mode-relevant fields are present.
-    if (v.calculationMode) enforceMode(v as z.infer<typeof baseEntry>, ctx);
+    // A PATCH may touch only metadata (e.g. project, employee). Validate the
+    // amount / hours / rate consistency only when one of those fields is actually
+    // being changed — otherwise the stored values stay as they are.
+    const touchesAmount =
+      v.calculationMode !== undefined ||
+      v.amount !== undefined ||
+      v.hours !== undefined ||
+      v.hourlyRate !== undefined;
+    if (touchesAmount) {
+      enforceMode(
+        { ...v, calculationMode: v.calculationMode ?? 'FIXED' } as z.infer<typeof baseEntry>,
+        ctx,
+      );
+    }
   });
 
 export const listEntriesQuerySchema = z.object({
