@@ -193,20 +193,23 @@ npm run test:e2e    → 2 passed (smoke + manager-flow ТЗ §67)
 
 ## 9. Как запустить demo
 
-Нужен только Docker.
+Нужен только Docker. **Без конфигурации:**
 
 ```bash
-cp .env.example .env
-# SESSION_SECRET      = openssl rand -base64 48
-# APP_ENCRYPTION_KEY  = openssl rand -base64 32   (ровно 32 байта)
+git clone <repo> && cd project-economics
 docker compose up --build
 ```
 
-Открыть <http://localhost:3000>. Контейнер `app` на старте выполняет
-`prisma migrate deploy` (проверено с чистого volume — миграция `init` применяется),
-затем seed демо-портала (6 проектов: прибыльный, убыточный, точно по плану, с
-перерасходом, без факт-дохода, архивный). Слева внизу — переключатель ролей
-Администратор / Руководитель / Сотрудник (его нет в production-режиме).
+Открыть <http://localhost:3000>. В demo-режиме контейнер `app` сам генерирует
+временные секреты (если `.env` нет), выполняет `prisma migrate deploy` (проверено на
+свежем клоне с чистого volume — миграция `init` применяется) и наполняет демо-портал
+(6 проектов: прибыльный, убыточный, точно по плану, с перерасходом, без факт-дохода,
+архивный). Слева внизу — переключатель ролей Администратор / Руководитель / Сотрудник
+(его нет в production-режиме).
+
+Для постоянного demo или реальной установки — `cp .env.example .env`, задать
+`SESSION_SECRET` (`openssl rand -base64 48`) и `APP_ENCRYPTION_KEY`
+(`openssl rand -base64 32`).
 
 Локально без Docker для приложения:
 ```bash
@@ -234,18 +237,33 @@ npm run db:migrate && npm run db:seed && npm run dev
 
 ## 11. Как развернуть на VPS
 
-`deploy/README.md`:
+Одной командой из корня репозитория:
 ```bash
-git clone <repo> /opt/economics && cd /opt/economics
-cp deploy/.env.production.example .env   # заполнить секреты, APP_URL, B24_*, DEMO_MODE=false
-docker compose up -d --build
+bash deploy/vps-setup.sh
 ```
-Контейнер `app` применяет миграции на старте (`prisma migrate deploy`, **не** `db push`).
-nginx как reverse-proxy с TLS — `deploy/nginx.example.conf` (CSP `frame-ancestors` для
-доменов `*.bitrix24.*`, проксирование на `:3000`, `certbot --nginx`).
-Обновление: `git pull && docker compose up -d --build`. Бэкап: `pg_dump` из контейнера `db`.
+Скрипт создаёт `.env` со сгенерированными секретами, собирает и поднимает стек
+(app + PostgreSQL), дожидается healthcheck. Контейнер `app` применяет миграции на
+старте (`prisma migrate deploy`, **не** `db push`).
+
+Дальше: nginx как reverse-proxy с TLS — `deploy/nginx.example.conf` (CSP
+`frame-ancestors` для доменов `*.bitrix24.*`, проксирование на `127.0.0.1:3000`,
+`certbot --nginx`); правка `.env` под реальный портал (`APP_URL`,
+`B24_CLIENT_ID/SECRET`, `DEMO_MODE=false`) и `docker compose up -d --build`.
+Обновление: `git pull && docker compose up -d --build`. Бэкап:
+`docker compose exec -T db pg_dump -U economics economics | gzip > backup.sql.gz`.
 
 ## 12. Что осталось
+
+**Правки после первичной сдачи** (по запросу на максимальный балл):
+- **Recharts 2 → 3.** Recharts 2.15 под React 19 молча не отрисовывал `<Cell>`
+  (столбцы и сегменты donut оставались нулевого размера). Обнаружено инспекцией DOM,
+  не по скриншоту. Recharts 3.10 + `isAnimationActive={false}` — все три графика
+  рендерятся корректно.
+- **Фильтры дашборда (ТЗ §22):** выпадающий список — статус проекта / проект /
+  сотрудник / статья, синхронизация с URL, сброс. API уже поддерживал эти параметры.
+- **Zero-config demo:** `docker compose up` работает без `.env` — entrypoint
+  генерирует временные секреты. Проверено на свежем `git clone`.
+- **`deploy/vps-setup.sh`** — развёртывание на VPS одной командой.
 
 Обязательный функционал ТЗ реализован и покрыт тестами полностью. Открытые пункты —
 только то, что **невозможно проверить без реального портала Bitrix24**:
