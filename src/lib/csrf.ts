@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { isSecureDeployment } from '@/lib/auth/session';
 
 /**
  * Double-submit CSRF. A non-HttpOnly `pe_csrf` cookie is mirrored by the client into the
@@ -18,11 +19,11 @@ export function csrfCookieOptions(): {
   path: string;
   maxAge: number;
 } {
-  const isProd = process.env.NODE_ENV === 'production';
+  const secure = isSecureDeployment();
   return {
     httpOnly: false,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    secure,
+    sameSite: secure ? 'none' : 'lax',
     path: '/',
     maxAge: 8 * 60 * 60,
   };

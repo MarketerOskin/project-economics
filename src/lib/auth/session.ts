@@ -52,6 +52,19 @@ export async function verifySession(token: string | undefined | null): Promise<S
   }
 }
 
+/**
+ * Cookie policy follows the deployment URL, not NODE_ENV:
+ *   https:// → Secure + SameSite=None  (required for the Bitrix24 iframe)
+ *   http://  → not Secure + SameSite=Lax  (an http demo by IP; Secure cookies would
+ *              be dropped by the browser and the session would loop)
+ */
+export function isSecureDeployment(): boolean {
+  const url = process.env.APP_URL ?? '';
+  if (url.startsWith('https://')) return true;
+  if (url.startsWith('http://')) return false;
+  return process.env.NODE_ENV === 'production';
+}
+
 export function sessionCookieOptions(): {
   httpOnly: true;
   secure: boolean;
@@ -59,12 +72,11 @@ export function sessionCookieOptions(): {
   path: string;
   maxAge: number;
 } {
-  const isProd = process.env.NODE_ENV === 'production';
+  const secure = isSecureDeployment();
   return {
     httpOnly: true,
-    // iframe embedding in Bitrix24 needs SameSite=None; that in turn requires Secure.
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    secure,
+    sameSite: secure ? 'none' : 'lax',
     path: '/',
     maxAge: TTL_SECONDS,
   };
