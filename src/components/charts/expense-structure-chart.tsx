@@ -47,11 +47,12 @@ export function ExpenseStructureChart({ data }: { data: Slice[] }) {
               data={slices.map((s) => ({ ...s, value: Number(s.amount) }))}
               dataKey="value"
               nameKey="name"
-              innerRadius={52}
+              innerRadius={50}
               outerRadius={80}
               paddingAngle={2}
               stroke={CHART.surface}
               strokeWidth={2}
+              isAnimationActive={false}
             >
               {slices.map((s) => (
                 <Cell key={s.categoryId} fill={s.color} />

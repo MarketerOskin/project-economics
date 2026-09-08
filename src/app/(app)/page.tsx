@@ -9,6 +9,7 @@ import { IncomeExpenseChart } from '@/components/charts/income-expense-chart';
 import { ProjectProfitChart } from '@/components/charts/project-profit-chart';
 import { ExpenseStructureChart } from '@/components/charts/expense-structure-chart';
 import { PeriodPicker } from '@/components/dashboard/period-picker';
+import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
 import { DashboardProjectsTable } from '@/components/dashboard/dashboard-projects-table';
 import { EntryFormDialog } from '@/components/finance/entry-form-dialog';
 import { requirePageSession } from '@/server/page-session';
@@ -57,6 +58,7 @@ export default async function DashboardPage({
         actions={
           <>
             <PeriodPicker />
+            <DashboardFilters />
             {canMutateFinance ? <EntryFormDialog /> : null}
             {canCreateProject ? (
               <Button asChild variant="secondary">

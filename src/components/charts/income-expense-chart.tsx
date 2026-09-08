@@ -54,6 +54,7 @@ export function IncomeExpenseChart({ data, showPlan }: { data: Point[]; showPlan
         <YAxis tickFormatter={compact} width={56} {...axisProps} />
         <Tooltip content={<ChartTooltip labelFormatter={(l) => monthLabel(String(l))} />} />
         <Area
+          isAnimationActive={false}
           type="monotone"
           dataKey="Доход (факт)"
           stroke={CHART.income}
@@ -62,6 +63,7 @@ export function IncomeExpenseChart({ data, showPlan }: { data: Point[]; showPlan
           dot={false}
         />
         <Line
+            isAnimationActive={false}
           type="monotone"
           dataKey="Расход (факт)"
           stroke={CHART.expense}
@@ -71,6 +73,7 @@ export function IncomeExpenseChart({ data, showPlan }: { data: Point[]; showPlan
         {showPlan ? (
           <>
             <Line
+            isAnimationActive={false}
               type="monotone"
               dataKey="Доход (план)"
               stroke={CHART.income}
@@ -79,6 +82,7 @@ export function IncomeExpenseChart({ data, showPlan }: { data: Point[]; showPlan
               dot={false}
             />
             <Line
+            isAnimationActive={false}
               type="monotone"
               dataKey="Расход (план)"
               stroke={CHART.expense}

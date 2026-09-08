@@ -28,8 +28,11 @@ services:
       DATABASE_URL: postgresql://economics:economics@db:5432/economics?schema=public
       APP_URL: ${APP_URL:-http://localhost:3000}
       NODE_ENV: production
-      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
-      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?set APP_ENCRYPTION_KEY in .env}
+      # Left empty on purpose: in demo mode the entrypoint generates ephemeral secrets
+      # so `docker compose up` works with zero config. For a real Bitrix24 install put
+      # persistent values in .env (see .env.example) and set DEMO_MODE=false.
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-}
       B24_CLIENT_ID: ${B24_CLIENT_ID:-}
       B24_CLIENT_SECRET: ${B24_CLIENT_SECRET:-}
       DEMO_MODE: ${DEMO_MODE:-true}
