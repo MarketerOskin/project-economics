@@ -1,0 +1,10 @@
+# Local development convenience — auto-loaded by plain `docker compose` commands.
+# NOT used on the VPS (there compose is run with an explicit
+# `-f docker-compose.yml -f docker-compose.prod.yml`, which skips this file).
+services:
+  db:
+    ports:
+      - '5432:5432'
+  app:
+    ports:
+      - '3000:3000'

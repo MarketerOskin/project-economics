@@ -28,19 +28,29 @@ Edit `.env`:
 
 ## 3. Run
 
+One command (safe next to an app that already runs on the server):
+
 ```bash
-docker compose up -d --build
+APP_PORT=3000 bash deploy/vps-setup.sh
 ```
 
-The app container runs `prisma migrate deploy` on every boot (never `db push`), then
-starts the standalone Next.js server on `:3000`. Postgres data persists in the `db-data`
-volume.
+It creates `.env` with generated secrets and starts the stack with the production
+override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+- the app is bound to **127.0.0.1:$APP_PORT** only (nginx is the public entrypoint) —
+  change `APP_PORT` if 3000 is taken;
+- PostgreSQL runs in its own container and its port is **not** published;
+- the app container runs `prisma migrate deploy` on every boot (never `db push`).
 
 Check health:
 
 ```bash
-curl -f http://localhost:3000/api/health   # {"status":"ok"}
-docker compose ps                            # both services "healthy"
+curl -f http://127.0.0.1:3000/api/health   # {"status":"ok"}
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 ```
 
 ## 4. Reverse proxy
@@ -57,18 +67,18 @@ nginx -t && systemctl reload nginx
 
 ```bash
 cd /opt/economics && git pull
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 Migrations apply automatically on container start. To run one-off commands:
 
 ```bash
-docker compose exec app node_modules/.bin/prisma migrate status
-docker compose exec app node prisma/seed.mjs      # re-seed demo (idempotent)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec app node_modules/.bin/prisma migrate status
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec app node prisma/seed.mjs      # re-seed demo (idempotent)
 ```
 
 ## 6. Backups
 
 ```bash
-docker compose exec -T db pg_dump -U economics economics | gzip > backup-$(date +%F).sql.gz
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T db pg_dump -U economics economics | gzip > backup-$(date +%F).sql.gz
 ```

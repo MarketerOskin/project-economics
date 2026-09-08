@@ -1,0 +1,14 @@
+# Production override for a shared VPS (another app may already be running there).
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# - the DB port is never published (base file omits it)
+# - the app is bound to loopback only — nginx is the public entrypoint
+# - APP_PORT (default 3000) lets you pick a free host port
+# - restart: always
+services:
+  db:
+    restart: always
+  app:
+    restart: always
+    ports:
+      - '127.0.0.1:${APP_PORT:-3000}:3000'

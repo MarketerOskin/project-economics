@@ -6,8 +6,8 @@ services:
       POSTGRES_USER: economics
       POSTGRES_PASSWORD: economics
       POSTGRES_DB: economics
-    ports:
-      - '5432:5432'
+    # No published port by default — only the app container needs it. Local dev adds
+    # the port via docker-compose.override.yml (auto-loaded).
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -36,8 +36,8 @@ services:
       B24_CLIENT_ID: ${B24_CLIENT_ID:-}
       B24_CLIENT_SECRET: ${B24_CLIENT_SECRET:-}
       DEMO_MODE: ${DEMO_MODE:-true}
-    ports:
-      - '3000:3000'
+    # Host port is set by the override file (dev) or docker-compose.prod.yml (VPS),
+    # so a shared server can choose a non-conflicting port.
     healthcheck:
       test:
         [
@@ -49,7 +49,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 20s
+      start_period: 25s
 
 volumes:
   db-data:
