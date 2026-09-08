@@ -92,20 +92,21 @@ flowchart LR
 
 ## Быстрый старт — Demo
 
-Нужен только Docker.
+Нужен только Docker. **Без конфигурации:**
 
 ```bash
-cp .env.example .env
-# сгенерируйте секреты:
-#   openssl rand -base64 48   -> SESSION_SECRET
-#   openssl rand -base64 32   -> APP_ENCRYPTION_KEY
+git clone <repo> && cd project-economics
 docker compose up --build
 ```
 
-Откройте <http://localhost:3000> — приложение стартует в demo-mode, применяет миграции
-и наполняет демо-портал (6 проектов: прибыльный, убыточный, точно по плану, с
-перерасходом, без факт-дохода, архивный). В левом нижнем углу — переключатель ролей
-Администратор / Руководитель / Сотрудник.
+Откройте <http://localhost:3000>. В demo-режиме контейнер сам генерирует временные
+секреты, применяет миграции и наполняет демо-портал (6 проектов: прибыльный,
+убыточный, точно по плану, с перерасходом, без факт-дохода, архивный). В левом нижнем
+углу — переключатель ролей **Администратор / Руководитель / Сотрудник**.
+
+> Временные секреты живут до перезапуска (сессии сбрасываются). Для постоянного
+> demo или реальной установки задайте `SESSION_SECRET` и `APP_ENCRYPTION_KEY` в `.env`
+> (`cp .env.example .env`, затем `openssl rand -base64 48` / `openssl rand -base64 32`).
 
 ## Локальная разработка
 
@@ -163,9 +164,19 @@ npm run test:e2e                                   # Playwright (собирае�
 
 ## Развёртывание на VPS
 
-См. [deploy/README.md](deploy/README.md): `docker compose up -d --build`, nginx как
-reverse-proxy с TLS (`deploy/nginx.example.conf`, CSP `frame-ancestors` для доменов
-Bitrix24), обновление через `git pull && docker compose up -d --build`.
+Одной командой из корня репозитория:
+
+```bash
+bash deploy/vps-setup.sh
+```
+
+Скрипт создаёт `.env` со сгенерированными секретами, собирает и поднимает стек
+(app + PostgreSQL), дожидается healthcheck. Дальше — nginx как reverse-proxy с TLS
+(`deploy/nginx.example.conf`, CSP `frame-ancestors` для доменов Bitrix24), правка
+`.env` под реальный портал (`APP_URL`, `B24_CLIENT_ID/SECRET`, `DEMO_MODE=false`) и
+`docker compose up -d --build`. Подробно — [deploy/README.md](deploy/README.md).
+Обновление: `git pull && docker compose up -d --build` (миграции применяются на старте
+контейнера).
 
 ## Тесты
 
