@@ -6,8 +6,12 @@ import { notFound } from '@/lib/errors';
  * A client bound to one portal. Every read and write it performs is filtered / stamped with
  * `portalId`, so a request for portal A can never touch portal B's data (ТЗ §54).
  *
- * Complex reads (groupBy / aggregate) use `scope.scopedWhere(extra)` to guarantee the same.
- * Pass a transaction client as the second argument to keep the scope inside `db.$transaction`.
+ * Read methods are generic over Prisma's args so `include` / `select` types flow through.
+ * The internal casts are the price of injecting `where` around Prisma's delegate types — the
+ * runtime shape always matches the caller's args.
+ *
+ * Complex reads (groupBy / aggregate) use `scope.scopedWhere(extra)` for the same guarantee.
+ * Pass a transaction client as the second argument to stay inside `db.$transaction`.
  */
 export type ScopedClient = Pick<
   PrismaClient,
@@ -25,16 +29,25 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
     scopedWhere,
 
     project: {
-      findMany: (args?: Omit<Prisma.ProjectFindManyArgs, 'where'> & { where?: Prisma.ProjectWhereInput }) =>
-        client.project.findMany({ ...args, where: { ...args?.where, portalId } }),
+      findMany<T extends Omit<Prisma.ProjectFindManyArgs, 'where'> & { where?: Prisma.ProjectWhereInput }>(
+        args?: T,
+      ): Promise<Prisma.ProjectGetPayload<T>[]> {
+        return client.project.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.ProjectFindManyArgs) as Promise<Prisma.ProjectGetPayload<T>[]>;
+      },
 
-      findFirst: (where: Prisma.ProjectWhereInput, args?: Omit<Prisma.ProjectFindFirstArgs, 'where'>) =>
-        client.project.findFirst({ ...args, where: { ...where, portalId } }),
-
-      async findByIdOrThrow(id: string, args?: Omit<Prisma.ProjectFindFirstArgs, 'where'>) {
-        const row = await client.project.findFirst({ ...args, where: { id, portalId } });
+      async findByIdOrThrow<T extends Omit<Prisma.ProjectFindFirstArgs, 'where'>>(
+        id: string,
+        args?: T,
+      ): Promise<Prisma.ProjectGetPayload<T>> {
+        const row = await client.project.findFirst({
+          ...args,
+          where: { id, portalId },
+        } as Prisma.ProjectFindFirstArgs);
         if (!row) throw notFound('Проект не найден');
-        return row;
+        return row as Prisma.ProjectGetPayload<T>;
       },
 
       create: (data: Omit<Prisma.ProjectUncheckedCreateInput, 'portalId'>) =>
@@ -48,16 +61,27 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
     },
 
     entry: {
-      findMany: (
-        args?: Omit<Prisma.FinancialEntryFindManyArgs, 'where'> & {
+      findMany<
+        T extends Omit<Prisma.FinancialEntryFindManyArgs, 'where'> & {
           where?: Prisma.FinancialEntryWhereInput;
         },
-      ) => client.financialEntry.findMany({ ...args, where: { ...args?.where, portalId } }),
+      >(args?: T): Promise<Prisma.FinancialEntryGetPayload<T>[]> {
+        return client.financialEntry.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.FinancialEntryFindManyArgs) as Promise<Prisma.FinancialEntryGetPayload<T>[]>;
+      },
 
-      async findByIdOrThrow(id: string, args?: Omit<Prisma.FinancialEntryFindFirstArgs, 'where'>) {
-        const row = await client.financialEntry.findFirst({ ...args, where: { id, portalId } });
+      async findByIdOrThrow<T extends Omit<Prisma.FinancialEntryFindFirstArgs, 'where'>>(
+        id: string,
+        args?: T,
+      ): Promise<Prisma.FinancialEntryGetPayload<T>> {
+        const row = await client.financialEntry.findFirst({
+          ...args,
+          where: { id, portalId },
+        } as Prisma.FinancialEntryFindFirstArgs);
         if (!row) throw notFound('Операция не найдена');
-        return row;
+        return row as Prisma.FinancialEntryGetPayload<T>;
       },
 
       create: (data: Omit<Prisma.FinancialEntryUncheckedCreateInput, 'portalId'>) =>
@@ -71,11 +95,16 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
     },
 
     category: {
-      findMany: (
-        args?: Omit<Prisma.FinanceCategoryFindManyArgs, 'where'> & {
+      findMany<
+        T extends Omit<Prisma.FinanceCategoryFindManyArgs, 'where'> & {
           where?: Prisma.FinanceCategoryWhereInput;
         },
-      ) => client.financeCategory.findMany({ ...args, where: { ...args?.where, portalId } }),
+      >(args?: T): Promise<Prisma.FinanceCategoryGetPayload<T>[]> {
+        return client.financeCategory.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.FinanceCategoryFindManyArgs) as Promise<Prisma.FinanceCategoryGetPayload<T>[]>;
+      },
 
       async findByIdOrThrow(id: string) {
         const row = await client.financeCategory.findFirst({ where: { id, portalId } });
@@ -108,9 +137,14 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
     },
 
     user: {
-      findMany: (
-        args?: Omit<Prisma.AppUserFindManyArgs, 'where'> & { where?: Prisma.AppUserWhereInput },
-      ) => client.appUser.findMany({ ...args, where: { ...args?.where, portalId } }),
+      findMany<T extends Omit<Prisma.AppUserFindManyArgs, 'where'> & { where?: Prisma.AppUserWhereInput }>(
+        args?: T,
+      ): Promise<Prisma.AppUserGetPayload<T>[]> {
+        return client.appUser.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.AppUserFindManyArgs) as Promise<Prisma.AppUserGetPayload<T>[]>;
+      },
 
       async findByIdOrThrow(id: string) {
         const row = await client.appUser.findFirst({ where: { id, portalId } });
@@ -126,9 +160,14 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
       create: (data: Omit<Prisma.AuditLogUncheckedCreateInput, 'portalId'>) =>
         client.auditLog.create({ data: { ...data, portalId } }),
 
-      findMany: (
-        args?: Omit<Prisma.AuditLogFindManyArgs, 'where'> & { where?: Prisma.AuditLogWhereInput },
-      ) => client.auditLog.findMany({ ...args, where: { ...args?.where, portalId } }),
+      findMany<T extends Omit<Prisma.AuditLogFindManyArgs, 'where'> & { where?: Prisma.AuditLogWhereInput }>(
+        args?: T,
+      ): Promise<Prisma.AuditLogGetPayload<T>[]> {
+        return client.auditLog.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.AuditLogFindManyArgs) as Promise<Prisma.AuditLogGetPayload<T>[]>;
+      },
 
       count: (where?: Prisma.AuditLogWhereInput) =>
         client.auditLog.count({ where: { ...where, portalId } }),
