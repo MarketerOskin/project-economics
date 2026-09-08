@@ -1,0 +1,334 @@
+// «Экономика проектов» — data model.
+// PostgreSQL is the financial system of record. Bitrix24 is identity + CRM reference only.
+// Money: Decimal(18,2). Hours / rate: Decimal(10,2). Dates that are calendar dates use @db.Date.
+// Everything portal-owned carries portalId and is scoped by it in every query (withPortal).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum AppRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum ProjectSource {
+  MANUAL
+  BITRIX_CRM
+}
+
+enum CrmEntityType {
+  DEAL
+  COMPANY
+  SMART_PROCESS
+}
+
+enum FinanceDirection {
+  INCOME
+  EXPENSE
+}
+
+enum BudgetType {
+  PLAN
+  FACT
+}
+
+enum CalculationMode {
+  FIXED
+  HOURS_RATE
+}
+
+enum CategoryKind {
+  INCOME
+  EXPENSE
+}
+
+enum AuditAction {
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_ARCHIVED
+  PROJECT_RESTORED
+  FINANCE_CREATED
+  FINANCE_UPDATED
+  FINANCE_DELETED
+  CATEGORY_CREATED
+  CATEGORY_UPDATED
+  CATEGORY_ARCHIVED
+  USER_ROLE_CHANGED
+  PROJECT_MEMBER_ADDED
+  PROJECT_MEMBER_REMOVED
+}
+
+enum AuditEntityType {
+  PROJECT
+  FINANCIAL_ENTRY
+  CATEGORY
+  USER
+  PROJECT_MEMBER
+}
+
+// ─── Portal ──────────────────────────────────────────────────────────────────
+
+model PortalInstallation {
+  id       String  @id @default(cuid())
+  /// Bitrix24 member_id — stable per portal. Demo portal uses "demo".
+  memberId String  @unique
+  domain   String
+  /// Bitrix "application_token" for verifying inbound event/placement calls.
+  applicationToken String?
+  /// OAuth tokens, AES-256-GCM encrypted at rest. Never logged, never sent to the client.
+  authTokenEnc     String?
+  refreshTokenEnc  String?
+  tokenExpiresAt   DateTime?
+  /// REST endpoint reported by Bitrix at install time (client_endpoint).
+  restEndpoint     String?
+  isDemo    Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  installedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users      AppUser[]
+  projects   Project[]
+  categories FinanceCategory[]
+  entries    FinancialEntry[]
+  members    ProjectMember[]
+  auditLogs  AuditLog[]
+}
+
+// ─── Users (snapshot of Bitrix24 employees) ──────────────────────────────────
+
+model AppUser {
+  id           String  @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  /// Bitrix24 user id (string form). Demo users use synthetic ids.
+  bitrixUserId String
+  firstName    String
+  lastName     String
+  photoUrl     String?
+  position     String?
+  isActive     Boolean @default(true)
+  /// True when the user is a Bitrix24 portal administrator -> resolved as ADMIN.
+  isBitrixAdmin Boolean @default(false)
+  /// Application role. ADMIN may change MANAGER/EMPLOYEE; ADMIN itself follows isBitrixAdmin
+  /// or an explicit grant.
+  role         AppRole @default(EMPLOYEE)
+  lastSyncedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships     ProjectMember[]  @relation("MemberUser")
+  membersAdded    ProjectMember[]  @relation("MemberAddedBy")
+  projectsCreated Project[]        @relation("ProjectCreatedBy")
+  projectsUpdated Project[]        @relation("ProjectUpdatedBy")
+  projectsArchived Project[]       @relation("ProjectArchivedBy")
+  entriesAuthored FinancialEntry[] @relation("EntryCreatedBy")
+  entriesUpdated  FinancialEntry[] @relation("EntryUpdatedBy")
+  entriesDeleted  FinancialEntry[] @relation("EntryDeletedBy")
+  entriesAssigned FinancialEntry[] @relation("EntryEmployee")
+  auditLogs       AuditLog[]       @relation("AuditActor")
+
+  @@unique([portalId, bitrixUserId])
+  @@index([portalId])
+  @@index([portalId, isActive])
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+
+model Project {
+  id          String  @id @default(cuid())
+  portalId    String
+  portal      PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  clientName      String?
+  internalComment String?
+
+  status ProjectStatus @default(ACTIVE)
+
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
+
+  sourceType      ProjectSource  @default(MANUAL)
+  crmEntityType   CrmEntityType?
+  crmEntityTypeId Int?
+  crmEntityId     String?
+  crmEntityTitle  String?
+  crmEntityUrl    String?
+
+  createdById String?
+  createdBy   AppUser? @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   AppUser? @relation("ProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  archivedAt   DateTime?
+  archivedById String?
+  archivedBy   AppUser? @relation("ProjectArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members ProjectMember[]
+  entries FinancialEntry[]
+
+  @@index([portalId])
+  @@index([portalId, status])
+  @@index([portalId, crmEntityTypeId, crmEntityId])
+}
+
+model ProjectMember {
+  id        String  @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      AppUser @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  addedById String?
+  addedBy   AppUser? @relation("MemberAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([portalId])
+  @@index([userId])
+  @@index([projectId])
+}
+
+// ─── Categories (statute of income / expense) ────────────────────────────────
+
+model FinanceCategory {
+  id        String  @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+
+  kind       CategoryKind
+  name       String
+  /// Palette key (blue | violet | orange | green | graphite | burgundy | cyan).
+  accentColor String @default("graphite")
+  sortOrder  Int     @default(0)
+  isArchived Boolean @default(false)
+  /// Seeded starter categories (ТЗ §1). Cannot be renamed away from its role, still archivable.
+  isSystem   Boolean @default(false)
+
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries FinancialEntry[]
+
+  @@unique([portalId, kind, name])
+  @@index([portalId])
+  @@index([portalId, kind, isArchived])
+}
+
+// ─── Financial entries (the core) ───────────────────────────────────────────
+
+model FinancialEntry {
+  id        String  @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   FinanceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  direction       FinanceDirection
+  budgetType      BudgetType
+  calculationMode CalculationMode  @default(FIXED)
+
+  operationDate DateTime @db.Date
+
+  /// Authoritative amount. For HOURS_RATE the server sets amount = round2(hours * hourlyRate)
+  /// and never trusts a client-supplied value.
+  amount     Decimal  @db.Decimal(18, 2)
+  hours      Decimal? @db.Decimal(10, 2)
+  hourlyRate Decimal? @db.Decimal(10, 2)
+
+  /// Исполнитель (a portal employee), optional.
+  employeeId String?
+  employee   AppUser? @relation("EntryEmployee", fields: [employeeId], references: [id], onDelete: SetNull)
+
+  contractorName   String?
+  counterpartyName String?
+  invoiceNumber    String?
+  invoiceDate      DateTime? @db.Date
+  documentUrl      String?
+  description      String?
+  comment          String?
+
+  /// Optional link from a FACT entry to the PLAN entry it realises (ТЗ §15).
+  plannedEntryId String?
+  plannedEntry   FinancialEntry?  @relation("PlanFact", fields: [plannedEntryId], references: [id], onDelete: SetNull)
+  factEntries    FinancialEntry[] @relation("PlanFact")
+
+  createdById String?
+  createdBy   AppUser? @relation("EntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   AppUser? @relation("EntryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  /// Soft delete (ТЗ §31). Excluded from every aggregate; still visible in the audit log.
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   AppUser? @relation("EntryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([portalId])
+  @@index([projectId])
+  @@index([categoryId])
+  @@index([portalId, operationDate])
+  @@index([portalId, projectId, budgetType, direction, deletedAt])
+  @@index([portalId, deletedAt])
+  @@index([employeeId])
+  @@index([createdById])
+}
+
+// ─── Audit log (ТЗ §30, §32) ────────────────────────────────────────────────
+
+model AuditLog {
+  id       String  @id @default(cuid())
+  portalId String
+  portal   PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+
+  actorId   String?
+  actor     AppUser? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  /// Snapshot of the actor's display name at the time of the action.
+  actorName String
+
+  action     AuditAction
+  entityType AuditEntityType
+  entityId   String
+  /// Denormalised for "history of project X" filtering.
+  projectId  String?
+
+  before        Json?
+  after         Json?
+  changedFields String[] @default([])
+
+  createdAt DateTime @default(now())
+
+  @@index([portalId, createdAt])
+  @@index([portalId, entityType, entityId])
+  @@index([portalId, projectId])
+  @@index([portalId, actorId])
+  @@index([portalId, action])
+}

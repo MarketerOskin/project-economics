@@ -1,0 +1,19 @@
+# Ephemeral PostgreSQL for the integration test suite.
+#   docker compose -f docker-compose.test.yml up -d
+# Matches TEST_DATABASE_URL in .env.example (host port 5433).
+services:
+  db-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: economics
+      POSTGRES_PASSWORD: economics
+      POSTGRES_DB: economics_test
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U economics -d economics_test']
+      interval: 3s
+      timeout: 3s
+      retries: 15
