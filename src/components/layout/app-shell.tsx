@@ -13,7 +13,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSession();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
-  // Close the mobile drawer on Escape.
+  // Nav links and the logo call this on click, so the drawer closes on navigation.
+  const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
+
+  // Close on Escape while the drawer is open.
   React.useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawerOpen(false);
@@ -21,65 +24,57 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [drawerOpen]);
 
-  const renderSidebar = (onNavigate?: () => void) => (
-    <div className="flex h-full flex-col gap-4 px-3 py-4">
-      <Link href="/" className="px-3 py-1" onClick={onNavigate}>
-        <div className="text-[15px] font-semibold tracking-tight">Экономика проектов</div>
-      </Link>
-
-      {loading ? (
-        <div className="flex flex-col gap-1 px-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-8 animate-pulse rounded-[10px] bg-surface/60" />
-          ))}
-        </div>
-      ) : session ? (
-        <Nav role={session.role} onNavigate={onNavigate} />
-      ) : null}
-
-      <div className="mt-auto flex flex-col gap-3">
-        <DemoRoleSwitch />
-        <div className="px-1">
-          <UserBadge />
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex min-h-screen bg-bg">
-      {/* Desktop sidebar (≥ lg) */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-[#f0f0f2] lg:block">
-        {renderSidebar()}
-      </aside>
-
-      {/* Mobile drawer (< lg) */}
-      <div className={cn('lg:hidden', drawerOpen ? '' : 'pointer-events-none')}>
+      {/* Backdrop — mobile only, only when the drawer is open. */}
+      {drawerOpen ? (
         <div
           aria-hidden
-          onClick={() => setDrawerOpen(false)}
-          className={cn(
-            'fixed inset-0 z-40 bg-black/30 transition-opacity duration-200',
-            drawerOpen ? 'opacity-100' : 'opacity-0',
-          )}
+          onClick={closeDrawer}
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
         />
-        <aside
-          className={cn(
-            'fixed left-0 top-0 z-50 h-full w-64 border-r border-border bg-[#f0f0f2] shadow-xl transition-transform duration-200',
-            drawerOpen ? 'translate-x-0' : '-translate-x-full',
-          )}
+      ) : null}
+
+      {/* One sidebar: a static column on ≥ lg, a slide-in drawer below it. */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r border-border bg-[#f0f0f2] shadow-xl transition-transform duration-200',
+          'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:shadow-none lg:transition-none',
+          drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        )}
+      >
+        <button
+          type="button"
+          onClick={closeDrawer}
+          aria-label="Закрыть меню"
+          className="absolute right-2 top-2 rounded-[8px] p-1.5 text-fg-tertiary hover:bg-surface hover:text-fg lg:hidden"
         >
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(false)}
-            aria-label="Закрыть меню"
-            className="absolute right-2 top-2 rounded-[8px] p-1.5 text-fg-tertiary hover:bg-surface hover:text-fg"
-          >
-            <X className="size-4" />
-          </button>
-          {renderSidebar(() => setDrawerOpen(false))}
-        </aside>
-      </div>
+          <X className="size-4" />
+        </button>
+
+        <div className="flex h-full flex-col gap-4 px-3 py-4">
+          <Link href="/" className="px-3 py-1" onClick={closeDrawer}>
+            <div className="text-[15px] font-semibold tracking-tight">Экономика проектов</div>
+          </Link>
+
+          {loading ? (
+            <div className="flex flex-col gap-1 px-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-8 animate-pulse rounded-[10px] bg-surface/60" />
+              ))}
+            </div>
+          ) : session ? (
+            <Nav role={session.role} onNavigate={closeDrawer} />
+          ) : null}
+
+          <div className="mt-auto flex flex-col gap-3">
+            <DemoRoleSwitch />
+            <div className="px-1">
+              <UserBadge />
+            </div>
+          </div>
+        </div>
+      </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar (< lg) */}
