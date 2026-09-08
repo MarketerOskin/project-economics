@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bindMenuPlacement, upsertPortalFromInstall, type BitrixAuthPayload } from '@/lib/bitrix/auth';
+import { AppError } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,10 @@ export async function POST(req: NextRequest) {
        </body></html>`,
       { headers: { 'content-type': 'text/html; charset=utf-8' } },
     );
-  } catch {
+  } catch (err) {
+    if (err instanceof AppError) {
+      return new NextResponse(err.userMessage, { status: err.httpStatus });
+    }
     return new NextResponse('Install failed', { status: 400 });
   }
 }

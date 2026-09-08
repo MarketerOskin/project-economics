@@ -2,6 +2,7 @@ import type { PortalInstallation } from '@prisma/client';
 import { db } from '@/lib/db/client';
 import { encryptToken } from './crypto';
 import { callBitrix, callBitrixWithToken } from './client';
+import { assertPortalAuthorized } from './licensing';
 import type { BitrixCurrentUser } from './types';
 
 /** Fields Bitrix POSTs to the install / handler endpoints. */
@@ -32,6 +33,9 @@ export async function upsertPortalFromInstall(payload: BitrixAuthPayload): Promi
   const memberId = payload.member_id;
   const domain = payload.DOMAIN;
   if (!memberId || !domain) throw new Error('Install payload missing member_id / DOMAIN');
+
+  // Refuse the install unless this portal is on the operator's allowlist (no-op when unset).
+  assertPortalAuthorized({ memberId, domain });
 
   const expiresAt = payload.AUTH_EXPIRES
     ? new Date(Date.now() + Number(payload.AUTH_EXPIRES) * 1000)

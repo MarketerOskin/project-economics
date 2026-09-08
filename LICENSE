@@ -1,21 +1,70 @@
-MIT License
+Proprietary Software License — Evaluation Only
+Проприетарная лицензия — только для оценки
 
-Copyright (c) 2026 MarketerOskin
+Copyright (c) 2026 MarketerOskin (Василий Оскин). All rights reserved.
+Все права защищены.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+================================================================================
+ENGLISH
+================================================================================
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This software and its source code (the "Software") are proprietary and
+confidential. They are provided solely for the purpose of evaluating the
+Software as a job-application test assignment.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You MAY:
+  - view and run the Software locally or on infrastructure you control for the
+    sole purpose of evaluating it;
+  - review the source code as part of that evaluation.
+
+You MAY NOT, without the prior written permission of the copyright holder:
+  - deploy, install, or connect the Software to any Bitrix24 portal or other
+    system for production, internal business, or any non-evaluation use;
+  - copy, publish, redistribute, sublicense, sell, or host the Software or any
+    derivative of it;
+  - remove or disable the portal-allowlist / licensing checks in the code;
+  - use the Software, in whole or in part, to provide a service to third
+    parties.
+
+No rights are granted by implication, estoppel, or otherwise. This is not open
+source. If you received this Software, you did so for evaluation only.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. THE COPYRIGHT
+HOLDER IS NOT LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM
+THE SOFTWARE OR ITS USE.
+
+For a commercial or production licence, contact the copyright holder.
+
+================================================================================
+РУССКИЙ
+================================================================================
+
+Настоящее программное обеспечение и его исходный код («ПО») являются
+проприетарными и конфиденциальными. Они предоставляются исключительно для
+целей оценки ПО в рамках тестового задания при трудоустройстве.
+
+РАЗРЕШАЕТСЯ:
+  - просматривать и запускать ПО локально или на инфраструктуре, которую вы
+    контролируете, исключительно для целей его оценки;
+  - изучать исходный код в рамках такой оценки.
+
+ЗАПРЕЩАЕТСЯ без предварительного письменного разрешения правообладателя:
+  - развёртывать, устанавливать или подключать ПО к любому порталу Bitrix24
+    или иной системе для промышленного, коммерческого, внутрихозяйственного
+    или любого иного использования, кроме оценки;
+  - копировать, публиковать, распространять, сублицензировать, продавать или
+    размещать ПО либо производные от него;
+  - удалять или отключать проверки белого списка порталов / лицензирования в
+    коде;
+  - использовать ПО целиком или частично для оказания услуг третьим лицам.
+
+Никакие права не предоставляются по умолчанию или косвенно. Это не программное
+обеспечение с открытым исходным кодом. Если вы получили это ПО — то только для
+оценки.
+
+ПО ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ. ПРАВООБЛАДАТЕЛЬ НЕ
+НЕСЁТ ОТВЕТСТВЕННОСТИ ЗА ЛЮБЫЕ ПРЕТЕНЗИИ, УБЫТКИ ИЛИ ИНЫЕ ОБЯЗАТЕЛЬСТВА,
+ВОЗНИКАЮЩИЕ ИЗ ПО ИЛИ ЕГО ИСПОЛЬЗОВАНИЯ.
+
+Для получения коммерческой или промышленной лицензии свяжитесь с
+правообладателем.

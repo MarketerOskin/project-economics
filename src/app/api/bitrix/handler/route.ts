@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db/client';
 import { syncCurrentUser } from '@/lib/bitrix/auth';
+import { isPortalAuthorized } from '@/lib/bitrix/licensing';
 import { issueSession } from '@/lib/auth/issue';
 import { resolveRole } from '@/lib/auth/resolve';
 
@@ -24,6 +25,12 @@ export async function POST(req: NextRequest) {
   const portal = await db.portalInstallation.findUnique({ where: { memberId } });
   if (!portal || !portal.isActive) {
     return new NextResponse('Приложение не установлено на этом портале', { status: 403 });
+  }
+  if (!isPortalAuthorized(portal)) {
+    return new NextResponse(
+      'Этот портал Bitrix24 не авторизован для использования приложения. Обратитесь к правообладателю.',
+      { status: 403 },
+    );
   }
   if (portal.applicationToken && get('application_token') && portal.applicationToken !== get('application_token')) {
     return new NextResponse('Invalid application token', { status: 401 });

@@ -107,6 +107,26 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     expect(portal?.authTokenEnc).toBeTruthy();
   });
 
+  it('refuses installation from a portal outside ALLOWED_PORTAL_MEMBER_IDS', async () => {
+    process.env.ALLOWED_PORTAL_MEMBER_IDS = 'authorised-portal-1';
+    try {
+      const res = await installRoute(
+        form({ AUTH_ID: 'A', member_id: 'stranger', DOMAIN: 'stranger.bitrix24.ru', application_token: 'T' }),
+      );
+      expect(res.status).toBe(403);
+      expect(await testDb.portalInstallation.findUnique({ where: { memberId: 'stranger' } })).toBeNull();
+
+      // The authorised portal still installs.
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ result: true }), { status: 200 }));
+      const ok = await installRoute(
+        form({ AUTH_ID: 'A', member_id: 'authorised-portal-1', DOMAIN: 'ours.bitrix24.ru', application_token: 'T' }),
+      );
+      expect(ok.status).toBe(200);
+    } finally {
+      delete process.env.ALLOWED_PORTAL_MEMBER_IDS;
+    }
+  });
+
   it('handler uses the inbound per-user AUTH_ID directly and never persists it as the portal token (ТЗ §44)', async () => {
     await installRoute(
       form({ AUTH_ID: 'PORTAL_ACCESS', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
