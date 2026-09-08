@@ -3,7 +3,7 @@ set -e
 
 # Apply pending migrations (never `db push` in production — ТЗ §4).
 echo "→ prisma migrate deploy"
-node_modules/.bin/prisma migrate deploy
+./node_modules/.bin/prisma migrate deploy
 
 # In demo mode, provision the demo portal on first boot (idempotent).
 if [ "$DEMO_MODE" = "true" ]; then

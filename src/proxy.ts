@@ -17,8 +17,8 @@ export function proxy(req: NextRequest): NextResponse {
     pathname !== '/robots.txt';
 
   if (isAppPage && !req.cookies.get(SESSION_COOKIE)) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/api/demo/bootstrap';
+    const base = process.env.APP_URL ?? req.nextUrl.origin;
+    const url = new URL('/api/demo/bootstrap', base);
     url.searchParams.set('next', pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }

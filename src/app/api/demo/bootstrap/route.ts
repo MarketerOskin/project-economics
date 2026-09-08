@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
 
   const nextParam = req.nextUrl.searchParams.get('next') ?? '/';
   const safeNext = nextParam.startsWith('/') ? nextParam : '/';
-  const res = NextResponse.redirect(new URL(safeNext, req.nextUrl.origin));
+  const base = process.env.APP_URL ?? req.nextUrl.origin;
+  const res = NextResponse.redirect(new URL(safeNext, base));
   return issueSession(res, { portalId, appUserId: admin.id, role: 'ADMIN', demo: true });
 }
