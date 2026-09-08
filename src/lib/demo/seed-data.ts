@@ -2,8 +2,8 @@ import type { PrismaClient } from '@prisma/client';
 import { DEMO_MEMBER_ID } from './constants';
 
 /**
- * Realistic demo dataset (ТЗ §5, §68). Six projects spanning every semantic state:
- * profitable, loss-making, on-plan, over-budget, no fact income, archived.
+ * Realistic demo dataset (ТЗ §5, §68). Seven projects spanning every semantic state:
+ * profitable, loss-making, on-plan, over-budget, no fact income, completed, archived/cancelled.
  * Idempotent: seeds only when the demo portal is absent, so a reviewer's edits survive reboots.
  */
 
@@ -155,8 +155,8 @@ const PROJECTS: ProjectSpec[] = [
   {
     name: 'Миграция с «Мегаплана»',
     clientName: 'ООО «Дом Стандарт»',
-    description: 'Перенос сделок, контактов и задач из Мегаплана в Bitrix24.',
-    status: 'ARCHIVED',
+    description: 'Перенос сделок, контактов и задач из Мегаплана в Bitrix24. Сдан и оплачен.',
+    status: 'COMPLETED',
     startDate: '2025-10-01',
     endDate: '2025-12-20',
     members: [2],
@@ -165,6 +165,21 @@ const PROJECTS: ProjectSpec[] = [
       { category: 'income', direction: 'INCOME', budget: 'FACT', date: '2025-11-01', amount: '450000', counterpartyName: 'ООО «Дом Стандарт»', invoiceNumber: 'СЧ-201' },
       { category: 'external', direction: 'EXPENSE', budget: 'FACT', date: '2025-11-10', hours: '90', rate: '2100', employee: 2, description: 'Скрипты миграции, сверка' },
       { category: 'server', direction: 'EXPENSE', budget: 'FACT', date: '2025-11-01', amount: '9000' },
+    ],
+  },
+  {
+    name: 'Онбординг-портал «Ленмар»',
+    clientName: 'ООО «Ленмар»',
+    description: 'Проект остановлен на этапе анализа по решению клиента — часть затрат уже понесена.',
+    status: 'ARCHIVED',
+    startDate: '2025-09-01',
+    endDate: '2025-10-05',
+    members: [1],
+    entries: [
+      { category: 'income', direction: 'INCOME', budget: 'PLAN', date: '2025-09-15', amount: '800000' },
+      { category: 'external', direction: 'EXPENSE', budget: 'PLAN', date: '2025-09-01', amount: '300000' },
+      { category: 'external', direction: 'EXPENSE', budget: 'FACT', date: '2025-09-20', hours: '40', rate: '2200', employee: 1, description: 'Предпроектный анализ, интеграционная карта' },
+      { category: 'server', direction: 'EXPENSE', budget: 'FACT', date: '2025-09-05', amount: '4000' },
     ],
   },
 ];
@@ -259,7 +274,8 @@ export async function seedDemoPortal(tx: Tx): Promise<{ created: boolean; portal
         startDate: new Date(p.startDate),
         endDate: p.endDate ? new Date(p.endDate) : null,
         createdById: manager.id,
-        archivedAt: p.status === 'ARCHIVED' ? new Date('2025-12-21') : null,
+        archivedAt:
+          p.status === 'ARCHIVED' ? new Date(p.endDate ?? '2025-12-21') : null,
         archivedById: p.status === 'ARCHIVED' ? admin.id : null,
       },
     });

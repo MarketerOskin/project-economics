@@ -34,10 +34,10 @@ describe('demo seed (ТЗ §5, §68)', () => {
     expect(second.portalId).toBe(first.portalId);
   });
 
-  it('seeds 6 projects, one per role, and the six starter categories', async () => {
+  it('seeds 7 projects, one per role, and the six starter categories', async () => {
     const { portalId } = await seedDemoPortal(testDb);
     const scope = withPortal(portalId, testDb);
-    expect(await scope.project.count()).toBe(6);
+    expect(await scope.project.count()).toBe(7);
     const users = await scope.user.findMany();
     expect(users.filter((u) => u.role === 'ADMIN')).toHaveLength(1);
     expect(users.filter((u) => u.role === 'MANAGER')).toHaveLength(1);
@@ -72,8 +72,13 @@ describe('demo seed (ТЗ §5, §68)', () => {
     const vector = await economicsFor(portalId, 'Интеграция 1С — «Вектор»');
     expect(vector.economics.expenseDeviation.isPositive()).toBe(true); // over budget
 
-    const archived = await economicsFor(portalId, 'Миграция с «Мегаплана»');
+    const completed = await economicsFor(portalId, 'Миграция с «Мегаплана»');
+    expect(completed.project.status).toBe('COMPLETED');
+    expect(completed.economics.factProfit.isPositive()).toBe(true);
+
+    const archived = await economicsFor(portalId, 'Онбординг-портал «Ленмар»');
     expect(archived.project.status).toBe('ARCHIVED');
+    expect(archived.economics.factIncome.isZero()).toBe(true);
   });
 
   it('stores HOURS_RATE amounts equal to hours × rate', async () => {

@@ -36,7 +36,7 @@ npm run build         # next build (output: standalone)
 | `with-portal` | изоляция порталов: `findByIdOrThrow` чужой строки → 404, `findMany` — только свой портал |
 | `handler` | `route()`: 401 без сессии, **подделанная роль в cookie игнорируется**, 403 без CSRF, маппинг `AppError` |
 | `demo-auth` | `/api/session`, переключатель роли, 403 при `DEMO_MODE=false`, невалидная роль → 400 |
-| `seed` | 6 проектов всех семантических состояний, HOURS_RATE = часы×ставка, soft-deleted + audit-строки |
+| `seed` | 7 проектов всех семантических состояний (вкл. завершённый и архивный), HOURS_RATE = часы×ставка, soft-deleted + audit-строки |
 | `projects/api` | **ТЗ §66**: сотрудник в проект A → 200, в B → 403, список — только свои; менеджер → 200; чужой портал → 404; PATCH пишет `changedFields`; archive/restore; участники (diff + audit) |
 | `projects/atomicity` | падение audit-записи откатывает создание проекта (ТЗ §52) |
 | `finance/api` | сотрудник → 403; **HOURS_RATE считается на сервере, клиентский `amount` игнорируется**; статья не того `kind` → 400; edit → пересчёт + audit before/after; delete → вне агрегатов; пагинация + скоуп; deleted скрыт по умолчанию |
