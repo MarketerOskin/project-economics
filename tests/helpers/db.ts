@@ -3,6 +3,7 @@
  * and a minimal portal factory. Import from test files (not a setup file).
  */
 import { PrismaClient } from '@prisma/client';
+import { _resetRateLimit } from '@/lib/rate-limit';
 
 export const testDb = new PrismaClient({
   datasources: { db: { url: process.env.TEST_DATABASE_URL } },
@@ -11,6 +12,7 @@ export const testDb = new PrismaClient({
 
 /** Order-independent wipe of every row (FK-safe via CASCADE). */
 export async function resetDb(): Promise<void> {
+  _resetRateLimit();
   await testDb.$executeRawUnsafe(`
     TRUNCATE TABLE
       "AuditLog","FinancialEntry","ProjectMember","Project",

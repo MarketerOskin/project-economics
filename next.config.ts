@@ -10,12 +10,18 @@ const nextConfig: NextConfig = {
     root: fileURLToPath(new URL('.', import.meta.url)),
   },
   async headers() {
+    // The app is embedded as an iframe in Bitrix24 — allow only Bitrix ancestors,
+    // and no one else (defends against clickjacking / rogue embedding, ТЗ §44).
+    const frameAncestors =
+      "frame-ancestors https://*.bitrix24.ru https://*.bitrix24.com https://*.bitrix24.de https://*.bitrix24.eu https://*.bitrix24.pl 'self'";
     return [
       {
         source: '/:path*',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Content-Security-Policy', value: frameAncestors },
+          { key: 'X-Frame-Options', value: 'ALLOW-FROM https://bitrix24.ru' },
         ],
       },
     ];

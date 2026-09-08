@@ -4,6 +4,7 @@ import { AppError, forbidden, toErrorResponse, unauthorized } from '@/lib/errors
 import { withPortal, type PortalScope } from '@/lib/db/with-portal';
 import { resolveSessionFromToken, type ResolvedSession } from '@/lib/auth/resolve';
 import { SESSION_COOKIE } from '@/lib/auth/session';
+import { rateLimit } from '@/lib/rate-limit';
 
 export interface HandlerContext<P = Record<string, string>> {
   req: NextRequest;
@@ -47,6 +48,22 @@ export function route<P = Record<string, string>>(handler: Handler<P>, options: 
 
       const session = await resolveSessionFromToken(req.cookies.get(SESSION_COOKIE)?.value);
       if (requireAuth && !session) throw unauthorized();
+
+      // Rate-limit mutating requests, keyed by the session (or a coarse client hint).
+      if (!SAFE_METHODS.has(req.method)) {
+        const key =
+          session?.user.id ??
+          req.headers.get('x-forwarded-for') ??
+          req.headers.get('x-real-ip') ??
+          'anon';
+        const { ok, retryAfter } = rateLimit(`mut:${key}`);
+        if (!ok) {
+          return NextResponse.json(
+            { error: { code: 'RATE_LIMITED', message: 'Слишком много запросов. Подождите немного.' } },
+            { status: 429, headers: { 'retry-after': String(retryAfter) } },
+          );
+        }
+      }
 
       const params = (segment ? await segment.params : ({} as P)) as P;
 
