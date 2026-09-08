@@ -27,7 +27,7 @@ function toInitial(e: EntryRow): EntryFormInitial {
     budgetType: e.budgetType,
     projectId: e.projectId,
     categoryId: e.category.id,
-    operationDate: e.operationDate.toString().slice(0, 10),
+    operationDate: new Date(e.operationDate).toISOString().slice(0, 10),
     calculationMode: e.calculationMode,
     amount: e.amount,
     hours: e.hours,
