@@ -1,8 +1,9 @@
 import type { AppRole } from '@prisma/client';
 import { db } from '@/lib/db/client';
 import { forbidden, notFound } from '@/lib/errors';
+import { DEMO_MEMBER_ID } from '@/lib/demo/constants';
 
-export const DEMO_MEMBER_ID = 'demo';
+export { DEMO_MEMBER_ID };
 
 export function isDemoMode(): boolean {
   return process.env.DEMO_MODE === 'true';
