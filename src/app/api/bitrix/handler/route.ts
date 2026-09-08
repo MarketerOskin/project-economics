@@ -29,22 +29,13 @@ export async function POST(req: NextRequest) {
     return new NextResponse('Invalid application token', { status: 401 });
   }
 
-  // Refresh this portal's access token from the inbound payload if provided.
+  // The inbound AUTH_ID is a short-lived, per-user token. We use it to resolve *this*
+  // user's identity directly — we do NOT write it to the portal's shared stored token.
+  // Doing so would let a second user (opening the app at the same moment) resolve their
+  // session against the first user's token, e.g. an employee getting an admin session
+  // (ТЗ §44, §54). The portal's stored token is refreshed only via the OAuth refresh flow.
   const authId = get('AUTH_ID');
-  if (authId) {
-    const { encryptToken } = await import('@/lib/bitrix/crypto');
-    const refreshId = get('REFRESH_ID');
-    await db.portalInstallation.update({
-      where: { id: portal.id },
-      data: {
-        authTokenEnc: encryptToken(authId),
-        ...(refreshId ? { refreshTokenEnc: encryptToken(refreshId) } : {}),
-      },
-    });
-  }
-
-  const fresh = await db.portalInstallation.findUnique({ where: { id: portal.id } });
-  const user = await syncCurrentUser(fresh ?? portal);
+  const user = await syncCurrentUser(portal, authId ?? undefined);
 
   const res = NextResponse.redirect(new URL('/', process.env.APP_URL ?? req.nextUrl.origin));
   return issueSession(res, {

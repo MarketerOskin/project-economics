@@ -76,13 +76,62 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     expect(res.status).toBe(401);
   });
 
-  it('ONAPPUNINSTALL deactivates the portal and clears tokens', async () => {
+  it('ONAPPUNINSTALL deactivates the portal and clears tokens when the application_token matches', async () => {
     await installRoute(
-      form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru' }),
+      form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
-    await eventsRoute(form({ event: 'ONAPPUNINSTALL', 'auth[member_id]': 'acme' }));
+    const res = await eventsRoute(
+      form({ event: 'ONAPPUNINSTALL', 'auth[member_id]': 'acme', 'auth[application_token]': 'APP_TOKEN' }),
+    );
+    expect(res.status).toBe(200);
     const portal = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
     expect(portal?.isActive).toBe(false);
     expect(portal?.authTokenEnc).toBeNull();
+  });
+
+  it('ONAPPUNINSTALL without a valid application_token is rejected and changes nothing (ТЗ §42)', async () => {
+    await installRoute(
+      form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
+    );
+
+    const noToken = await eventsRoute(form({ event: 'ONAPPUNINSTALL', 'auth[member_id]': 'acme' }));
+    expect(noToken.status).toBe(401);
+
+    const wrongToken = await eventsRoute(
+      form({ event: 'ONAPPUNINSTALL', 'auth[member_id]': 'acme', 'auth[application_token]': 'GUESS' }),
+    );
+    expect(wrongToken.status).toBe(401);
+
+    const portal = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
+    expect(portal?.isActive).toBe(true);
+    expect(portal?.authTokenEnc).toBeTruthy();
+  });
+
+  it('handler uses the inbound per-user AUTH_ID directly and never persists it as the portal token (ТЗ §44)', async () => {
+    await installRoute(
+      form({ AUTH_ID: 'PORTAL_ACCESS', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
+    );
+    const before = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
+
+    const seen: string[] = [];
+    vi.spyOn(global, 'fetch').mockImplementation(async (_url, init) => {
+      const body = String((init as RequestInit)?.body ?? '');
+      const auth = new URLSearchParams(body).get('auth');
+      if (auth) seen.push(auth);
+      return new Response(JSON.stringify({ result: { ID: '9', NAME: 'Ева', LAST_NAME: 'Сотрудникова', ADMIN: false } }), { status: 200 });
+    });
+
+    const res = await handlerRoute(
+      form({ member_id: 'acme', application_token: 'APP_TOKEN', AUTH_ID: 'USER_EVA_TOKEN' }),
+    );
+    expect(res.status).toBe(307);
+    // user.current was called with the inbound per-user token, not the stored portal token
+    expect(seen).toContain('USER_EVA_TOKEN');
+
+    const after = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
+    expect(after?.authTokenEnc).toBe(before?.authTokenEnc);
+
+    const user = await testDb.appUser.findFirst({ where: { bitrixUserId: '9' } });
+    expect(user?.role).toBe('EMPLOYEE');
   });
 });

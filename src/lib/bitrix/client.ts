@@ -49,8 +49,43 @@ async function refreshAccessToken(portal: PortalInstallation): Promise<string> {
 }
 
 /**
- * Call a Bitrix24 REST method. Injects the (decrypted) access token, refreshes once on
- * `expired_token` and retries. Never logs a token (redactTokens on any error text).
+ * Call a Bitrix24 REST method with an explicit access token (e.g. the short-lived
+ * per-user token from a placement request). No refresh, no persistence — one shot.
+ */
+export async function callBitrixWithToken<T = unknown>(
+  portal: Pick<PortalInstallation, 'domain' | 'restEndpoint'>,
+  accessToken: string,
+  method: string,
+  params: Record<string, unknown> = {},
+): Promise<T> {
+  const body = new URLSearchParams();
+  const flatten = (prefix: string, value: unknown) => {
+    if (value === null || value === undefined) return;
+    if (Array.isArray(value)) value.forEach((v, i) => flatten(`${prefix}[${i}]`, v));
+    else if (typeof value === 'object') for (const [k, v] of Object.entries(value)) flatten(`${prefix}[${k}]`, v);
+    else body.append(prefix, String(value));
+  };
+  for (const [k, v] of Object.entries(params)) flatten(k, v);
+  body.append('auth', accessToken);
+
+  let res: Response;
+  try {
+    res = await fetch(`${restBase(portal as PortalInstallation)}/${method}.json`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  } catch (err) {
+    throw upstream(redactTokens(`Сеть недоступна: ${err instanceof Error ? err.message : ''}`));
+  }
+  const json = (await res.json()) as { result?: T } | BitrixError;
+  if (isBitrixError(json)) throw upstream(redactTokens(json.error_description || json.error));
+  return json.result as T;
+}
+
+/**
+ * Call a Bitrix24 REST method. Injects the (decrypted) portal access token, refreshes
+ * once on `expired_token` and retries. Never logs a token (redactTokens on any error text).
  */
 export async function callBitrix<T = unknown>(
   portal: PortalInstallation,

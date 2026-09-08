@@ -1,7 +1,7 @@
 import type { PortalInstallation } from '@prisma/client';
 import { db } from '@/lib/db/client';
 import { encryptToken } from './crypto';
-import { callBitrix } from './client';
+import { callBitrix, callBitrixWithToken } from './client';
 import type { BitrixCurrentUser } from './types';
 
 /** Fields Bitrix POSTs to the install / handler endpoints. */
@@ -83,9 +83,19 @@ export async function bindMenuPlacement(portal: PortalInstallation): Promise<voi
   }
 }
 
-/** Resolve the current Bitrix user for a handler request and mirror them into AppUser. */
-export async function syncCurrentUser(portal: PortalInstallation) {
-  const me = await callBitrix<BitrixCurrentUser>(portal, 'user.current');
+/**
+ * Resolve the current Bitrix user for a handler request and mirror them into AppUser.
+ *
+ * `accessToken` is the short-lived per-user token from the placement/iframe POST. When
+ * present we call `user.current` with THAT token directly — never persisting it — so two
+ * users opening the app concurrently can't overwrite each other's identity through the
+ * portal's shared stored token (ТЗ §44, §54). Without it (background sync) we fall back
+ * to the portal's own stored token.
+ */
+export async function syncCurrentUser(portal: PortalInstallation, accessToken?: string) {
+  const me = accessToken
+    ? await callBitrixWithToken<BitrixCurrentUser>(portal, accessToken, 'user.current')
+    : await callBitrix<BitrixCurrentUser>(portal, 'user.current');
   const isAdmin = me.ADMIN === true;
 
   const user = await db.appUser.upsert({
