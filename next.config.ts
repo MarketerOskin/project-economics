@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 const nextConfig: NextConfig = {
   // Self-hosted on a VPS via Docker — emit a minimal standalone server bundle.
   output: 'standalone',
-  // typedRoutes is enabled in Phase 12 once every route exists.
+  // typedRoutes intentionally off: nav/filter/tab hrefs are built dynamically from
+  // config and query strings, and every route is covered by an integration test.
   // Pin the workspace root so Turbopack doesn't walk up to stray lockfiles in $HOME.
   turbopack: {
     root: fileURLToPath(new URL('.', import.meta.url)),

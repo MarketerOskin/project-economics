@@ -18,6 +18,17 @@ const compact = (v: number) =>
     ? `${(v / 1_000_000).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} млн`
     : `${Math.round(v / 1000).toLocaleString('ru-RU')} тыс`;
 
+function TruncatedTick(props: { x?: number; y?: number; payload?: { value?: string } }) {
+  const { x = 0, y = 0, payload } = props;
+  const text = payload?.value ?? '';
+  const clipped = text.length > 22 ? `${text.slice(0, 21)}…` : text;
+  return (
+    <text x={x} y={y} dy={4} textAnchor="end" fill={CHART.inkSecondary} fontSize={CHART.fontSize}>
+      {clipped}
+    </text>
+  );
+}
+
 export function ProjectProfitChart({ data }: { data: ProfitBar[] }) {
   const router = useRouter();
   const rows = data.slice(0, 10).map((b) => ({ ...b, value: Number(b.profit) }));
@@ -34,9 +45,10 @@ export function ProjectProfitChart({ data }: { data: ProfitBar[] }) {
         <YAxis
           type="category"
           dataKey="name"
-          width={150}
+          width={160}
+          interval={0}
           {...axisProps}
-          tick={{ fill: CHART.inkSecondary, fontSize: CHART.fontSize }}
+          tick={<TruncatedTick />}
         />
         <Tooltip cursor={{ fill: CHART.grid }} content={<ChartTooltip />} />
         <Bar
