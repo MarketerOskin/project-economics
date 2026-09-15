@@ -68,6 +68,9 @@ export default async function SettingsPage() {
                 </p>
               ) : null}
             </div>
+            <Link href="/pricing" className="shrink-0 text-sm text-accent underline underline-offset-2">
+              {plan === 'PRO' ? 'Тарифы' : 'Оформить Pro'}
+            </Link>
           </div>
         </section>
 

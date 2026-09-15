@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronDown, LogOut, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/client/api';
 import { useToast } from '@/lib/client/toast';
 import { formatDateTime, toDateInputValue } from '@/lib/format';
@@ -147,8 +146,7 @@ function PortalEditor({
   );
 }
 
-export function PortalsDashboard({ operatorEmail }: { operatorEmail: string }) {
-  const router = useRouter();
+export function PortalsPanel() {
   const [portals, setPortals] = React.useState<PortalRow[] | null>(null);
   const [q, setQ] = React.useState('');
   const [expanded, setExpanded] = React.useState<string | null>(null);
@@ -165,29 +163,8 @@ export function PortalsDashboard({ operatorEmail }: { operatorEmail: string }) {
     load().catch(() => setPortals([]));
   }, [load]);
 
-  const logout = async () => {
-    await apiFetch('/api/operator/logout', { method: 'POST' });
-    router.push('/operator/login');
-    router.refresh();
-  };
-
-  const proCount = portals?.filter((p) => p.effectivePlan === 'PRO').length ?? 0;
-
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Порталы</h1>
-          <p className="mt-1 text-sm text-fg-secondary">
-            {operatorEmail} · {portals?.length ?? '—'} портал(ов), {proCount} на Pro
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={logout}>
-          <LogOut className="size-3.5" />
-          Выйти
-        </Button>
-      </div>
-
+    <div>
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-tertiary" />
         <Input

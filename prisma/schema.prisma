@@ -90,6 +90,17 @@ enum Plan {
   PRO
 }
 
+enum ProLeadStatus {
+  /// Just submitted, nobody has followed up yet.
+  NEW
+  /// The operator reached out.
+  CONTACTED
+  /// Became a paying (PRO) portal.
+  CONVERTED
+  /// Chose not to buy / went cold.
+  DECLINED
+}
+
 // ─── Portal ──────────────────────────────────────────────────────────────────
 
 model PortalInstallation {
@@ -125,6 +136,32 @@ model PortalInstallation {
   members    ProjectMember[]
   auditLogs  AuditLog[]
   planGrants OperatorGrant[]
+  proLeads   ProLead[]
+}
+
+/// A "I want PRO" request submitted from the app's /pricing page. Manual sales funnel:
+/// shows up in /operator for the operator to follow up and grant the plan.
+model ProLead {
+  id       String @id @default(cuid())
+  portalId String
+  portal   PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+
+  requestedById   String?
+  requestedBy     AppUser? @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  /// Snapshot of the requester's display name at submission time.
+  requestedByName String
+  /// Free-text contact the requester left (email / phone / Telegram) — not Bitrix24 identity.
+  contact String
+  comment String?
+
+  status          ProLeadStatus @default(NEW)
+  createdAt       DateTime      @default(now())
+  handledAt       DateTime?
+  /// Which operator last changed the status.
+  handledByOperator String?
+
+  @@index([portalId])
+  @@index([status])
 }
 
 // ─── Operator (you — the app owner, outside every portal's role system) ─────
@@ -176,6 +213,7 @@ model AppUser {
   entriesDeleted  FinancialEntry[] @relation("EntryDeletedBy")
   entriesAssigned FinancialEntry[] @relation("EntryEmployee")
   auditLogs       AuditLog[]       @relation("AuditActor")
+  proLeads        ProLead[]
 
   @@unique([portalId, bitrixUserId])
   @@index([portalId])

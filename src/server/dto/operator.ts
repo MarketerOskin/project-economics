@@ -13,3 +13,7 @@ export const setPlanSchema = z.object({
 });
 
 export type SetPlanInput = z.infer<typeof setPlanSchema>;
+
+export const setLeadStatusSchema = z.object({
+  status: z.enum(['NEW', 'CONTACTED', 'CONVERTED', 'DECLINED']),
+});

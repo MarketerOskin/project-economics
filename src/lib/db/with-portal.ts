@@ -15,7 +15,7 @@ import { notFound } from '@/lib/errors';
  */
 export type ScopedClient = Pick<
   PrismaClient,
-  'project' | 'financialEntry' | 'financeCategory' | 'projectMember' | 'appUser' | 'auditLog'
+  'project' | 'financialEntry' | 'financeCategory' | 'projectMember' | 'appUser' | 'auditLog' | 'proLead'
 >;
 
 export function withPortal(portalId: string, client: ScopedClient = db) {
@@ -171,6 +171,20 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       count: (where?: Prisma.AuditLogWhereInput) =>
         client.auditLog.count({ where: { ...where, portalId } }),
+    },
+
+    proLead: {
+      create: (data: Omit<Prisma.ProLeadUncheckedCreateInput, 'portalId'>) =>
+        client.proLead.create({ data: { ...data, portalId } }),
+
+      findMany<T extends Omit<Prisma.ProLeadFindManyArgs, 'where'> & { where?: Prisma.ProLeadWhereInput }>(
+        args?: T,
+      ): Promise<Prisma.ProLeadGetPayload<T>[]> {
+        return client.proLead.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.ProLeadFindManyArgs) as Promise<Prisma.ProLeadGetPayload<T>[]>;
+      },
     },
   };
 }

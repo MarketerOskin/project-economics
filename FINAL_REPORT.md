@@ -160,7 +160,7 @@ HOURS_RATE: Сумма = round₂(часы × ставка)   — всегда �
 
 ## 7. Tests
 
-37 файлов, **216 unit/integration + 2 E2E**.
+39 файлов, **226 unit/integration + 2 E2E**.
 
 - **Unit:** движок финансов (все §65), форматтеры (`₽` только в `lib/format` —
   grep-тест), матрица прав 3×9, маппинг ошибок, session, period, humanize аудита,
@@ -192,7 +192,7 @@ HOURS_RATE: Сумма = round₂(часы × ставка)   — всегда �
 ```
 npm run lint        → clean (0 errors, 0 warnings)
 npm run typecheck   → clean (tsc --noEmit, strict + noUncheckedIndexedAccess)
-npm test            → Test Files 37 passed (37) · Tests 216 passed (216)
+npm test            → Test Files 39 passed (39) · Tests 226 passed (226)
 npm run build       → ✓ Compiled successfully · standalone output
 npm run test:e2e    → 2 passed (smoke + manager-flow ТЗ §67)
 ```
@@ -307,6 +307,13 @@ bash deploy/vps-setup.sh
   (владелец приложения) — свой вход по email/паролю из `.env` (`scrypt`, без Bitrix24 и
   без пересечения с ролями ADMIN/MANAGER/EMPLOYEE), список порталов, выдача/отзыв Pro
   с датой и заметкой, история выдач (`OperatorGrant`).
+- **Продажи: страница `/pricing` + заявки на Pro:** сравнение Free/Pro, кнопка
+  «Оформить Pro» → форма (контакт + комментарий) → `ProLead`. Один открытый лид на
+  портал (повторная заявка при открытой → 409, без тихих дублей). Заявки видны во
+  вкладке «Заявки на Pro» в `/operator` с доменом портала — оператор в один клик
+  «Выдаёт Pro» (грант + перевод заявки в CONVERTED) либо отмечает «Связался»/«Отказ».
+  Блок «Тарифы» появился в `/settings` и в каждом `UpsellNotice` (заблокированной
+  Pro-функции) — теперь это не тупик, а ссылка на оформление.
 
 Обязательный функционал ТЗ реализован и покрыт тестами полностью. Открытые пункты —
 только то, что **невозможно проверить без реального портала Bitrix24**:

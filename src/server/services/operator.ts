@@ -1,6 +1,6 @@
-import type { Plan } from '@prisma/client';
+import type { Plan, ProLeadStatus } from '@prisma/client';
 import { db } from '@/lib/db/client';
-import { badRequest } from '@/lib/errors';
+import { badRequest, notFound } from '@/lib/errors';
 import { effectivePlan } from '@/lib/billing/plan';
 
 export interface PortalSummary {
@@ -95,4 +95,72 @@ export async function setPortalPlan(input: {
       },
     }),
   ]);
+}
+
+// ─── PRO leads (sales) ───────────────────────────────────────────────────────
+
+export interface LeadRow {
+  id: string;
+  portalId: string;
+  portalDomain: string;
+  portalIsDemo: boolean;
+  requestedByName: string;
+  contact: string;
+  comment: string | null;
+  status: ProLeadStatus;
+  createdAt: Date;
+  handledAt: Date | null;
+  handledByOperator: string | null;
+}
+
+/** Every "I want PRO" request across all portals, newest first. */
+export async function listProLeadsForOperator(q?: { status?: ProLeadStatus }): Promise<LeadRow[]> {
+  const rows = await db.proLead.findMany({
+    where: q?.status ? { status: q.status } : undefined,
+    orderBy: { createdAt: 'desc' },
+    include: { portal: { select: { domain: true, isDemo: true } } },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    portalId: r.portalId,
+    portalDomain: r.portal.domain,
+    portalIsDemo: r.portal.isDemo,
+    requestedByName: r.requestedByName,
+    contact: r.contact,
+    comment: r.comment,
+    status: r.status,
+    createdAt: r.createdAt,
+    handledAt: r.handledAt,
+    handledByOperator: r.handledByOperator,
+  }));
+}
+
+export async function setLeadStatus(input: {
+  leadId: string;
+  status: ProLeadStatus;
+  operatorEmail: string;
+}): Promise<void> {
+  const lead = await db.proLead.findUnique({ where: { id: input.leadId } });
+  if (!lead) throw notFound('Заявка не найдена');
+
+  await db.proLead.update({
+    where: { id: input.leadId },
+    data: { status: input.status, handledAt: new Date(), handledByOperator: input.operatorEmail },
+  });
+}
+
+export interface OperatorOverview {
+  portalCount: number;
+  proCount: number;
+  newLeadCount: number;
+}
+
+/** Small numbers for the operator dashboard header. */
+export async function getOperatorOverview(): Promise<OperatorOverview> {
+  const [portals, newLeadCount] = await Promise.all([
+    db.portalInstallation.findMany({ select: { plan: true, planExpiresAt: true, isDemo: true } }),
+    db.proLead.count({ where: { status: 'NEW' } }),
+  ]);
+  const proCount = portals.filter((p) => !p.isDemo && effectivePlan(p) === 'PRO').length;
+  return { portalCount: portals.length, proCount, newLeadCount };
 }
