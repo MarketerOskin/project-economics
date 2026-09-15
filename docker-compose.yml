@@ -36,6 +36,12 @@ services:
       B24_CLIENT_ID: ${B24_CLIENT_ID:-}
       B24_CLIENT_SECRET: ${B24_CLIENT_SECRET:-}
       DEMO_MODE: ${DEMO_MODE:-true}
+      # Anti-unauthorized-deployment allowlist (empty = disabled, see src/lib/bitrix/licensing.ts).
+      ALLOWED_PORTAL_MEMBER_IDS: ${ALLOWED_PORTAL_MEMBER_IDS:-}
+      ALLOWED_PORTAL_DOMAINS: ${ALLOWED_PORTAL_DOMAINS:-}
+      # Operator back-office (/operator) — see src/lib/operator/.
+      OPERATOR_EMAIL: ${OPERATOR_EMAIL:-}
+      OPERATOR_PASSWORD_HASH: ${OPERATOR_PASSWORD_HASH:-}
     # Host port is set by the override file (dev) or docker-compose.prod.yml (VPS),
     # so a shared server can choose a non-conflicting port.
     healthcheck:
