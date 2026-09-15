@@ -126,6 +126,9 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
       findMany: (where?: Prisma.ProjectMemberWhereInput) =>
         client.projectMember.findMany({ where: { ...where, portalId } }),
 
+      count: (where?: Prisma.ProjectMemberWhereInput) =>
+        client.projectMember.count({ where: { ...where, portalId } }),
+
       createMany: (rows: Omit<Prisma.ProjectMemberUncheckedCreateInput, 'portalId'>[]) =>
         client.projectMember.createMany({
           data: rows.map((r) => ({ ...r, portalId })),

@@ -160,7 +160,7 @@ HOURS_RATE: Сумма = round₂(часы × ставка)   — всегда �
 
 ## 7. Tests
 
-39 файлов, **226 unit/integration + 2 E2E**.
+40 файлов, **229 unit/integration + 2 E2E**.
 
 - **Unit:** движок финансов (все §65), форматтеры (`₽` только в `lib/format` —
   grep-тест), матрица прав 3×9, маппинг ошибок, session, period, humanize аудита,
@@ -192,7 +192,7 @@ HOURS_RATE: Сумма = round₂(часы × ставка)   — всегда �
 ```
 npm run lint        → clean (0 errors, 0 warnings)
 npm run typecheck   → clean (tsc --noEmit, strict + noUncheckedIndexedAccess)
-npm test            → Test Files 39 passed (39) · Tests 226 passed (226)
+npm test            → Test Files 40 passed (40) · Tests 229 passed (229)
 npm run build       → ✓ Compiled successfully · standalone output
 npm run test:e2e    → 2 passed (smoke + manager-flow ТЗ §67)
 ```
@@ -314,6 +314,12 @@ bash deploy/vps-setup.sh
   «Выдаёт Pro» (грант + перевод заявки в CONVERTED) либо отмечает «Связался»/«Отказ».
   Блок «Тарифы» появился в `/settings` и в каждом `UpsellNotice` (заблокированной
   Pro-функции) — теперь это не тупик, а ссылка на оформление.
+- **Онбординг на дашборде:** для нового реального портала (не демо) — чек-лист из
+  3 реальных шагов (есть проект / есть участник / есть операция), посчитанных прямо
+  из данных, а не «руками отмеченных». Скрывается сам, когда всё сделано, либо по
+  кнопке ✕ (сохраняется на портал через `onboardingDismissedAt`, не мешает другим
+  пользователям). Ведёт человека от пустого приложения к первой реальной пользе —
+  и, как следствие, ближе к лимиту Free и к `/pricing`.
 
 Обязательный функционал ТЗ реализован и покрыт тестами полностью. Открытые пункты —
 только то, что **невозможно проверить без реального портала Bitrix24**:

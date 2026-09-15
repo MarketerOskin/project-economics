@@ -16,6 +16,8 @@ import { requirePageSession } from '@/server/page-session';
 import { loadDashboard } from '@/server/services/dashboard';
 import { resolvePeriod, type PeriodPreset } from '@/lib/period';
 import { can } from '@/lib/permissions';
+import { getOnboardingProgress } from '@/lib/onboarding';
+import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +52,9 @@ export default async function DashboardPage({
   const canCreateProject = can.mutateProject(session.actor);
   const hasData = data.projects.length > 0;
 
+  const showOnboarding = canCreateProject && !session.demo && !session.portal.onboardingDismissedAt;
+  const onboarding = showOnboarding ? await getOnboardingProgress(scope) : null;
+
   return (
     <>
       <PageHeader
@@ -73,6 +78,8 @@ export default async function DashboardPage({
       />
 
       <div className="flex flex-col gap-6 px-4 sm:px-8 py-6">
+        {onboarding && !onboarding.complete ? <OnboardingChecklist steps={onboarding.steps} /> : null}
+
         {!hasData ? (
           <EmptyState
             title="Нет данных за период"

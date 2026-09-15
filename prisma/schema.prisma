@@ -129,6 +129,10 @@ model PortalInstallation {
   /// Free-text note from the operator (e.g. "оплатил на год, перевод от 12.03").
   planNote      String?
 
+  /// Set once an ADMIN/MANAGER dismisses the dashboard onboarding checklist. Null = still
+  /// showing (unless every step is already complete, in which case it auto-hides anyway).
+  onboardingDismissedAt DateTime?
+
   users      AppUser[]
   projects   Project[]
   categories FinanceCategory[]
