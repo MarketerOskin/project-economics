@@ -14,6 +14,9 @@ export function proxy(req: NextRequest): NextResponse {
     !pathname.startsWith('/api') &&
     !pathname.startsWith('/_next') &&
     !pathname.startsWith('/favicon') &&
+    // The operator back-office is not a Bitrix24 portal page — it has its own login and
+    // session cookie (see src/lib/operator/) and must never be swept into demo bootstrap.
+    !pathname.startsWith('/operator') &&
     pathname !== '/robots.txt';
 
   if (isAppPage && !req.cookies.get(SESSION_COOKIE)) {

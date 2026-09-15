@@ -81,6 +81,15 @@ enum AuditEntityType {
   PROJECT_MEMBER
 }
 
+// ─── Billing / plan ────────────────────────────────────────────────────────
+
+/// FREE = default on install. PRO = paid features unlocked, granted by the operator
+/// (manual billing for now — no automated payment processor is wired up yet).
+enum Plan {
+  FREE
+  PRO
+}
+
 // ─── Portal ──────────────────────────────────────────────────────────────────
 
 model PortalInstallation {
@@ -102,12 +111,37 @@ model PortalInstallation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  /// Manual billing (ТЗ: operator-granted access ahead of Marketplace payment integration).
+  plan          Plan      @default(FREE)
+  /// Null = no expiry (granted indefinitely). Past this date the portal reverts to FREE.
+  planExpiresAt DateTime?
+  /// Free-text note from the operator (e.g. "оплатил на год, перевод от 12.03").
+  planNote      String?
+
   users      AppUser[]
   projects   Project[]
   categories FinanceCategory[]
   entries    FinancialEntry[]
   members    ProjectMember[]
   auditLogs  AuditLog[]
+  planGrants OperatorGrant[]
+}
+
+// ─── Operator (you — the app owner, outside every portal's role system) ─────
+
+/// A grant/revoke of a plan by the app operator. Separate from AuditLog (which is
+/// per-portal, actor = AppUser) because the operator is not a portal user at all.
+model OperatorGrant {
+  id           String   @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  operatorEmail String
+  plan         Plan
+  expiresAt    DateTime?
+  note         String?
+  createdAt    DateTime @default(now())
+
+  @@index([portalId])
 }
 
 // ─── Users (snapshot of Bitrix24 employees) ──────────────────────────────────

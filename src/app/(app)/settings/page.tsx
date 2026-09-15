@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/layout/app-shell';
 import { requirePageSession } from '@/server/page-session';
 import { can } from '@/lib/permissions';
+import { FREE_LIMITS } from '@/lib/billing/plan';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
   const { session, scope } = await requirePageSession();
   if (!can.manageSettings(session.actor)) redirect('/');
 
-  const { portal } = session;
+  const { portal, plan } = session;
   const [projects, entries, categories, auditEntries, users] = await Promise.all([
     scope.project.count(),
     scope.entry.count(),
@@ -49,6 +50,27 @@ export default async function SettingsPage() {
       <PageHeader title="Настройки" subtitle="Интеграция с Bitrix24, данные портала и команда" />
 
       <div className="flex flex-col gap-8 px-4 sm:px-8 py-6">
+        <section className="max-w-2xl">
+          <h2 className="mb-3 text-sm font-semibold text-fg">Тариф</h2>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+            <div>
+              <span className={plan === 'PRO' ? 'font-medium text-accent' : 'font-medium text-fg'}>
+                {plan === 'PRO' ? 'Pro' : 'Free'}
+              </span>
+              {portal.planExpiresAt ? (
+                <span className="ml-2 text-fg-tertiary">
+                  до {new Date(portal.planExpiresAt).toLocaleDateString('ru-RU')}
+                </span>
+              ) : null}
+              {plan === 'FREE' ? (
+                <p className="mt-1 text-xs text-fg-tertiary">
+                  До {FREE_LIMITS.maxActiveProjects} активных проектов, без импорта из CRM Bitrix24
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
         <section className="max-w-2xl">
           <h2 className="mb-3 text-sm font-semibold text-fg">Интеграция и портал</h2>
           <dl className="divide-y divide-border rounded-xl border border-border bg-surface">

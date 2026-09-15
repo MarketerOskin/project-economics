@@ -1,12 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import type { AppRole } from '@prisma/client';
+import type { AppRole, Plan } from '@prisma/client';
 import { apiFetch } from './api';
 
 export interface ClientSession {
   demo: boolean;
   role: AppRole;
+  plan: Plan;
   user: {
     id: string;
     firstName: string;

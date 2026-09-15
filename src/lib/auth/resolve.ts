@@ -1,7 +1,8 @@
-import type { AppUser, PortalInstallation } from '@prisma/client';
+import type { AppUser, Plan, PortalInstallation } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db/client';
 import type { Actor } from '@/lib/permissions';
+import { effectivePlan } from '@/lib/billing/plan';
 import { SESSION_COOKIE, verifySession } from './session';
 
 export interface ResolvedSession {
@@ -9,6 +10,8 @@ export interface ResolvedSession {
   user: AppUser;
   actor: Actor;
   demo: boolean;
+  /** FREE or PRO, already resolved against planExpiresAt — never re-derive from portal.plan directly. */
+  plan: Plan;
 }
 
 /** Role is always recomputed from the DB record — never trusted from the cookie (ТЗ §44). */
@@ -41,6 +44,9 @@ export async function resolveSessionFromToken(
     user,
     demo: portal.isDemo,
     actor: { role: resolveRole(user), appUserId: user.id },
+    // The demo portal always shows the full product (ТЗ §5) — plan limits only apply to
+    // real, operator-billed portals.
+    plan: portal.isDemo ? 'PRO' : effectivePlan(portal),
   };
 }
 

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProjectForm } from '@/components/projects/project-form';
 import { ToastProvider } from '@/lib/client/toast';
+import { SessionProvider } from '@/lib/client/session';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -17,9 +18,11 @@ vi.mock('@/lib/client/api', async (orig) => {
 
 function setup() {
   return render(
-    <ToastProvider>
-      <ProjectForm />
-    </ToastProvider>,
+    <SessionProvider>
+      <ToastProvider>
+        <ProjectForm />
+      </ToastProvider>
+    </SessionProvider>,
   );
 }
 
@@ -28,7 +31,11 @@ describe('ProjectForm', () => {
     apiFetch.mockReset();
     push.mockReset();
     apiFetch.mockImplementation((url: string) =>
-      url === '/api/users' ? Promise.resolve({ users: [] }) : Promise.resolve({ id: 'p1' }),
+      url === '/api/users'
+        ? Promise.resolve({ users: [] })
+        : url === '/api/session'
+          ? Promise.resolve({ demo: true, role: 'MANAGER', plan: 'FREE', user: { id: 'u1', firstName: 'А', lastName: 'Б', fullName: 'А Б', photoUrl: null, position: null } })
+          : Promise.resolve({ id: 'p1' }),
     );
   });
 

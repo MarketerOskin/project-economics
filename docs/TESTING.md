@@ -48,6 +48,10 @@ npm run build         # next build (output: standalone)
 | `bitrix/install` | install создаёт портал с зашифрованными токенами + 6 статей; handler: `user.current` (admin) → сессия + `AppUser` ADMIN; неверный `application_token` → 401; `ONAPPUNINSTALL` деактивирует портал |
 | `bitrix/users` | `syncUsers`: upsert снимков, деактивация исчезнувших |
 | `bitrix/crm` | demo — заготовленный список; production — нормализация `crm.item.list`; проект из сделки хранит snapshot + валидный URL Bitrix |
+| `billing/plan` (unit) | `effectivePlan`: FREE/PRO без даты/с будущей датой/с истёкшей датой; `requirePro` кидает 403 с упоминанием функции |
+| `operator/password` (unit) | scrypt round-trip, неверный пароль отклоняется, две соли дают разный хеш, битый хеш не падает |
+| `projects/plan-gating` | FREE: 3 активных проекта ок, 4-й → 400 с апсейлом; импорт из CRM → 403; PRO: лимита нет, импорт проходит гейт; истёкший Pro-грант = снова FREE |
+| `operator` | логин: неверный пароль/email → 401, верный → cookie; порталы без operator-сессии → 401; список порталов с планом; выдача/отзыв Pro пишет `OperatorGrant`, история растёт; поиск по домену/member_id |
 
 ### E2E (`tests/e2e/`, Playwright, demo-mode)
 

@@ -6,10 +6,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiFetch, ApiError } from '@/lib/client/api';
+import { useSession } from '@/lib/client/session';
 import { useToast } from '@/lib/client/toast';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { Segmented } from '@/components/ui/segmented';
+import { UpsellNotice } from '@/components/ui/upsell-notice';
 import { MemberSelect } from './member-select';
 import { CrmImport, type CrmSelection } from './crm-import';
 
@@ -43,6 +45,8 @@ export interface ProjectFormInitial {
 export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
   const router = useRouter();
   const { toast } = useToast();
+  const { session } = useSession();
+  const isPro = session?.plan === 'PRO';
   const isEdit = Boolean(initial?.id);
   const [members, setMembers] = React.useState<string[]>(initial?.memberIds ?? []);
   const [submitting, setSubmitting] = React.useState(false);
@@ -85,7 +89,7 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
       startDate: values.startDate || undefined,
       endDate: values.endDate || undefined,
       ...(isEdit ? {} : { memberIds: members }),
-      ...(!isEdit && source === 'BITRIX_CRM' && crm
+      ...(!isEdit && isPro && source === 'BITRIX_CRM' && crm
         ? { source: 'BITRIX_CRM', crmEntityTypeId: crm.entityTypeId, crmEntityId: crm.id }
         : {}),
     };
@@ -131,15 +135,19 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
           }}
           options={[
             { value: 'MANUAL', label: 'Создать вручную' },
-            { value: 'BITRIX_CRM', label: 'Выбрать из Bitrix24' },
+            { value: 'BITRIX_CRM', label: isPro ? 'Выбрать из Bitrix24' : 'Выбрать из Bitrix24 · Pro' },
           ]}
         />
       ) : null}
 
       {!isEdit && source === 'BITRIX_CRM' ? (
-        <Field label="CRM-сущность" error={undefined} hint="Сделка или компания из Bitrix24">
-          <CrmImport value={crm} onChange={pickCrm} />
-        </Field>
+        isPro ? (
+          <Field label="CRM-сущность" error={undefined} hint="Сделка или компания из Bitrix24">
+            <CrmImport value={crm} onChange={pickCrm} />
+          </Field>
+        ) : (
+          <UpsellNotice feature="Импорт проекта из Bitrix24 CRM" />
+        )
       ) : null}
 
       <Field label="Название" htmlFor="name" error={errors.name?.message}>
