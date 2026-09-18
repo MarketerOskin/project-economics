@@ -24,7 +24,10 @@ export function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
         <div>
           <h2 className="text-[15px] font-medium text-fg">Начало работы</h2>
           <p className="mt-0.5 text-sm text-fg-secondary">
-            {doneCount} из {steps.length} — дальше приложение считает экономику само
+            {doneCount} из {steps.length} — дальше приложение считает экономику само.{' '}
+            <Link href="/how-it-works" className="font-medium text-accent hover:underline">
+              Как это работает
+            </Link>
           </p>
         </div>
         <button
