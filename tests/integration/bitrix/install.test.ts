@@ -16,6 +16,14 @@ function form(fields: Record<string, string>) {
   return new NextRequest('http://localhost/api/bitrix/x', { method: 'POST', body: fd });
 }
 
+/** Real Bitrix24 install requests split fields: some on the query string, some in the body. */
+function splitRequest(query: Record<string, string>, body: Record<string, string>) {
+  const qs = new URLSearchParams(query).toString();
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(body)) fd.append(k, v);
+  return new NextRequest(`http://localhost/api/bitrix/x?${qs}`, { method: 'POST', body: fd });
+}
+
 describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   beforeEach(resetDb);
   afterAll(async () => {
@@ -47,6 +55,30 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     expect(cats).toBe(6);
   });
 
+  it('install succeeds when DOMAIN/PROTOCOL/LANG/APP_SID arrive on the query string, not the body (real Bitrix24 request shape)', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ result: true }), { status: 200 }));
+
+    const res = await installRoute(
+      splitRequest(
+        { DOMAIN: 'query-domain.bitrix24.ru', PROTOCOL: '1', LANG: 'ru', APP_SID: 'sid123' },
+        { AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'query-domain-member', application_token: 'APP_TOKEN' },
+      ),
+    );
+    expect(res.status).toBe(200);
+
+    const portal = await testDb.portalInstallation.findUnique({ where: { memberId: 'query-domain-member' } });
+    expect(portal).not.toBeNull();
+    expect(portal?.domain).toBe('query-domain.bitrix24.ru');
+  });
+
+  it('install still rejects a request with no DOMAIN anywhere (query or body)', async () => {
+    const res = await installRoute(
+      form({ AUTH_ID: 'A', member_id: 'no-domain-member', application_token: 'APP_TOKEN' }),
+    );
+    expect(res.status).toBe(400);
+    expect(await testDb.portalInstallation.findUnique({ where: { memberId: 'no-domain-member' } })).toBeNull();
+  });
+
   it('handler resolves the current user (admin) and issues a session cookie', async () => {
     await installRoute(
       form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
@@ -66,6 +98,23 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     const user = await testDb.appUser.findFirst({ where: { bitrixUserId: '7' } });
     expect(user?.isBitrixAdmin).toBe(true);
     expect(user?.role).toBe('ADMIN');
+  });
+
+  it('handler also accepts member_id/AUTH_ID on the query string (same split as install)', async () => {
+    await installRoute(
+      form({ AUTH_ID: 'A', member_id: 'qs-handler', DOMAIN: 'qs-handler.bitrix24.ru', application_token: 'APP_TOKEN' }),
+    );
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ result: { ID: '9', NAME: 'Ева', LAST_NAME: 'Сотрудникова', ADMIN: false } }), { status: 200 }),
+    );
+
+    const res = await handlerRoute(
+      splitRequest(
+        { member_id: 'qs-handler', application_token: 'APP_TOKEN' },
+        { AUTH_ID: 'A2' },
+      ),
+    );
+    expect(res.status).toBe(307);
   });
 
   it('handler rejects a wrong application_token', async () => {

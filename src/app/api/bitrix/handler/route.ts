@@ -13,8 +13,10 @@ export const dynamic = 'force-dynamic';
  * cookie and redirect into the app (ТЗ §44).
  */
 export async function POST(req: NextRequest) {
+  // Same split as /api/bitrix/install: some fields can arrive on the query string, the
+  // auth-critical ones (member_id, AUTH_ID, application_token) in the POST body. Body wins.
   const form = await req.formData().catch(() => null);
-  const get = (k: string) => (form ? (form.get(k)?.toString() ?? null) : null);
+  const get = (k: string) => form?.get(k)?.toString() ?? req.nextUrl.searchParams.get(k) ?? null;
 
   const memberId = get('member_id');
   const appToken = get('application_token') ?? get('AUTH_ID');

@@ -4,12 +4,25 @@ import { AppError } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Bitrix24 splits the install payload across two places: some fields (DOMAIN, PROTOCOL,
+ * LANG, APP_SID) arrive on the query string of the install URL itself, others (AUTH_ID,
+ * REFRESH_ID, member_id, application_token, ...) in the POST body. Merge both — query
+ * string first as a base, body values win on any overlap — so neither source alone
+ * being incomplete causes a false "missing member_id / DOMAIN" rejection.
+ */
 async function readPayload(req: NextRequest): Promise<BitrixAuthPayload> {
-  const ct = req.headers.get('content-type') ?? '';
-  if (ct.includes('application/json')) return (await req.json()) as BitrixAuthPayload;
-  const form = await req.formData();
   const obj: Record<string, string> = {};
-  for (const [k, v] of form.entries()) obj[k] = String(v);
+  for (const [k, v] of req.nextUrl.searchParams.entries()) obj[k] = v;
+
+  const ct = req.headers.get('content-type') ?? '';
+  if (ct.includes('application/json')) {
+    const json = (await req.json().catch(() => null)) as Record<string, string> | null;
+    if (json) Object.assign(obj, json);
+  } else {
+    const form = await req.formData().catch(() => null);
+    if (form) for (const [k, v] of form.entries()) obj[k] = String(v);
+  }
   return obj as unknown as BitrixAuthPayload;
 }
 
