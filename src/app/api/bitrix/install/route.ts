@@ -1,5 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { bindMenuPlacement, upsertPortalFromInstall, type BitrixAuthPayload } from '@/lib/bitrix/auth';
+import {
+  bindMenuPlacement,
+  syncCurrentUser,
+  upsertPortalFromInstall,
+  type BitrixAuthPayload,
+} from '@/lib/bitrix/auth';
+import { issueSession } from '@/lib/auth/issue';
+import { resolveRole } from '@/lib/auth/resolve';
 import { AppError } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
@@ -27,8 +34,13 @@ async function readPayload(req: NextRequest): Promise<BitrixAuthPayload> {
 }
 
 /**
- * Bitrix24 calls this once at install time with fresh OAuth tokens (ТЗ §42).
- * We store them encrypted, seed default categories, and bind the left-menu placement.
+ * Bitrix24 POSTs here both at install time with fresh OAuth tokens (ТЗ §42) AND every
+ * time someone opens a Local Application from Bitrix's own menu/shortcut — unlike a
+ * Marketplace placement, a Local Application has no separate "open" URL, Bitrix just
+ * re-POSTs the same install payload again on every open. So on every call we upsert
+ * the portal (a no-op after the first time), then go straight into a session — a
+ * static "installed, now open it from the menu" page is a dead end the user can never
+ * get past, since that same menu item is what re-triggers this very endpoint.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -36,15 +48,14 @@ export async function POST(req: NextRequest) {
     const portal = await upsertPortalFromInstall(payload);
     await bindMenuPlacement(portal);
 
-    return new NextResponse(
-      `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Установка</title></head>
-       <body style="font-family:-apple-system,sans-serif;padding:40px">
-         <h2>Приложение «Экономика проектов» установлено</h2>
-         <p>Откройте его из пункта левого меню Bitrix24.</p>
-         <script>if(window.top){try{BX24.installFinish&&BX24.installFinish()}catch(e){}}</script>
-       </body></html>`,
-      { headers: { 'content-type': 'text/html; charset=utf-8' } },
-    );
+    const user = await syncCurrentUser(portal, payload.AUTH_ID);
+    const res = NextResponse.redirect(new URL('/', process.env.APP_URL ?? req.nextUrl.origin));
+    return issueSession(res, {
+      portalId: portal.id,
+      appUserId: user.id,
+      role: resolveRole(user),
+      demo: false,
+    });
   } catch (err) {
     if (err instanceof AppError) {
       return new NextResponse(err.userMessage, { status: err.httpStatus });

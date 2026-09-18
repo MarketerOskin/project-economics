@@ -24,6 +24,21 @@ function splitRequest(query: Record<string, string>, body: Record<string, string
   return new NextRequest(`http://localhost/api/bitrix/x?${qs}`, { method: 'POST', body: fd });
 }
 
+/**
+ * install now also calls user.current (it opens the app immediately after installing,
+ * not just storing tokens — see install/route.ts), on top of placement.bind. Route by
+ * URL so both calls get a shape they can parse.
+ */
+function mockBitrixFetch(user: Partial<{ ID: string; NAME: string; LAST_NAME: string; ADMIN: boolean }> = {}) {
+  const me = { ID: '1', NAME: 'Admin', LAST_NAME: 'Adminov', ADMIN: true, ...user };
+  return vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+    if (String(url).includes('user.current')) {
+      return new Response(JSON.stringify({ result: me }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ result: true }), { status: 200 });
+  });
+}
+
 describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   beforeEach(resetDb);
   afterAll(async () => {
@@ -31,8 +46,8 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     vi.restoreAllMocks();
   });
 
-  it('install creates a portal with encrypted tokens and seeds default categories', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ result: true }), { status: 200 }));
+  it('install creates a portal with encrypted tokens, seeds default categories, and opens a session', async () => {
+    mockBitrixFetch();
 
     const res = await installRoute(
       form({
@@ -43,7 +58,8 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
         application_token: 'APP_TOKEN',
       }),
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(307);
+    expect(res.headers.getSetCookie().join(';')).toContain('pe_session=');
 
     const portal = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
     expect(portal).not.toBeNull();
@@ -56,7 +72,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   });
 
   it('install succeeds when DOMAIN/PROTOCOL/LANG/APP_SID arrive on the query string, not the body (real Bitrix24 request shape)', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ result: true }), { status: 200 }));
+    mockBitrixFetch();
 
     const res = await installRoute(
       splitRequest(
@@ -64,7 +80,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
         { AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'query-domain-member', application_token: 'APP_TOKEN' },
       ),
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(307);
 
     const portal = await testDb.portalInstallation.findUnique({ where: { memberId: 'query-domain-member' } });
     expect(portal).not.toBeNull();
@@ -80,6 +96,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   });
 
   it('handler resolves the current user (admin) and issues a session cookie', async () => {
+    mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
@@ -101,6 +118,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   });
 
   it('handler also accepts member_id/AUTH_ID on the query string (same split as install)', async () => {
+    mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'A', member_id: 'qs-handler', DOMAIN: 'qs-handler.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
@@ -118,6 +136,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   });
 
   it('handler rejects a wrong application_token', async () => {
+    mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'A', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'RIGHT' }),
     );
@@ -126,6 +145,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   });
 
   it('ONAPPUNINSTALL deactivates the portal and clears tokens when the application_token matches', async () => {
+    mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
@@ -139,6 +159,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
   });
 
   it('ONAPPUNINSTALL without a valid application_token is rejected and changes nothing (ТЗ §42)', async () => {
+    mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
@@ -166,17 +187,18 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
       expect(await testDb.portalInstallation.findUnique({ where: { memberId: 'stranger' } })).toBeNull();
 
       // The authorised portal still installs.
-      vi.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ result: true }), { status: 200 }));
+      mockBitrixFetch();
       const ok = await installRoute(
         form({ AUTH_ID: 'A', member_id: 'authorised-portal-1', DOMAIN: 'ours.bitrix24.ru', application_token: 'T' }),
       );
-      expect(ok.status).toBe(200);
+      expect(ok.status).toBe(307);
     } finally {
       delete process.env.ALLOWED_PORTAL_MEMBER_IDS;
     }
   });
 
   it('handler uses the inbound per-user AUTH_ID directly and never persists it as the portal token (ТЗ §44)', async () => {
+    mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'PORTAL_ACCESS', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
