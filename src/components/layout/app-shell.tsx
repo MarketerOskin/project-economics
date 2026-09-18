@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { Nav } from './nav';
 import { UserBadge } from './user-badge';
 import { DemoRoleSwitch } from './demo-role-switch';
+import { BugReportButton } from '@/components/support/bug-report-button';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSession();
@@ -93,6 +94,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <main className="min-w-0 flex-1">{children}</main>
       </div>
+
+      {session ? <BugReportButton /> : null}
     </div>
   );
 }
