@@ -10,7 +10,7 @@ export default function TermsPage() {
       <h1 className="text-2xl font-semibold tracking-tight">
         Лицензионное соглашение на использование программы для ЭВМ «Экономика проектов»
       </h1>
-      <p className="mt-2 text-sm text-fg-tertiary">Редакция от 18.09.2026</p>
+      <p className="mt-2 text-sm text-fg-tertiary">Редакция от 21.09.2026</p>
 
       <div className="mt-8 flex flex-col gap-6 text-sm leading-relaxed text-fg-secondary">
         <p>
@@ -27,8 +27,9 @@ export default function TermsPage() {
         </p>
 
         <p>
-          Настоящее Лицензионное соглашение (далее — Соглашение) заключается между Оскиным
-          Василием (далее — Лицензиар, контакт: vasiliyoskin96@gmail.com) и Пользователем (любым
+          Настоящее Лицензионное соглашение (далее — Соглашение) заключается между
+          Индивидуальным предпринимателем Оськиным Василием Игоревичем (далее — Лицензиар,
+          контакт: vasiliyoskin96@gmail.com) и Пользователем (любым
           физическим лицом, индивидуальным предпринимателем, юридическим лицом, далее —
           Пользователь) программы для ЭВМ «Экономика проектов» (далее — ПО).
         </p>
@@ -182,7 +183,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-base font-medium text-fg">7. Контактная информация Лицензиара</h2>
-          <p className="mt-2">Оскин Василий — vasiliyoskin96@gmail.com</p>
+          <p className="mt-2">ИП Оськин Василий Игоревич — vasiliyoskin96@gmail.com</p>
         </section>
       </div>
     </div>

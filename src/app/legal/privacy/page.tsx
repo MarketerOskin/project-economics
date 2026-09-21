@@ -10,11 +10,11 @@ export default function PrivacyPage() {
       <h1 className="text-2xl font-semibold tracking-tight">
         Условия о конфиденциальности персональной информации
       </h1>
-      <p className="mt-2 text-sm text-fg-tertiary">Редакция от 18.09.2026</p>
+      <p className="mt-2 text-sm text-fg-tertiary">Редакция от 21.09.2026</p>
 
       <div className="mt-8 flex flex-col gap-6 text-sm leading-relaxed text-fg-secondary">
         <p>
-          Оскин Василий (далее — Оператор), правообладатель приложения «Экономика проектов»
+          Индивидуальный предприниматель Оськин Василий Игоревич (далее — Оператор), правообладатель приложения «Экономика проектов»
           (далее — Продукт), уважает право каждого человека на конфиденциальность.
         </p>
         <p>
@@ -133,7 +133,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-base font-medium text-fg">7. Контактная информация</h2>
-          <p className="mt-2">Оскин Василий — vasiliyoskin96@gmail.com</p>
+          <p className="mt-2">ИП Оськин Василий Игоревич — vasiliyoskin96@gmail.com</p>
         </section>
       </div>
     </div>
