@@ -3,8 +3,9 @@ import { forbidden } from '@/lib/errors';
 
 /**
  * Plan resolution + free-tier limits. Billing is manual for now (ТЗ: the operator grants
- * PRO by hand — see src/lib/operator/ — ahead of a Marketplace payment integration). Every
- * gate here is enforced on the server; the frontend only mirrors it for the upsell UI.
+ * PRO by hand — see src/lib/operator/ — ahead of a Marketplace payment integration).
+ * FREE has no usage limits: Marketplace rules require the free part to be a real working
+ * product, so PRO only unlocks *additional* functionality (CRM import). Every gate here is enforced on the server; the frontend only mirrors it for the upsell UI.
  */
 
 export interface PlanSource {
@@ -19,11 +20,6 @@ export function effectivePlan(source: PlanSource): Plan {
   }
   return source.plan;
 }
-
-export const FREE_LIMITS = {
-  /** Active (non-archived) projects a FREE portal may have at once. */
-  maxActiveProjects: 3,
-} as const;
 
 /** Throw a 403 with an upsell-flavoured message when the portal isn't on PRO. */
 export function requirePro(plan: Plan, feature: string): void {

@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/layout/app-shell';
 import { requirePageSession } from '@/server/page-session';
 import { can } from '@/lib/permissions';
-import { FREE_LIMITS } from '@/lib/billing/plan';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +63,7 @@ export default async function SettingsPage() {
               ) : null}
               {plan === 'FREE' ? (
                 <p className="mt-1 text-xs text-fg-tertiary">
-                  До {FREE_LIMITS.maxActiveProjects} активных проектов, без импорта из CRM Bitrix24
+                  Без ограничений по числу проектов; импорт из CRM Битрикс24 — на Pro
                 </p>
               ) : null}
             </div>

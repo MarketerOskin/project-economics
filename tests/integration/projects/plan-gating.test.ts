@@ -26,22 +26,15 @@ describe('project creation — plan gating (ТЗ: free tier limits)', () => {
     await testDb.$disconnect();
   });
 
-  it('FREE: allows up to 3 active projects, rejects the 4th with an upsell message', async () => {
+  it('FREE: no project-count limit — the free part is a real working product', async () => {
     const s = await seedPortal();
     const cookie = await ctx(s.portalId, s.managerId);
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
       const res = await createRoute(req({ name: `Проект ${i + 1}` }, cookie));
       expect(res.status).toBe(201);
     }
-
-    const fourth = await createRoute(req({ name: 'Четвёртый' }, cookie));
-    expect(fourth.status).toBe(400);
-    const body = await fourth.json();
-    expect(body.error.message).toContain('Free');
-    expect(body.error.message).toMatch(/Pro/);
-
-    expect(await testDb.project.count({ where: { portalId: s.portalId } })).toBe(3);
+    expect(await testDb.project.count({ where: { portalId: s.portalId } })).toBe(6);
   });
 
   it('FREE: rejects importing a project from Bitrix24 CRM (403, names the feature)', async () => {
@@ -57,16 +50,10 @@ describe('project creation — plan gating (ТЗ: free tier limits)', () => {
     expect(await testDb.project.count({ where: { portalId: s.portalId } })).toBe(0);
   });
 
-  it('PRO: no project-count limit and CRM-source is accepted (gate passes before CRM lookup)', async () => {
+  it('PRO: CRM-source is accepted (gate passes before CRM lookup)', async () => {
     const s = await seedPortal();
     await testDb.portalInstallation.update({ where: { id: s.portalId }, data: { plan: 'PRO' } });
     const cookie = await ctx(s.portalId, s.managerId);
-
-    for (let i = 0; i < 4; i++) {
-      const res = await createRoute(req({ name: `Проект ${i + 1}` }, cookie));
-      expect(res.status).toBe(201);
-    }
-    expect(await testDb.project.count({ where: { portalId: s.portalId } })).toBe(4);
 
     // source=BITRIX_CRM without crmEntityTypeId/crmEntityId just skips the CRM lookup —
     // this only proves the plan gate itself doesn't block a PRO portal.
@@ -74,7 +61,7 @@ describe('project creation — plan gating (ТЗ: free tier limits)', () => {
     expect(crmRes.status).toBe(201);
   });
 
-  it('PRO with an expired grant behaves as FREE (limit enforced again)', async () => {
+  it('PRO with an expired grant behaves as FREE (CRM import blocked again)', async () => {
     const s = await seedPortal();
     const past = new Date(Date.now() - 24 * 60 * 60 * 1000);
     await testDb.portalInstallation.update({
@@ -83,9 +70,7 @@ describe('project creation — plan gating (ТЗ: free tier limits)', () => {
     });
     const cookie = await ctx(s.portalId, s.managerId);
 
-    for (let i = 0; i < 3; i++) {
-      expect((await createRoute(req({ name: `П${i}` }, cookie))).status).toBe(201);
-    }
-    expect((await createRoute(req({ name: 'Четвёртый' }, cookie))).status).toBe(400);
+    const res = await createRoute(req({ name: 'Импорт', source: 'BITRIX_CRM' }, cookie));
+    expect(res.status).toBe(403);
   });
 });

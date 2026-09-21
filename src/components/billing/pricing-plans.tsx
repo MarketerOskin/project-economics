@@ -10,7 +10,6 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Field, Input, Textarea } from '@/components/ui/field';
-import { FREE_LIMITS } from '@/lib/billing/plan';
 
 interface PendingLead {
   id: string;
@@ -21,18 +20,16 @@ interface PendingLead {
 }
 
 const FREE_FEATURES = [
-  { label: `До ${FREE_LIMITS.maxActiveProjects} активных проектов`, included: true },
+  { label: 'Неограниченное число проектов', included: true },
   { label: 'Доход и расход, план и факт', included: true },
   { label: 'Дашборд, графики, история изменений', included: true },
-  { label: 'Импорт проекта из сделки/компании Bitrix24', included: false },
-  { label: 'Проекты без лимита', included: false },
+  { label: 'Роли и права доступа сотрудников', included: true },
+  { label: 'Импорт проекта из сделки/компании Битрикс24', included: false },
 ];
 
 const PRO_FEATURES = [
   { label: 'Всё из Free', included: true },
-  { label: 'Проекты без лимита', included: true },
-  { label: 'Импорт проекта из сделки/компании Bitrix24', included: true },
-  { label: 'Приоритетная поддержка', included: true },
+  { label: 'Импорт проекта из сделки/компании Битрикс24', included: true },
 ];
 
 function PlanCard({
@@ -164,7 +161,7 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
       {isDemo ? (
         <p className="mb-6 rounded-[10px] border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-secondary">
           Это демо-портал — здесь всегда открыт весь функционал. Тарифы ниже относятся к
-          реальной установке приложения на портал Bitrix24.
+          реальной установке приложения на портал Битрикс24.
         </p>
       ) : null}
 
@@ -181,8 +178,8 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
       </div>
 
       <p className="mt-4 text-xs text-fg-tertiary">
-        Pro оплачивается отдельно от сертификата Битрикс24 Маркетплейс — напрямую
-        разработчику по счёту. Подключение вручную, без автосписания.
+        Pro — дополнительный функционал, он оплачивается отдельно от сертификата Битрикс24
+        Маркетплейс. Основной функционал (Free) работает без ограничений.
       </p>
 
       <RequestProDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmitted={setPending} />

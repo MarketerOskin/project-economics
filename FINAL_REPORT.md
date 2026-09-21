@@ -302,7 +302,7 @@ bash deploy/vps-setup.sh
   открытие приложения для не разрешённых порталов.
 - **Тарифы Free/Pro + панель оператора (`/operator`):** сверх обязательного ТЗ — минимальный
   биллинг для будущей публикации в Маркетплейсе Bitrix24. `PortalInstallation.plan`/
-  `planExpiresAt`; гейты на backend (`requirePro`, лимит 3 активных проектов на Free,
+  `planExpiresAt`; гейты на backend (`requirePro`; Free без лимита проектов,
   импорт из CRM только на Pro; фронт — заглушка с апсейлом). Отдельная роль «оператор»
   (владелец приложения) — свой вход по email/паролю из `.env` (`scrypt`, без Bitrix24 и
   без пересечения с ролями ADMIN/MANAGER/EMPLOYEE), список порталов, выдача/отзыв Pro
