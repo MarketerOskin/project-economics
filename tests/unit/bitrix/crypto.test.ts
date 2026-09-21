@@ -32,4 +32,12 @@ describe('token crypto (ТЗ §42)', () => {
     const line = 'GET https://x.bitrix24.ru/rest/user.get?auth=SECRETTOKEN&ID=1';
     expect(redactTokens(line)).toBe('GET https://x.bitrix24.ru/rest/user.get?auth=***&ID=1');
   });
+
+  it('redacts token values inside JSON payloads too', () => {
+    const json = JSON.stringify({ auth: 'SECRET1', nested: { refresh_token: 'SECRET2' }, keep: 'visible' });
+    const out = redactTokens(json);
+    expect(out).not.toContain('SECRET1');
+    expect(out).not.toContain('SECRET2');
+    expect(out).toContain('visible');
+  });
 });

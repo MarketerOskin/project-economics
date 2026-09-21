@@ -2,6 +2,7 @@ import type { PortalInstallation } from '@prisma/client';
 import { db } from '@/lib/db/client';
 import { upstream } from '@/lib/errors';
 import { decryptToken, encryptToken, redactTokens } from './crypto';
+import { logApiCall } from './call-log';
 import type { BitrixTokenSet } from './types';
 
 interface BitrixError {
@@ -11,6 +12,27 @@ interface BitrixError {
 
 function isBitrixError(v: unknown): v is BitrixError {
   return Boolean(v) && typeof v === 'object' && 'error' in (v as object);
+}
+
+/** Records one REST round-trip for the Marketplace-mandated call log (no-op without a portal id). */
+async function record(
+  portalId: string | undefined,
+  method: string,
+  params: Record<string, unknown>,
+  started: number,
+  response: unknown,
+  errorCode?: string,
+): Promise<void> {
+  if (!portalId) return;
+  await logApiCall({
+    portalId,
+    method,
+    params,
+    response,
+    ok: errorCode === undefined,
+    errorCode,
+    durationMs: Date.now() - started,
+  });
 }
 
 function restBase(portal: PortalInstallation): string {
@@ -53,7 +75,7 @@ async function refreshAccessToken(portal: PortalInstallation): Promise<string> {
  * per-user token from a placement request). No refresh, no persistence — one shot.
  */
 export async function callBitrixWithToken<T = unknown>(
-  portal: Pick<PortalInstallation, 'domain' | 'restEndpoint'>,
+  portal: Pick<PortalInstallation, 'domain' | 'restEndpoint'> & { id?: string },
   accessToken: string,
   method: string,
   params: Record<string, unknown> = {},
@@ -68,6 +90,7 @@ export async function callBitrixWithToken<T = unknown>(
   for (const [k, v] of Object.entries(params)) flatten(k, v);
   body.append('auth', accessToken);
 
+  const started = Date.now();
   let res: Response;
   try {
     res = await fetch(`${restBase(portal as PortalInstallation)}/${method}.json`, {
@@ -76,10 +99,16 @@ export async function callBitrixWithToken<T = unknown>(
       body,
     });
   } catch (err) {
-    throw upstream(redactTokens(`Сеть недоступна: ${err instanceof Error ? err.message : ''}`));
+    const message = redactTokens(`Сеть недоступна: ${err instanceof Error ? err.message : ''}`);
+    await record(portal.id, method, params, started, { error: message }, 'NETWORK');
+    throw upstream(message);
   }
   const json = (await res.json()) as { result?: T } | BitrixError;
-  if (isBitrixError(json)) throw upstream(redactTokens(json.error_description || json.error));
+  if (isBitrixError(json)) {
+    await record(portal.id, method, params, started, json, json.error);
+    throw upstream(redactTokens(json.error_description || json.error));
+  }
+  await record(portal.id, method, params, started, json);
   return json.result as T;
 }
 
@@ -110,6 +139,7 @@ export async function callBitrix<T = unknown>(
   for (const [k, v] of Object.entries(params)) flatten(k, v);
   body.append('auth', accessToken);
 
+  const started = Date.now();
   let res: Response;
   try {
     res = await fetch(`${restBase(portal)}/${method}.json`, {
@@ -118,12 +148,15 @@ export async function callBitrix<T = unknown>(
       body,
     });
   } catch (err) {
-    throw upstream(redactTokens(`Сеть недоступна: ${err instanceof Error ? err.message : ''}`));
+    const message = redactTokens(`Сеть недоступна: ${err instanceof Error ? err.message : ''}`);
+    await record(portal.id, method, params, started, { error: message }, 'NETWORK');
+    throw upstream(message);
   }
 
   const json = (await res.json()) as { result?: T } | BitrixError;
 
   if (isBitrixError(json)) {
+    await record(portal.id, method, params, started, json, json.error);
     if (json.error === 'expired_token' && !_retried) {
       const fresh = await db.portalInstallation.findUnique({ where: { id: portal.id } });
       if (fresh) {
@@ -135,6 +168,7 @@ export async function callBitrix<T = unknown>(
     throw upstream(redactTokens(json.error_description || json.error));
   }
 
+  await record(portal.id, method, params, started, json);
   return json.result as T;
 }
 

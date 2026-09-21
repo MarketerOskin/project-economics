@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db/client';
+import { purgePortalData } from '@/lib/bitrix/portal-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +31,17 @@ export async function POST(req: NextRequest) {
   }
 
   if (event === 'ONAPPUNINSTALL' || event === 'ONAPPUNINSTALLED') {
-    await db.portalInstallation.update({
-      where: { id: portal.id },
-      data: { isActive: false, authTokenEnc: null, refreshTokenEnc: null },
-    });
+    // data[CLEAN]=1 is the user ticking "Очистить данные приложения" in Bitrix's uninstall
+    // dialog: erase everything. Otherwise keep the data (so a reinstall picks up where they
+    // left off) but drop the tokens and deactivate.
+    if (get('data[CLEAN]') === '1' && !portal.isDemo) {
+      await purgePortalData(portal.id);
+    } else {
+      await db.portalInstallation.update({
+        where: { id: portal.id },
+        data: { isActive: false, authTokenEnc: null, refreshTokenEnc: null },
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });

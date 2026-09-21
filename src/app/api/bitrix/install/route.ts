@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import {
   bindMenuPlacement,
+  bindUninstallEvent,
   syncCurrentUser,
   upsertPortalFromInstall,
   type BitrixAuthPayload,
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     const payload = await readPayload(req);
     const portal = await upsertPortalFromInstall(payload);
     await bindMenuPlacement(portal);
+    await bindUninstallEvent(portal);
 
     const user = await syncCurrentUser(portal, payload.AUTH_ID);
     const res = NextResponse.redirect(new URL('/', process.env.APP_URL ?? req.nextUrl.origin));

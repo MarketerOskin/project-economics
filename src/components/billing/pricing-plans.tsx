@@ -172,7 +172,7 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
         <PlanCard title="Free" price={formatRubStr('0')} features={FREE_FEATURES} isCurrent={currentPlan === 'FREE' && !isDemo} footer={<p className="text-sm text-fg-tertiary">Бесплатно, без ограничения по времени</p>} />
         <PlanCard
           title="Pro"
-          price={`от ${formatRubStr('1000')} / мес`}
+          price={`${formatRubStr('1000')} / мес за портал`}
           features={PRO_FEATURES}
           highlighted
           isCurrent={currentPlan === 'PRO' && !isDemo}
@@ -181,8 +181,8 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
       </div>
 
       <p className="mt-4 text-xs text-fg-tertiary">
-        Точная цена и сроки — по заявке. Оплата и подключение сейчас идут вручную, без
-        автосписания.
+        Pro оплачивается отдельно от сертификата Битрикс24 Маркетплейс — напрямую
+        разработчику по счёту. Подключение вручную, без автосписания.
       </p>
 
       <RequestProDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmitted={setPending} />

@@ -87,6 +87,29 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     expect(portal?.domain).toBe('query-domain.bitrix24.ru');
   });
 
+  it('install subscribes to ONAPPUNINSTALL (event.bind) so uninstalls reach /api/bitrix/events', async () => {
+    const urls: string[] = [];
+    const bodies: string[] = [];
+    vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
+      urls.push(String(url));
+      bodies.push(String((init as RequestInit)?.body ?? ''));
+      if (String(url).includes('user.current')) {
+        return new Response(JSON.stringify({ result: { ID: '1', NAME: 'A', LAST_NAME: 'B', ADMIN: true } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ result: true }), { status: 200 });
+    });
+
+    await installRoute(
+      form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'ev-bind', DOMAIN: 'ev-bind.bitrix24.ru', application_token: 'T' }),
+    );
+
+    const i = urls.findIndex((u) => u.includes('event.bind.json'));
+    expect(i).toBeGreaterThanOrEqual(0);
+    const params = new URLSearchParams(bodies[i]);
+    expect(params.get('event')).toBe('ONAPPUNINSTALL');
+    expect(params.get('handler')).toBe('https://economics.example.com/api/bitrix/events');
+  });
+
   it('install still rejects a request with no DOMAIN anywhere (query or body)', async () => {
     const res = await installRoute(
       form({ AUTH_ID: 'A', member_id: 'no-domain-member', application_token: 'APP_TOKEN' }),

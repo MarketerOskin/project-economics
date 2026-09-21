@@ -88,6 +88,22 @@ export async function bindMenuPlacement(portal: PortalInstallation): Promise<voi
 }
 
 /**
+ * Subscribe to ONAPPUNINSTALL so we hear about removals (and the "clear data" choice).
+ * Nothing else registers this handler, so without it the event never reaches
+ * /api/bitrix/events. Best-effort and idempotent: "already bound" is a harmless error.
+ */
+export async function bindUninstallEvent(portal: PortalInstallation): Promise<void> {
+  try {
+    await callBitrix(portal, 'event.bind', {
+      event: 'ONAPPUNINSTALL',
+      handler: `${process.env.APP_URL}/api/bitrix/events`,
+    });
+  } catch {
+    // Non-fatal: the app works without it; the portal just isn't told about uninstalls.
+  }
+}
+
+/**
  * Resolve the current Bitrix user for a handler request and mirror them into AppUser.
  *
  * `accessToken` is the short-lived per-user token from the placement/iframe POST. When

@@ -38,5 +38,10 @@ export function decryptToken(payload: string): string {
 
 /** Best-effort: never let a token substring reach a log line. */
 export function redactTokens(input: string): string {
-  return input.replace(/([?&](auth|refresh|access_token|refresh_token)=)[^&\s"]+/gi, '$1***');
+  return input
+    .replace(/([?&](auth|refresh|access_token|refresh_token)=)[^&\s"]+/gi, '$1***')
+    .replace(
+      /("(?:auth|access_token|refresh_token|AUTH_ID|REFRESH_ID|application_token)"\s*:\s*")[^"]*/gi,
+      '$1***',
+    );
 }

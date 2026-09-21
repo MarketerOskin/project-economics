@@ -141,6 +141,7 @@ model PortalInstallation {
   auditLogs  AuditLog[]
   planGrants OperatorGrant[]
   proLeads   ProLead[]
+  apiLogs    ApiCallLog[]
 }
 
 /// A "I want PRO" request submitted from the app's /pricing page. Manual sales funnel:
@@ -407,4 +408,23 @@ model AuditLog {
   @@index([portalId, projectId])
   @@index([portalId, actorId])
   @@index([portalId, action])
+}
+
+/// Log of server-side REST calls to a portal's Bitrix24 (requests + responses), kept for at
+/// least 3 days as the Marketplace requires. `request`/`response` are token-redacted and
+/// truncated. Rows older than API_LOG_RETENTION_DAYS are purged opportunistically.
+model ApiCallLog {
+  id         String   @id @default(cuid())
+  portalId   String
+  portal     PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  method     String
+  request    String?
+  response   String?
+  ok         Boolean
+  errorCode  String?
+  durationMs Int
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([portalId, createdAt])
 }
