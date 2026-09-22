@@ -25,16 +25,18 @@ function splitRequest(query: Record<string, string>, body: Record<string, string
 }
 
 /**
- * install now also calls user.current (it opens the app immediately after installing,
- * not just storing tokens — see install/route.ts), on top of placement.bind. Route by
- * URL so both calls get a shape they can parse.
+ * install now also calls user.current + user.admin (it opens the app immediately after
+ * installing, not just storing tokens — see install/route.ts), on top of placement.bind.
+ * Admin status comes from user.admin, not a `me.ADMIN` field on user.current's response —
+ * that field doesn't exist in any user.* scope version (confirmed against production
+ * traffic, ADR-025). Route by URL so all three calls get a shape they can parse.
  */
-function mockBitrixFetch(user: Partial<{ ID: string; NAME: string; LAST_NAME: string; ADMIN: boolean }> = {}) {
-  const me = { ID: '1', NAME: 'Admin', LAST_NAME: 'Adminov', ADMIN: true, ...user };
+function mockBitrixFetch(user: Partial<{ ID: string; NAME: string; LAST_NAME: string }> = {}, isAdmin = true) {
+  const me = { ID: '1', NAME: 'Admin', LAST_NAME: 'Adminov', ...user };
   return vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
-    if (String(url).includes('user.current')) {
-      return new Response(JSON.stringify({ result: me }), { status: 200 });
-    }
+    const u = String(url);
+    if (u.includes('user.admin')) return new Response(JSON.stringify({ result: isAdmin }), { status: 200 });
+    if (u.includes('user.current')) return new Response(JSON.stringify({ result: me }), { status: 200 });
     return new Response(JSON.stringify({ result: true }), { status: 200 });
   });
 }
@@ -97,8 +99,10 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
       urls.push(String(url));
       bodies.push(String((init as RequestInit)?.body ?? ''));
-      if (String(url).includes('user.current')) {
-        return new Response(JSON.stringify({ result: { ID: '1', NAME: 'A', LAST_NAME: 'B', ADMIN: true } }), { status: 200 });
+      const u = String(url);
+      if (u.includes('user.admin')) return new Response(JSON.stringify({ result: true }), { status: 200 });
+      if (u.includes('user.current')) {
+        return new Response(JSON.stringify({ result: { ID: '1', NAME: 'A', LAST_NAME: 'B' } }), { status: 200 });
       }
       return new Response(JSON.stringify({ result: true }), { status: 200 });
     });
@@ -128,9 +132,7 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
       form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'acme', DOMAIN: 'acme.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
 
-    vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ result: { ID: '7', NAME: 'Пётр', LAST_NAME: 'Админов', ADMIN: true } }), { status: 200 }),
-    );
+    mockBitrixFetch({ ID: '7', NAME: 'Пётр', LAST_NAME: 'Админов' }, true);
 
     const res = await handlerRoute(
       form({ member_id: 'acme', application_token: 'APP_TOKEN', AUTH_ID: 'A2', REFRESH_ID: 'R2' }),
@@ -144,14 +146,39 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     expect(user?.role).toBe('ADMIN');
   });
 
+  it('an admin is recognised even though user.current never sends an ADMIN field at all (real Bitrix24 shape, ADR-025)', async () => {
+    await installRoute(
+      form({ AUTH_ID: 'A', REFRESH_ID: 'R', member_id: 'real-shape', DOMAIN: 'real-shape.bitrix24.ru', application_token: 'T' }),
+    );
+    vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes('user.admin')) return new Response(JSON.stringify({ result: true }), { status: 200 });
+      if (u.includes('user.current')) {
+        // No ADMIN key anywhere — exactly what production traffic showed (ApiCallLog).
+        return new Response(
+          JSON.stringify({ result: { ID: '7981', NAME: 'Василий', LAST_NAME: 'Оськин', ACTIVE: true, IS_ONLINE: 'Y' } }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ result: true }), { status: 200 });
+    });
+
+    const res = await handlerRoute(
+      form({ member_id: 'real-shape', application_token: 'T', AUTH_ID: 'A2', REFRESH_ID: 'R2' }),
+    );
+    expect(res.status).toBe(307);
+
+    const user = await testDb.appUser.findFirst({ where: { bitrixUserId: '7981' } });
+    expect(user?.isBitrixAdmin).toBe(true);
+    expect(user?.role).toBe('ADMIN');
+  });
+
   it('handler also accepts member_id/AUTH_ID on the query string (same split as install)', async () => {
     mockBitrixFetch();
     await installRoute(
       form({ AUTH_ID: 'A', member_id: 'qs-handler', DOMAIN: 'qs-handler.bitrix24.ru', application_token: 'APP_TOKEN' }),
     );
-    vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ result: { ID: '9', NAME: 'Ева', LAST_NAME: 'Сотрудникова', ADMIN: false } }), { status: 200 }),
-    );
+    mockBitrixFetch({ ID: '9', NAME: 'Ева', LAST_NAME: 'Сотрудникова' }, false);
 
     const res = await handlerRoute(
       splitRequest(
@@ -232,11 +259,12 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
     const before = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
 
     const seen: string[] = [];
-    vi.spyOn(global, 'fetch').mockImplementation(async (_url, init) => {
+    vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
       const body = String((init as RequestInit)?.body ?? '');
       const auth = new URLSearchParams(body).get('auth');
       if (auth) seen.push(auth);
-      return new Response(JSON.stringify({ result: { ID: '9', NAME: 'Ева', LAST_NAME: 'Сотрудникова', ADMIN: false } }), { status: 200 });
+      if (String(url).includes('user.admin')) return new Response(JSON.stringify({ result: false }), { status: 200 });
+      return new Response(JSON.stringify({ result: { ID: '9', NAME: 'Ева', LAST_NAME: 'Сотрудникова' } }), { status: 200 });
     });
 
     const res = await handlerRoute(

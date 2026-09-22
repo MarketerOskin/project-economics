@@ -111,12 +111,23 @@ export async function bindUninstallEvent(portal: PortalInstallation): Promise<vo
  * users opening the app concurrently can't overwrite each other's identity through the
  * portal's shared stored token (ТЗ §44, §54). Without it (background sync) we fall back
  * to the portal's own stored token.
+ *
+ * Admin status comes from `user.admin`, not `user.current`'s `ADMIN` field — that field
+ * doesn't exist in any user.* scope version (user_brief/user_basic/user; confirmed against
+ * production traffic via ApiCallLog, and against Bitrix's own scope reference), so it was
+ * always undefined and every real portal admin silently landed as EMPLOYEE. `user.admin`
+ * needs no scope at all and returns the flag directly.
  */
 export async function syncCurrentUser(portal: PortalInstallation, accessToken?: string) {
-  const me = accessToken
-    ? await callBitrixWithToken<BitrixCurrentUser>(portal, accessToken, 'user.current')
-    : await callBitrix<BitrixCurrentUser>(portal, 'user.current');
-  const isAdmin = me.ADMIN === true;
+  const [me, isAdmin] = accessToken
+    ? await Promise.all([
+        callBitrixWithToken<BitrixCurrentUser>(portal, accessToken, 'user.current'),
+        callBitrixWithToken<boolean>(portal, accessToken, 'user.admin'),
+      ])
+    : await Promise.all([
+        callBitrix<BitrixCurrentUser>(portal, 'user.current'),
+        callBitrix<boolean>(portal, 'user.admin'),
+      ]);
 
   const user = await db.appUser.upsert({
     where: { portalId_bitrixUserId: { portalId: portal.id, bitrixUserId: String(me.ID) } },

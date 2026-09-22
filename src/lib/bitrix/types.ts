@@ -21,9 +21,10 @@ export interface BitrixUser {
   IS_ONLINE?: string;
 }
 
-export interface BitrixCurrentUser extends BitrixUser {
-  ADMIN?: boolean;
-}
+// user.current never returns an ADMIN field, in any user.* scope version (confirmed
+// against production traffic and Bitrix's own scope reference — see ADR-025); admin
+// status comes from the separate user.admin call instead (src/lib/bitrix/auth.ts).
+export type BitrixCurrentUser = BitrixUser;
 
 /** crm.item.* — fields common to Deal (entityTypeId 2) and Company (4). */
 export interface CrmItem {
