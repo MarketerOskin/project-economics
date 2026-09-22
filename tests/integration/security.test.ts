@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { testDb, resetDb, seedPortal } from '../helpers/db';
 import { signSession, SESSION_COOKIE } from '@/lib/auth/session';
 import { CSRF_COOKIE, CSRF_HEADER } from '@/lib/csrf';
+import { SESSION_HEADER } from '@/lib/auth/constants';
 import { _resetRateLimit } from '@/lib/rate-limit';
 import { encryptToken } from '@/lib/bitrix/crypto';
 import { GET as sessionRoute } from '@/app/api/session/route';
@@ -78,6 +79,24 @@ describe('security invariants (ТЗ §42, §44)', () => {
       body: JSON.stringify({ name: 'X' }),
     });
     expect((await createProjectRoute(noCsrf)).status).toBe(403);
+  });
+
+  it('a POST with no CSRF token but a valid x-pe-session bearer header is allowed (ADR-024)', async () => {
+    // Only JS running on our own origin can read localStorage to produce this header — a
+    // cross-site attacker page cannot forge it, so it stands in for the CSRF check on its own.
+    const s = await seedPortal();
+    const token = await signSession({ portalId: s.portalId, appUserId: s.adminId, role: 'ADMIN', demo: false });
+    const bearerNoCsrf = new NextRequest('http://localhost/api/projects', {
+      method: 'POST',
+      headers: new Headers({
+        cookie: `${SESSION_COOKIE}=${token}`,
+        'content-type': 'application/json',
+        [SESSION_HEADER]: token,
+      }),
+      body: JSON.stringify({ name: 'Через bearer-токен' }),
+    });
+    const res = await createProjectRoute(bearerNoCsrf);
+    expect(res.status).toBe(201);
   });
 
   it('rapid mutations are rate-limited with 429', async () => {

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { AppRole, Plan } from '@prisma/client';
 import { apiFetch } from './api';
+import { bridgeTokenFromUrlOnce, patchFetchWithBridgedToken } from './token-bridge';
 
 export interface ClientSession {
   demo: boolean;
@@ -51,6 +52,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     [refresh],
   );
+
+  // Layout effects (all of them, tree-wide) run before any passive effect fires — so the
+  // token is bridged into localStorage and `fetch` is patched before `refresh()`'s request
+  // goes out below, and before any other component's own data-fetching effect can run too.
+  React.useLayoutEffect(() => {
+    bridgeTokenFromUrlOnce();
+    patchFetchWithBridgedToken();
+  }, []);
 
   React.useEffect(() => {
     // Synchronising with an external system (the session endpoint) on mount; setState

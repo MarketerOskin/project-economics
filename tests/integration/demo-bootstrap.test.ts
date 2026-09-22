@@ -27,10 +27,12 @@ describe('demo bootstrap: what a sessionless visitor gets redirected to', () => 
     expect(res.headers.getSetCookie()).toHaveLength(0);
   });
 
-  it('with DEMO_MODE on, seeds/signs in as the demo ADMIN and redirects to `next`', async () => {
+  it('with DEMO_MODE on, seeds/signs in as the demo ADMIN and redirects to `next` (token appended for ADR-024)', async () => {
     process.env.DEMO_MODE = 'true';
     const res = await bootstrapRoute(req('?next=/finance'));
-    expect(res.headers.get('location')).toBe('https://economics.example.com/finance');
+    const location = new URL(res.headers.get('location')!);
+    expect(`${location.origin}${location.pathname}`).toBe('https://economics.example.com/finance');
+    expect(location.searchParams.get('pe_token')).toBeTruthy();
     expect(res.headers.getSetCookie().join(';')).toContain('pe_session=');
   });
 });

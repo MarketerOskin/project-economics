@@ -4,6 +4,7 @@ import { AppError, forbidden, toErrorResponse, unauthorized } from '@/lib/errors
 import { withPortal, type PortalScope } from '@/lib/db/with-portal';
 import { resolveSessionFromToken, type ResolvedSession } from '@/lib/auth/resolve';
 import { SESSION_COOKIE } from '@/lib/auth/session';
+import { SESSION_HEADER } from '@/lib/auth/constants';
 import { rateLimit } from '@/lib/rate-limit';
 
 export interface HandlerContext<P = Record<string, string>> {
@@ -38,7 +39,13 @@ export function route<P = Record<string, string>>(handler: Handler<P>, options: 
     segment?: { params: Promise<P> },
   ): Promise<Response> {
     try {
-      if (requireCsrf && !SAFE_METHODS.has(req.method)) {
+      // The classic double-submit CSRF check assumes the browser auto-attaches the CSRF
+      // cookie — exactly what's blocked for the same browsers ADR-024 works around. A request
+      // carrying our own x-pe-session header is proof it was built by JS running on our own
+      // origin (only that origin's script can read its own localStorage to produce the
+      // header): a cross-site attacker page cannot forge it, so it's CSRF-safe on its own.
+      const bearerAuth = Boolean(req.headers.get(SESSION_HEADER));
+      if (requireCsrf && !SAFE_METHODS.has(req.method) && !bearerAuth) {
         const cookie = req.cookies.get(CSRF_COOKIE)?.value;
         const header = req.headers.get(CSRF_HEADER);
         if (!csrfOk(cookie, header)) {
