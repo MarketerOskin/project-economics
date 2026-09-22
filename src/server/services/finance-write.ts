@@ -28,7 +28,7 @@ function resolveAmount(input: {
   return { amount: m(input.amount!).toDecimalPlaces(2), hours: null, hourlyRate: null };
 }
 
-async function assertProjectAndCategory(
+export async function assertProjectAndCategory(
   scope: PortalScope,
   projectId: string,
   categoryId: string,

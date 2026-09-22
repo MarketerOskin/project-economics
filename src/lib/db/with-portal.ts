@@ -23,6 +23,7 @@ export type ScopedClient = Pick<
   | 'auditLog'
   | 'proLead'
   | 'crmImportSource'
+  | 'taskTimeDraft'
 >;
 
 export function withPortal(portalId: string, client: ScopedClient = db) {
@@ -140,6 +141,39 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
       remove: (id: string) => client.crmImportSource.deleteMany({ where: { id, portalId } }),
     },
 
+    timeDraft: {
+      findMany<
+        T extends Omit<Prisma.TaskTimeDraftFindManyArgs, 'where'> & {
+          where?: Prisma.TaskTimeDraftWhereInput;
+        },
+      >(args?: T): Promise<Prisma.TaskTimeDraftGetPayload<T>[]> {
+        return client.taskTimeDraft.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.TaskTimeDraftFindManyArgs) as Promise<Prisma.TaskTimeDraftGetPayload<T>[]>;
+      },
+
+      async findByIdOrThrow(id: string) {
+        const row = await client.taskTimeDraft.findFirst({ where: { id, portalId } });
+        if (!row) throw notFound('Черновик не найден');
+        return row;
+      },
+
+      upsert: (args: {
+        where: Prisma.TaskTimeDraftWhereUniqueInput;
+        create: Omit<Prisma.TaskTimeDraftUncheckedCreateInput, 'portalId'>;
+        update: Prisma.TaskTimeDraftUncheckedUpdateInput;
+      }) =>
+        client.taskTimeDraft.upsert({
+          where: args.where,
+          create: { ...args.create, portalId },
+          update: args.update,
+        }),
+
+      update: (id: string, data: Prisma.TaskTimeDraftUncheckedUpdateInput) =>
+        client.taskTimeDraft.update({ where: { id }, data }),
+    },
+
     member: {
       findMany: (where?: Prisma.ProjectMemberWhereInput) =>
         client.projectMember.findMany({ where: { ...where, portalId } }),
@@ -175,6 +209,9 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       listByIds: (ids: string[]) =>
         client.appUser.findMany({ where: { id: { in: ids }, portalId } }),
+
+      update: (id: string, data: Prisma.AppUserUncheckedUpdateInput) =>
+        client.appUser.update({ where: { id }, data }),
     },
 
     audit: {

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/layout/app-shell';
+import { TeamRates } from '@/components/settings/team-rates';
 import { requirePageSession } from '@/server/page-session';
 import { can } from '@/lib/permissions';
 
@@ -123,20 +124,23 @@ export default async function SettingsPage() {
 
         <section className="max-w-2xl">
           <h2 className="mb-3 text-sm font-semibold text-fg">Команда ({users.length})</h2>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
-            {users.map((u) => (
-              <li key={u.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
-                <span className="text-fg">
-                  {`${u.firstName} ${u.lastName}`.trim() || u.bitrixUserId}
-                  {u.position ? <span className="ml-2 text-xs text-fg-secondary">{u.position}</span> : null}
-                </span>
-                <span className="text-xs text-fg-secondary">{roleLabel[u.role] ?? u.role}</span>
-              </li>
-            ))}
-          </ul>
+          <TeamRates
+            users={users.map((u) => ({
+              id: u.id,
+              fullName: `${u.firstName} ${u.lastName}`.trim() || u.bitrixUserId,
+              position: u.position,
+              roleLabel: roleLabel[u.role] ?? u.role,
+              hourlyRate: u.hourlyRate?.toString() ?? null,
+            }))}
+          />
           <p className="mt-3 text-sm text-fg-secondary">
             Роли назначаются в Bitrix24: администратор портала получает роль «Администратор»
-            автоматически. Права проверяются на сервере при каждом запросе.
+            автоматически. Права проверяются на сервере при каждом запросе. Часовая ставка
+            используется для автоматического расчёта расхода по отработанным часам — см.{' '}
+            <Link href="/time-drafts" className="text-accent underline underline-offset-2">
+              «Часы к подтверждению»
+            </Link>
+            .
           </p>
         </section>
       </div>

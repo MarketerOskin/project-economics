@@ -143,6 +143,7 @@ model PortalInstallation {
   proLeads   ProLead[]
   apiLogs    ApiCallLog[]
   crmImportSources CrmImportSource[]
+  taskTimeDrafts   TaskTimeDraft[]
 }
 
 /// A "I want PRO" request submitted from the app's /pricing page. Manual sales funnel:
@@ -205,6 +206,9 @@ model AppUser {
   /// Application role. ADMIN may change MANAGER/EMPLOYEE; ADMIN itself follows isBitrixAdmin
   /// or an explicit grant.
   role         AppRole @default(EMPLOYEE)
+  /// Часовая ставка для автоматического расчёта расхода из отработанных часов (ADR-027).
+  /// NULL = ставка не задана — черновики по этому сотруднику видны, но не подтверждаемы.
+  hourlyRate   Decimal? @db.Decimal(10, 2)
   lastSyncedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -220,6 +224,8 @@ model AppUser {
   entriesAssigned FinancialEntry[] @relation("EntryEmployee")
   auditLogs       AuditLog[]       @relation("AuditActor")
   proLeads        ProLead[]
+  timeDrafts      TaskTimeDraft[]  @relation("TimeDraftEmployee")
+  timeDraftsResolved TaskTimeDraft[] @relation("TimeDraftResolvedBy")
 
   @@unique([portalId, bitrixUserId])
   @@index([portalId])
@@ -264,6 +270,7 @@ model Project {
 
   members ProjectMember[]
   entries FinancialEntry[]
+  timeDrafts TaskTimeDraft[]
 
   @@index([portalId])
   @@index([portalId, status])
@@ -357,6 +364,9 @@ model FinancialEntry {
   plannedEntry   FinancialEntry?  @relation("PlanFact", fields: [plannedEntryId], references: [id], onDelete: SetNull)
   factEntries    FinancialEntry[] @relation("PlanFact")
 
+  /// Set when this entry was created by approving a TaskTimeDraft (ADR-027).
+  sourceTimeDraft TaskTimeDraft?
+
   createdById String?
   createdBy   AppUser? @relation("EntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedById String?
@@ -447,4 +457,48 @@ model CrmImportSource {
 
   @@unique([portalId, entityTypeId])
   @@index([portalId])
+}
+
+// ─── Автоматизация расходов по часам (ADR-027) ──────────────────────────────
+
+enum TimeDraftStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Ночной синк агрегирует отработанные часы по задачам Битрикс24, привязанным к CRM-элементу
+/// проекта, в черновик (не сразу в FinancialEntry — ТЗ §5: PLAN/FACT остаются единственными
+/// "настоящими" строками). Менеджер подтверждает черновик -> создаётся FinancialEntry; либо
+/// отклоняет -> черновик остаётся REJECTED, но следующий синк может снова предложить эту дату
+/// заново (см. src/server/services/time-sync.ts), если по ней всё ещё числятся часы.
+model TaskTimeDraft {
+  id        String @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   AppUser @relation("TimeDraftEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  workDate DateTime @db.Date
+  hours    Decimal  @db.Decimal(10, 2)
+  /// Bitrix24 task ids that contributed to this total, for traceability (not FK'd — external ids).
+  bitrixTaskIds Int[]
+
+  status TimeDraftStatus @default(PENDING)
+
+  resultingEntryId String?          @unique
+  resultingEntry   FinancialEntry?  @relation(fields: [resultingEntryId], references: [id], onDelete: SetNull)
+
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   AppUser? @relation("TimeDraftResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([portalId, projectId, employeeId, workDate])
+  @@index([portalId, status])
+  @@index([projectId])
 }

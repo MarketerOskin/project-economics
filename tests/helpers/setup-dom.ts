@@ -24,3 +24,19 @@ if (!window.localStorage) {
   };
   Object.defineProperty(window, 'localStorage', { value: memoryStorage, configurable: true });
 }
+
+// jsdom doesn't implement the Pointer Events capture API or scrollIntoView, both of which
+// Radix UI's Select calls on open/select — without these, any test that opens a <Select>
+// throws "target.hasPointerCapture is not a function" (a known jsdom gap, not our code).
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {};
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
