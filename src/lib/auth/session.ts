@@ -69,6 +69,7 @@ export function sessionCookieOptions(): {
   httpOnly: true;
   secure: boolean;
   sameSite: 'none' | 'lax';
+  partitioned: boolean;
   path: string;
   maxAge: number;
 } {
@@ -77,6 +78,13 @@ export function sessionCookieOptions(): {
     httpOnly: true,
     secure,
     sameSite: secure ? 'none' : 'lax',
+    // CHIPS (Cookies Having Independent Partitioned State): SameSite=None alone is not
+    // enough — Chromium browsers (incl. Yandex Browser) increasingly block *unpartitioned*
+    // third-party cookies outright inside an iframe, which is exactly how this app is
+    // embedded in Bitrix24. `Partitioned` scopes the cookie per (Bitrix portal, our origin)
+    // pair instead of dropping it — confirmed via production nginx logs: the session
+    // cookie from a fresh install's Set-Cookie was never sent back on the next request.
+    partitioned: secure,
     path: '/',
     maxAge: TTL_SECONDS,
   };

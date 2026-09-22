@@ -16,6 +16,7 @@ export function csrfCookieOptions(): {
   httpOnly: false;
   secure: boolean;
   sameSite: 'none' | 'lax';
+  partitioned: boolean;
   path: string;
   maxAge: number;
 } {
@@ -24,6 +25,10 @@ export function csrfCookieOptions(): {
     httpOnly: false,
     secure,
     sameSite: secure ? 'none' : 'lax',
+    // Same CHIPS reasoning as the session cookie (see sessionCookieOptions) — must match,
+    // or a partitioned session cookie paired with an unpartitioned CSRF cookie would have
+    // the CSRF cookie silently dropped instead while the session cookie survives.
+    partitioned: secure,
     path: '/',
     maxAge: 8 * 60 * 60,
   };

@@ -59,7 +59,11 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
       }),
     );
     expect(res.status).toBe(307);
-    expect(res.headers.getSetCookie().join(';')).toContain('pe_session=');
+    const setCookie = res.headers.getSetCookie().join(';');
+    expect(setCookie).toContain('pe_session=');
+    // CHIPS: without this, third-party-cookie-blocking browsers (e.g. Yandex Browser)
+    // silently drop the cookie inside the Bitrix24 iframe — confirmed in production logs.
+    expect(setCookie).toContain('Partitioned');
 
     const portal = await testDb.portalInstallation.findUnique({ where: { memberId: 'acme' } });
     expect(portal).not.toBeNull();

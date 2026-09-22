@@ -227,3 +227,20 @@ b24-rest-docs, market/monetization/index.md, «Критерии статуса �
 - Оплата за Pro — «встроенные покупки» (in-app purchases): по указанию модератора нужно
   отметить чекбокс «Содержит встроенные покупки» в карточке решения и описать бесплатную
   и платную часть одним абзацем/предложением, а не как два параллельных тарифа.
+
+## ADR-023 — Сессионная cookie: добавлен атрибут Partitioned (CHIPS)
+
+На новом тестовом портале `it-wizards.bitrix24.ru` установка снова обрывалась: install
+отдавал 307 с корректным `Set-Cookie` (`Secure; SameSite=None`), портал создавался в БД
+(`isActive=true`), но следующий же `GET /api/session` внутри iframe получал 401 — куки не
+доехали. Подтверждено по nginx-логам продакшена, не гипотеза.
+
+Причина: `SameSite=None; Secure` разрешает третьесторонние cookie технически, но не
+отменяет отдельную политику браузера блокировать НЕ партиционированные third-party cookies
+целиком (Chromium/Yandex Browser). Стандартное решение — CHIPS: атрибут `Partitioned`
+scoping cookie по паре (сайт верхнего уровня, наш ориджин), а не блокирует её. Next.js уже
+поддерживает `partitioned` в опциях `res.cookies.set()`.
+
+`sessionCookieOptions()`/`csrfCookieOptions()` теперь возвращают `partitioned: secure`
+(true на https-проде, false на http-деплое, где Secure-куки всё равно недопустимы).
+Тест на реальный `Set-Cookie` из install-роута проверяет наличие `Partitioned`.
