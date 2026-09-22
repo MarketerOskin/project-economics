@@ -42,6 +42,10 @@ services:
       # Operator back-office (/operator) — see src/lib/operator/.
       OPERATOR_EMAIL: ${OPERATOR_EMAIL:-}
       OPERATOR_PASSWORD_HASH: ${OPERATOR_PASSWORD_HASH:-}
+      # "Сообщить о проблеме" -> developer's own CRM (src/server/services/support.ts).
+      SUPPORT_BITRIX_WEBHOOK_URL: ${SUPPORT_BITRIX_WEBHOOK_URL:-}
+      # Nightly hours->expense sync entrypoint secret (ADR-027).
+      INTERNAL_SYNC_SECRET: ${INTERNAL_SYNC_SECRET:-}
     # Host port is set by the override file (dev) or docker-compose.prod.yml (VPS),
     # so a shared server can choose a non-conflicting port.
     healthcheck:
