@@ -1,6 +1,15 @@
 import type { PortalInstallation } from '@prisma/client';
 import { callBitrix } from './client';
-import { ENTITY_TYPE_ID, type CrmItem } from './types';
+import { ENTITY_TYPE_ID, type BitrixCrmType, type CrmItem } from './types';
+
+/** Custom Smart Process types start at 1000; below that are Bitrix24's own built-in entities. */
+const SMART_PROCESS_ENTITY_TYPE_FLOOR = 1000;
+
+/** Every Smart Process defined on the portal (crm.type.list), for the "add a source" picker. */
+export async function listSmartProcessTypes(portal: PortalInstallation): Promise<BitrixCrmType[]> {
+  const res = await callBitrix<{ types: BitrixCrmType[] }>(portal, 'crm.type.list');
+  return (res?.types ?? []).filter((t) => t.entityTypeId >= SMART_PROCESS_ENTITY_TYPE_FLOOR);
+}
 
 export interface NormalizedCrmItem {
   id: string;
@@ -59,7 +68,9 @@ export async function getCrmItem(
   let clientName: string | null = null;
   if (entityTypeId === ENTITY_TYPE_ID.COMPANY) {
     clientName = item.title ?? null;
-  } else if (entityTypeId === ENTITY_TYPE_ID.DEAL && item.companyId) {
+  } else if (entityTypeId !== ENTITY_TYPE_ID.COMPANY && item.companyId) {
+    // Deals always carry companyId; a Smart Process only does when the portal linked it —
+    // both are handled the same way once the field is present (real example: "Заявки BK").
     try {
       const company = await callBitrix<{ item: CrmItem }>(portal, 'crm.item.get', {
         entityTypeId: ENTITY_TYPE_ID.COMPANY,

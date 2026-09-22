@@ -142,6 +142,7 @@ model PortalInstallation {
   planGrants OperatorGrant[]
   proLeads   ProLead[]
   apiLogs    ApiCallLog[]
+  crmImportSources CrmImportSource[]
 }
 
 /// A "I want PRO" request submitted from the app's /pricing page. Manual sales funnel:
@@ -427,4 +428,23 @@ model ApiCallLog {
 
   @@index([createdAt])
   @@index([portalId, createdAt])
+}
+
+/// Which Bitrix24 CRM entity types the "import project from CRM" picker offers, beyond the
+/// two always-available built-ins (Deal id 2, Company id 4). Lets a portal add its own Smart
+/// Process (e.g. a custom leads/requests process) as a project source without any code
+/// change — configured once by an admin in Settings, so ordinary users importing a project
+/// never have to think about which CRM entity type their org uses (ADR-026).
+model CrmImportSource {
+  id           String   @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  entityTypeId Int
+  /// Snapshot of the type's title in Bitrix24 at the time it was added (crm.type.list) —
+  /// shown in the import picker; not kept in sync if renamed on the Bitrix24 side.
+  label        String
+  createdAt    DateTime @default(now())
+
+  @@unique([portalId, entityTypeId])
+  @@index([portalId])
 }

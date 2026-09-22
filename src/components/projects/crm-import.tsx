@@ -20,6 +20,11 @@ interface Item {
   entityTypeId: number;
 }
 
+interface Source {
+  entityTypeId: number;
+  label: string;
+}
+
 export function CrmImport({
   value,
   onChange,
@@ -27,13 +32,31 @@ export function CrmImport({
   value: CrmSelection | null;
   onChange: (v: CrmSelection | null) => void;
 }) {
-  const [entityTypeId, setEntityTypeId] = React.useState(2);
+  const [sources, setSources] = React.useState<Source[] | null>(null);
+  const [entityTypeId, setEntityTypeId] = React.useState<number | null>(null);
   const [q, setQ] = React.useState('');
   const [items, setItems] = React.useState<Item[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Every portal has Deal + Company built in; some admins add Smart Processes too
+  // (ADR-026) — fetch what's actually configured instead of assuming entity types.
   React.useEffect(() => {
+    let cancelled = false;
+    apiFetch<{ sources: Source[] }>('/api/crm/sources')
+      .then((r) => {
+        if (cancelled) return;
+        setSources(r.sources);
+        setEntityTypeId((current) => current ?? r.sources[0]?.entityTypeId ?? null);
+      })
+      .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'Не удалось загрузить'));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (entityTypeId === null) return;
     let cancelled = false;
     // Synchronising the list with an external system (Bitrix CRM) when the filter changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -50,14 +73,13 @@ export function CrmImport({
 
   return (
     <div className="space-y-3">
-      <Segmented
-        value={String(entityTypeId)}
-        onChange={(v) => setEntityTypeId(Number(v))}
-        options={[
-          { value: '2', label: 'Сделки' },
-          { value: '4', label: 'Компании' },
-        ]}
-      />
+      {sources && sources.length > 1 ? (
+        <Segmented
+          value={String(entityTypeId)}
+          onChange={(v) => setEntityTypeId(Number(v))}
+          options={sources.map((s) => ({ value: String(s.entityTypeId), label: s.label }))}
+        />
+      ) : null}
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-tertiary" />
         <input

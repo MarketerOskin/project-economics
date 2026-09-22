@@ -110,6 +110,18 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
+          <h2 className="mb-3 text-sm font-semibold text-fg">Импорт проектов из CRM</h2>
+          <p className="text-sm text-fg-secondary">
+            У кого-то проекты — это сделки, у кого-то смарт-процессы. Настройте, откуда их
+            можно импортировать, на{' '}
+            <Link href="/settings/crm-sources" className="text-accent underline underline-offset-2">
+              отдельной странице
+            </Link>
+            .
+          </p>
+        </section>
+
+        <section className="max-w-2xl">
           <h2 className="mb-3 text-sm font-semibold text-fg">Команда ({users.length})</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
             {users.map((u) => (

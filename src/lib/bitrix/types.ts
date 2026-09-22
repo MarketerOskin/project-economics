@@ -48,3 +48,10 @@ export const ENTITY_TYPE_ID = {
   DEAL: 2,
   COMPANY: 4,
 } as const;
+
+/** crm.type.list — one custom Smart Process definition. entityTypeId >= 1000 for these. */
+export interface BitrixCrmType {
+  id: number;
+  title: string;
+  entityTypeId: number;
+}

@@ -7,6 +7,8 @@ import { can, requirePermission } from '@/lib/permissions';
 import { FREE_LIMITS, requirePro } from '@/lib/billing/plan';
 import { createProjectSchema, listProjectsQuerySchema, setMembersSchema, updateProjectSchema } from '@/server/dto/project';
 import { getProjectDetail, queryProjects } from '@/server/services/project-read';
+import { listImportSources } from '@/server/services/crm-sources';
+import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
 import type { HandlerContext } from '@/server/handler';
 
 function actorName(user: { firstName: string; lastName: string }): string {
@@ -55,18 +57,30 @@ export async function createProject({ req, session, scope }: HandlerContext) {
 
   // Resolve the CRM entity snapshot (title / client / url) when importing from Bitrix24.
   let crm: {
-    crmEntityType: 'DEAL' | 'COMPANY' | null;
+    crmEntityType: 'DEAL' | 'COMPANY' | 'SMART_PROCESS' | null;
     crmEntityTitle: string | null;
     crmEntityUrl: string | null;
     clientName: string | null;
   } = { crmEntityType: null, crmEntityTitle: null, crmEntityUrl: null, clientName: input.clientName ?? null };
 
   if (input.source === 'BITRIX_CRM' && input.crmEntityTypeId && input.crmEntityId) {
+    // Only a source the admin configured (built-in Deal/Company, or an added Smart Process,
+    // ADR-026) may be imported from — never an arbitrary entityTypeId the client happens to send.
+    const sources = await listImportSources(scope);
+    if (!sources.some((s) => s.entityTypeId === input.crmEntityTypeId)) {
+      throw badRequest('Этот тип CRM-сущности не настроен как источник проектов');
+    }
+
     const { resolveCrmItem } = await import('@/server/services/crm');
     const item = await resolveCrmItem(session, input.crmEntityTypeId, input.crmEntityId);
     if (!item) throw badRequest('CRM-сущность не найдена в Bitrix24');
     crm = {
-      crmEntityType: input.crmEntityTypeId === 4 ? 'COMPANY' : 'DEAL',
+      crmEntityType:
+        input.crmEntityTypeId === ENTITY_TYPE_ID.COMPANY
+          ? 'COMPANY'
+          : input.crmEntityTypeId === ENTITY_TYPE_ID.DEAL
+            ? 'DEAL'
+            : 'SMART_PROCESS',
       crmEntityTitle: item.title,
       crmEntityUrl: item.url,
       clientName: input.clientName ?? item.clientName ?? null,

@@ -15,7 +15,14 @@ import { notFound } from '@/lib/errors';
  */
 export type ScopedClient = Pick<
   PrismaClient,
-  'project' | 'financialEntry' | 'financeCategory' | 'projectMember' | 'appUser' | 'auditLog' | 'proLead'
+  | 'project'
+  | 'financialEntry'
+  | 'financeCategory'
+  | 'projectMember'
+  | 'appUser'
+  | 'auditLog'
+  | 'proLead'
+  | 'crmImportSource'
 >;
 
 export function withPortal(portalId: string, client: ScopedClient = db) {
@@ -120,6 +127,17 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       count: (where?: Prisma.FinanceCategoryWhereInput) =>
         client.financeCategory.count({ where: { ...where, portalId } }),
+    },
+
+    crmImportSource: {
+      findMany: (args?: Omit<Prisma.CrmImportSourceFindManyArgs, 'where'>) =>
+        client.crmImportSource.findMany({ ...args, where: { portalId }, orderBy: { createdAt: 'asc' } }),
+
+      create: (data: Omit<Prisma.CrmImportSourceUncheckedCreateInput, 'portalId'>) =>
+        client.crmImportSource.create({ data: { ...data, portalId } }),
+
+      /** Scoped delete: returns a count instead of throwing, so callers can 404 cleanly. */
+      remove: (id: string) => client.crmImportSource.deleteMany({ where: { id, portalId } }),
     },
 
     member: {
