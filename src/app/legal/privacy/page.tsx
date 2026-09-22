@@ -100,7 +100,7 @@ export default function PrivacyPage() {
             хранящиеся у Оператора (сотрудники, проекты, операции, история, журнал обращений),
             удаляются без возможности восстановления. Если опция не отмечена, токены доступа
             удаляются немедленно, а остальные данные сохраняются на случай повторной установки и
-            удаляются по запросу на vasiliyoskin96@gmail.com.
+            удаляются по запросу на MarketerOskin@yandex.ru.
           </p>
           <p className="mt-2">3.3. При обработке персональных данных Оператор руководствуется Федеральным законом РФ «О персональных данных».</p>
         </section>
@@ -146,7 +146,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-base font-medium text-fg">7. Контактная информация</h2>
-          <p className="mt-2">ИП Оськин Василий Игоревич — vasiliyoskin96@gmail.com</p>
+          <p className="mt-2">ИП Оськин Василий Игоревич — MarketerOskin@yandex.ru</p>
         </section>
       </div>
     </div>
