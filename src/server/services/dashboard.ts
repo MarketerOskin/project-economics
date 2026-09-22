@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type Plan } from '@prisma/client';
 import type { PortalScope } from '@/lib/db/with-portal';
 import type { Actor } from '@/lib/permissions';
 import { can } from '@/lib/permissions';
@@ -45,9 +45,17 @@ export interface DashboardData {
  * Everything the dashboard needs, from ONE entry query + one project query (ТЗ §53).
  * Every number is scoped to what the actor may see (EMPLOYEE -> member projects only, ТЗ §7).
  */
+/**
+ * Everything the dashboard needs, from ONE entry query + one project query (ТЗ §53).
+ * Every number is scoped to what the actor may see (EMPLOYEE -> member projects only, ТЗ §7).
+ * Charts (timeseries/expenseStructure/projectBars) are Pro-only analytics (ADR-021/022):
+ * FREE gets empty arrays, never the underlying numbers — the frontend upsell mirrors this,
+ * but the gate lives here so a direct /api/dashboard call can't bypass it.
+ */
 export async function loadDashboard(
   scope: PortalScope,
   actor: Actor,
+  plan: Plan,
   q: DashboardQuery,
 ): Promise<DashboardData> {
   const projectWhere: Prisma.ProjectWhereInput = {};
@@ -108,7 +116,7 @@ export async function loadDashboard(
 
   // Expense structure — categories present in the data, resolved to names + colors.
   const allInputs = rows.map(asInput);
-  const structure = expenseStructure(allInputs, 'FACT');
+  const structure = plan === 'PRO' ? expenseStructure(allInputs, 'FACT') : [];
   const categoryIds = structure.map((s) => s.categoryId);
   const categories =
     categoryIds.length > 0
@@ -119,7 +127,7 @@ export async function loadDashboard(
   const gran = granularityFor(q.from, q.to);
   const seriesFrom = q.from ?? rows.reduce<Date | undefined>((min, r) => (!min || r.operationDate < min ? r.operationDate : min), undefined) ?? new Date();
   const seriesTo = q.to ?? new Date();
-  const series = timeSeries(allInputs, { from: seriesFrom, to: seriesTo, granularity: gran });
+  const series = plan === 'PRO' ? timeSeries(allInputs, { from: seriesFrom, to: seriesTo, granularity: gran }) : [];
 
   return {
     kpi: economicsToJson(company),
@@ -130,14 +138,17 @@ export async function loadDashboard(
       planIncome: s.planIncome.toString(),
       planExpense: s.planExpense.toString(),
     })),
-    projectBars: perProject
-      .map((p) => ({
-        id: p.project.id,
-        name: p.project.name,
-        profit: p.economics.factProfit.toString(),
-        margin: p.economics.factMargin?.toString() ?? null,
-      }))
-      .sort((a, b) => Number(b.profit) - Number(a.profit)),
+    projectBars:
+      plan === 'PRO'
+        ? perProject
+            .map((p) => ({
+              id: p.project.id,
+              name: p.project.name,
+              profit: p.economics.factProfit.toString(),
+              margin: p.economics.factMargin?.toString() ?? null,
+            }))
+            .sort((a, b) => Number(b.profit) - Number(a.profit))
+        : [],
     expenseStructure: structure.map((s) => ({
       categoryId: s.categoryId,
       name: catMap.get(s.categoryId)?.name ?? 'Другое',

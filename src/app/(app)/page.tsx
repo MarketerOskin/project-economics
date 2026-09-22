@@ -18,6 +18,7 @@ import { resolvePeriod, type PeriodPreset } from '@/lib/period';
 import { can } from '@/lib/permissions';
 import { getOnboardingProgress } from '@/lib/onboarding';
 import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist';
+import { UpsellNotice } from '@/components/ui/upsell-notice';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,7 @@ export default async function DashboardPage({
     to: get('to') ? new Date(get('to')!) : undefined,
   });
 
-  const data = await loadDashboard(scope, session.actor, {
+  const data = await loadDashboard(scope, session.actor, session.plan, {
     from: period.from,
     to: period.to,
     projectId: get('projectId'),
@@ -105,18 +106,24 @@ export default async function DashboardPage({
               <KpiCard label="Рентабельность" factValue={data.kpi.factMargin ?? '0'} planValue={data.kpi.planMargin ?? '0'} percent points={data.kpi.marginDeltaPoints} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <ChartCard title="Доходы и расходы во времени" hint="Факт — сплошная линия, план — пунктир">
-                <IncomeExpenseChart data={data.timeseries} showPlan />
-              </ChartCard>
-              <ChartCard title="Структура расходов" hint="Факт за выбранный период">
-                <ExpenseStructureChart data={data.expenseStructure} />
-              </ChartCard>
-            </div>
+            {session.plan === 'PRO' ? (
+              <>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <ChartCard title="Доходы и расходы во времени" hint="Факт — сплошная линия, план — пунктир">
+                    <IncomeExpenseChart data={data.timeseries} showPlan />
+                  </ChartCard>
+                  <ChartCard title="Структура расходов" hint="Факт за выбранный период">
+                    <ExpenseStructureChart data={data.expenseStructure} />
+                  </ChartCard>
+                </div>
 
-            <ChartCard title="Прибыль по проектам" hint="Клик по столбцу открывает проект">
-              <ProjectProfitChart data={data.projectBars} />
-            </ChartCard>
+                <ChartCard title="Прибыль по проектам" hint="Клик по столбцу открывает проект">
+                  <ProjectProfitChart data={data.projectBars} />
+                </ChartCard>
+              </>
+            ) : (
+              <UpsellNotice feature="Графики и аналитика по проектам" />
+            )}
 
             <div>
               <h2 className="mb-3 text-sm font-medium text-fg-secondary">Проекты за период</h2>

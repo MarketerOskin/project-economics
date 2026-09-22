@@ -20,15 +20,17 @@ interface PendingLead {
 }
 
 const FREE_FEATURES = [
-  { label: 'Неограниченное число проектов', included: true },
+  { label: 'До 3 активных проектов', included: true },
   { label: 'Доход и расход, план и факт', included: true },
-  { label: 'Дашборд, графики, история изменений', included: true },
+  { label: 'Базовый дашборд и история изменений', included: true },
   { label: 'Роли и права доступа сотрудников', included: true },
+  { label: 'Графики и аналитика по проектам', included: false },
   { label: 'Импорт проекта из сделки/компании Битрикс24', included: false },
 ];
 
 const PRO_FEATURES = [
-  { label: 'Всё из Free', included: true },
+  { label: 'Всё из Free, без лимита проектов', included: true },
+  { label: 'Графики и аналитика по проектам', included: true },
   { label: 'Импорт проекта из сделки/компании Битрикс24', included: true },
 ];
 
@@ -166,7 +168,7 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <PlanCard title="Free" price={formatRubStr('0')} features={FREE_FEATURES} isCurrent={currentPlan === 'FREE' && !isDemo} footer={<p className="text-sm text-fg-tertiary">Бесплатно, без ограничения по времени</p>} />
+        <PlanCard title="Free" price={formatRubStr('0')} features={FREE_FEATURES} isCurrent={currentPlan === 'FREE' && !isDemo} footer={<p className="text-sm text-fg-tertiary">Бесплатно, до 3 активных проектов</p>} />
         <PlanCard
           title="Pro"
           price={`${formatRubStr('1000')} / мес за портал`}
@@ -178,8 +180,9 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
       </div>
 
       <p className="mt-4 text-xs text-fg-tertiary">
-        Pro — дополнительный функционал, он оплачивается отдельно от сертификата Битрикс24
-        Маркетплейс. Основной функционал (Free) работает без ограничений.
+        Free — полноценный рабочий сценарий для небольшой команды. Pro снимает лимит
+        проектов и открывает графики, аналитику и импорт из CRM — оплачивается отдельно от
+        сертификата Битрикс24 Маркетплейс.
       </p>
 
       <RequestProDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmitted={setPending} />

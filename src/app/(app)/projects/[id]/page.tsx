@@ -8,6 +8,7 @@ import { IncomeExpenseChart } from '@/components/charts/income-expense-chart';
 import { ExpenseStructureChart } from '@/components/charts/expense-structure-chart';
 import { EntriesTable } from '@/components/finance/entries-table';
 import { can } from '@/lib/permissions';
+import { UpsellNotice } from '@/components/ui/upsell-notice';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
 
   const [project, dash, recent] = await Promise.all([
     getProjectDetail(scope, session.actor, id),
-    loadDashboard(scope, session.actor, { projectId: id, status: 'ALL' }),
+    loadDashboard(scope, session.actor, session.plan, { projectId: id, status: 'ALL' }),
     queryEntries(scope, session.actor, {
       projectId: id,
       sort: 'date',
@@ -34,14 +35,18 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
         <p className="max-w-3xl text-sm text-fg-secondary">{project.description}</p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Динамика" hint="Доходы и расходы по месяцам">
-          <IncomeExpenseChart data={dash.timeseries} showPlan />
-        </ChartCard>
-        <ChartCard title="Структура расходов">
-          <ExpenseStructureChart data={dash.expenseStructure} />
-        </ChartCard>
-      </div>
+      {session.plan === 'PRO' ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ChartCard title="Динамика" hint="Доходы и расходы по месяцам">
+            <IncomeExpenseChart data={dash.timeseries} showPlan />
+          </ChartCard>
+          <ChartCard title="Структура расходов">
+            <ExpenseStructureChart data={dash.expenseStructure} />
+          </ChartCard>
+        </div>
+      ) : (
+        <UpsellNotice feature="Графики и аналитика по проектам" />
+      )}
 
       <div>
         <div className="mb-3 flex items-center justify-between">

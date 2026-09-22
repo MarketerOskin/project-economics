@@ -50,7 +50,7 @@ describe('loadDashboard (ТЗ §18–21, §53)', () => {
 
   it('company KPI = sum of visible projects', async () => {
     const { s, scope } = await seedData();
-    const d = await loadDashboard(scope, { role: 'ADMIN', appUserId: s.adminId }, {});
+    const d = await loadDashboard(scope, { role: 'ADMIN', appUserId: s.adminId }, 'PRO', {});
     expect(d.kpi.factIncome).toBe('1200000');
     expect(d.kpi.factExpense).toBe('1100000');
     expect(d.kpi.factProfit).toBe('100000');
@@ -58,14 +58,14 @@ describe('loadDashboard (ТЗ §18–21, §53)', () => {
 
   it('project bars are sorted by profit desc', async () => {
     const { s, scope } = await seedData();
-    const d = await loadDashboard(scope, { role: 'MANAGER', appUserId: s.managerId }, {});
+    const d = await loadDashboard(scope, { role: 'MANAGER', appUserId: s.managerId }, 'PRO', {});
     expect(d.projectBars.map((b) => b.name)).toEqual(['Альфа', 'Бета']);
     expect(d.projectBars[1]?.profit).toBe('-300000');
   });
 
   it('EMPLOYEE only sees their member project in every number', async () => {
     const { s, scope } = await seedData();
-    const d = await loadDashboard(scope, { role: 'EMPLOYEE', appUserId: s.employeeId }, {});
+    const d = await loadDashboard(scope, { role: 'EMPLOYEE', appUserId: s.employeeId }, 'PRO', {});
     expect(d.projects.map((p) => p.name)).toEqual(['Альфа']);
     expect(d.kpi.factProfit).toBe('400000');
   });
@@ -96,7 +96,7 @@ describe('loadDashboard (ТЗ §18–21, §53)', () => {
     logged.$on('query', (e) => {
       if (/^SELECT/i.test(e.query)) selects++;
     });
-    await loadDashboard(withPortal(s.portalId, logged), { role: 'ADMIN', appUserId: s.adminId }, {});
+    await loadDashboard(withPortal(s.portalId, logged), { role: 'ADMIN', appUserId: s.adminId }, 'PRO', {});
     await logged.$disconnect();
 
     // projects + entries + categories = a small constant, not one-per-project
@@ -105,9 +105,19 @@ describe('loadDashboard (ТЗ §18–21, §53)', () => {
 
   it('expense structure carries names + colors and sums correctly', async () => {
     const { s, scope } = await seedData();
-    const d = await loadDashboard(scope, { role: 'ADMIN', appUserId: s.adminId }, {});
+    const d = await loadDashboard(scope, { role: 'ADMIN', appUserId: s.adminId }, 'PRO', {});
     const total = d.expenseStructure.reduce((n, e) => n + Number(e.amount), 0);
     expect(total).toBe(1_100_000);
     expect(d.expenseStructure[0]?.color).toMatch(/^#/);
+  });
+
+  it('FREE: charts are empty (no underlying numbers leak), KPI and project list stay usable (ADR-021/022)', async () => {
+    const { s, scope } = await seedData();
+    const d = await loadDashboard(scope, { role: 'ADMIN', appUserId: s.adminId }, 'FREE', {});
+    expect(d.timeseries).toEqual([]);
+    expect(d.projectBars).toEqual([]);
+    expect(d.expenseStructure).toEqual([]);
+    expect(d.kpi.factProfit).toBe('100000');
+    expect(d.projects.map((p) => p.name).sort()).toEqual(['Альфа', 'Бета']);
   });
 });

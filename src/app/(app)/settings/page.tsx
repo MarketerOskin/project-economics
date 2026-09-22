@@ -63,7 +63,7 @@ export default async function SettingsPage() {
               ) : null}
               {plan === 'FREE' ? (
                 <p className="mt-1 text-xs text-fg-tertiary">
-                  Без ограничений по числу проектов; импорт из CRM Битрикс24 — на Pro
+                  До 3 активных проектов, без графиков и импорта из CRM Битрикс24
                 </p>
               ) : null}
             </div>

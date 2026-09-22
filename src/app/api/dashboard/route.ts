@@ -23,7 +23,7 @@ export const GET = route(async ({ req, session, scope }) => {
     from: q.from ? new Date(q.from) : undefined,
     to: q.to ? new Date(q.to) : undefined,
   });
-  return loadDashboard(scope, session.actor, {
+  return loadDashboard(scope, session.actor, session.plan, {
     from: period.from,
     to: period.to,
     projectId: q.projectId,

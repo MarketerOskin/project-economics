@@ -4,7 +4,7 @@ import { withPortal } from '@/lib/db/with-portal';
 import { writeAudit } from '@/lib/audit';
 import { badRequest } from '@/lib/errors';
 import { can, requirePermission } from '@/lib/permissions';
-import { requirePro } from '@/lib/billing/plan';
+import { FREE_LIMITS, requirePro } from '@/lib/billing/plan';
 import { createProjectSchema, listProjectsQuerySchema, setMembersSchema, updateProjectSchema } from '@/server/dto/project';
 import { getProjectDetail, queryProjects } from '@/server/services/project-read';
 import type { HandlerContext } from '@/server/handler';
@@ -35,6 +35,15 @@ export async function createProject({ req, session, scope }: HandlerContext) {
 
   if (input.source === 'BITRIX_CRM') {
     requirePro(session.plan, 'Импорт проекта из Битрикс24 CRM');
+  }
+  if (session.plan !== 'PRO') {
+    const activeCount = await scope.project.count({ status: { not: 'ARCHIVED' } });
+    if (activeCount >= FREE_LIMITS.maxActiveProjects) {
+      throw badRequest(
+        `На тарифе Free доступно не более ${FREE_LIMITS.maxActiveProjects} активных проектов. ` +
+          'Архивируйте один из существующих или оформите Pro для снятия лимита.',
+      );
+    }
   }
 
   if (input.memberIds.length > 0) {

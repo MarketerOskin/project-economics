@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { effectivePlan, requirePro } from '@/lib/billing/plan';
+import { effectivePlan, requirePro, FREE_LIMITS } from '@/lib/billing/plan';
 
 describe('effectivePlan', () => {
   it('FREE stays FREE regardless of expiry', () => {
@@ -34,5 +34,11 @@ describe('requirePro', () => {
       expect((err as { httpStatus: number }).httpStatus).toBe(403);
       expect((err as Error).message).toContain('Импорт из CRM');
     }
+  });
+});
+
+describe('FREE_LIMITS', () => {
+  it('caps active projects at 3', () => {
+    expect(FREE_LIMITS.maxActiveProjects).toBe(3);
   });
 });
