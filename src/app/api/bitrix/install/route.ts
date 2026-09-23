@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof AppError) {
       return new NextResponse(err.userMessage, { status: err.httpStatus });
     }
+    console.error('[bitrix/install] unhandled error', err);
     return new NextResponse('Install failed', { status: 400 });
   }
 }
