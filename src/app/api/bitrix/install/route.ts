@@ -6,6 +6,7 @@ import {
   upsertPortalFromInstall,
   type BitrixAuthPayload,
 } from '@/lib/bitrix/auth';
+import { handleBitrixEvent } from '@/lib/bitrix/events';
 import { issueSession } from '@/lib/auth/issue';
 import { resolveRole } from '@/lib/auth/resolve';
 import { AppError } from '@/lib/errors';
@@ -46,6 +47,18 @@ async function readPayload(req: NextRequest): Promise<BitrixAuthPayload> {
 export async function POST(req: NextRequest) {
   try {
     const payload = await readPayload(req);
+
+    // Some Bitrix24 app configurations (notably "rest-only" apps, where a single "Ссылка на
+    // обработчик события установки" URL carries EVERY lifecycle event, not just install)
+    // deliver ONAPPUNINSTALL etc. right here instead of to /api/bitrix/events (ADR-030). An
+    // event payload has no member_id/DOMAIN at the top level, so it must be detected before
+    // upsertPortalFromInstall runs, or it fails with a misleading "missing member_id" error.
+    const raw = payload as unknown as Record<string, string | undefined>;
+    if (raw.event) {
+      const { status, body } = await handleBitrixEvent(raw);
+      return NextResponse.json(body, { status });
+    }
+
     const portal = await upsertPortalFromInstall(payload);
     await bindMenuPlacement(portal);
     await bindUninstallEvent(portal);
