@@ -44,9 +44,11 @@ describe('POST /api/internal/sync-sales-funnels — cron entrypoint (ADR-029)', 
       where: { id: s.portalId },
       data: { authTokenEnc: encryptToken('ACCESS'), restEndpoint: 'https://x.bitrix24.ru/rest/', plan: 'PRO' },
     });
+    const emptyBatch: Record<string, { items: unknown[] }> = {};
+    for (let i = 0; i < 50; i++) emptyBatch[`p${i}`] = { items: [] };
     vi.spyOn(global, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify({ result: { categories: [] } }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ result: { items: [] } }), { status: 200 }));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ result: { result: emptyBatch } }), { status: 200 }));
 
     const res = await syncFunnelsRoute(req({ 'x-sync-secret': 'correct-secret' }));
     expect(res.status).toBe(200);

@@ -17,9 +17,11 @@ async function connectPortal(portalId: string) {
 function mockSync(categories: Array<{ id: number; name: string }>, deals: Array<{ categoryId: number; stageId: string; opportunity: string }>) {
   const fetchSpy = vi.spyOn(global, 'fetch');
   fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ result: { categories } }), { status: 200 }));
-  fetchSpy.mockResolvedValueOnce(
-    new Response(JSON.stringify({ result: { items: deals.map((d, i) => ({ id: i, ...d })) } }), { status: 200 }),
-  );
+  // fetchAllDeals batches 50 crm.item.list pages per HTTP round trip (ADR-029) — page 0 gets
+  // every deal here (well under 50), the rest of the batch's 50 slots are empty.
+  const batchResult: Record<string, { items: unknown[] }> = { p0: { items: deals.map((d, i) => ({ id: i, ...d })) } };
+  for (let i = 1; i < 50; i++) batchResult[`p${i}`] = { items: [] };
+  fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ result: { result: batchResult } }), { status: 200 }));
   return fetchSpy;
 }
 
