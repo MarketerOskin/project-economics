@@ -56,6 +56,7 @@ async function refreshAccessToken(portal: PortalInstallation): Promise<string> {
   const res = await fetch(`https://oauth.bitrix.info/oauth/token/?${params}`);
   const json = (await res.json()) as BitrixTokenSet & Partial<BitrixError>;
   if (!res.ok || !json.access_token) {
+    console.error('[TEMP-DIAG] refresh failed', res.status, JSON.stringify({ error: json.error, error_description: json.error_description }));
     throw upstream('Не удалось обновить токен Bitrix24');
   }
 
