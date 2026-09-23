@@ -17,6 +17,8 @@ export interface NormalizedCrmItem {
   clientName: string | null;
   url: string;
   entityTypeId: number;
+  /** The CRM entity's own amount field (сумма сделки) — used for auto-income sync (ADR-028). */
+  opportunity: string | null;
 }
 
 function itemUrl(domain: string, entityTypeId: number, id: string): string {
@@ -41,7 +43,7 @@ export async function listCrmItems(
   const res = await callBitrix<{ items: CrmItem[] }>(portal, 'crm.item.list', {
     entityTypeId,
     filter,
-    select: ['id', 'title', 'companyId'],
+    select: ['id', 'title', 'companyId', 'opportunity'],
     order: { id: 'DESC' },
     start: opts.start ?? 0,
   });
@@ -53,6 +55,7 @@ export async function listCrmItems(
     clientName: null,
     url: itemUrl(portal.domain, entityTypeId, String(it.id)),
     entityTypeId,
+    opportunity: it.opportunity ?? null,
   }));
 }
 
@@ -88,5 +91,6 @@ export async function getCrmItem(
     clientName,
     url: itemUrl(portal.domain, entityTypeId, String(item.id)),
     entityTypeId,
+    opportunity: item.opportunity ?? null,
   };
 }

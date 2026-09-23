@@ -24,6 +24,7 @@ export type ScopedClient = Pick<
   | 'proLead'
   | 'crmImportSource'
   | 'taskTimeDraft'
+  | 'crmIncomeDraft'
 >;
 
 export function withPortal(portalId: string, client: ScopedClient = db) {
@@ -172,6 +173,39 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       update: (id: string, data: Prisma.TaskTimeDraftUncheckedUpdateInput) =>
         client.taskTimeDraft.update({ where: { id }, data }),
+    },
+
+    incomeDraft: {
+      findMany<
+        T extends Omit<Prisma.CrmIncomeDraftFindManyArgs, 'where'> & {
+          where?: Prisma.CrmIncomeDraftWhereInput;
+        },
+      >(args?: T): Promise<Prisma.CrmIncomeDraftGetPayload<T>[]> {
+        return client.crmIncomeDraft.findMany({
+          ...args,
+          where: { ...args?.where, portalId },
+        } as Prisma.CrmIncomeDraftFindManyArgs) as Promise<Prisma.CrmIncomeDraftGetPayload<T>[]>;
+      },
+
+      async findByIdOrThrow(id: string) {
+        const row = await client.crmIncomeDraft.findFirst({ where: { id, portalId } });
+        if (!row) throw notFound('Черновик не найден');
+        return row;
+      },
+
+      upsert: (args: {
+        where: Prisma.CrmIncomeDraftWhereUniqueInput;
+        create: Omit<Prisma.CrmIncomeDraftUncheckedCreateInput, 'portalId'>;
+        update: Prisma.CrmIncomeDraftUncheckedUpdateInput;
+      }) =>
+        client.crmIncomeDraft.upsert({
+          where: args.where,
+          create: { ...args.create, portalId },
+          update: args.update,
+        }),
+
+      update: (id: string, data: Prisma.CrmIncomeDraftUncheckedUpdateInput) =>
+        client.crmIncomeDraft.update({ where: { id }, data }),
     },
 
     member: {

@@ -144,6 +144,7 @@ model PortalInstallation {
   apiLogs    ApiCallLog[]
   crmImportSources CrmImportSource[]
   taskTimeDrafts   TaskTimeDraft[]
+  crmIncomeDrafts  CrmIncomeDraft[]
 }
 
 /// A "I want PRO" request submitted from the app's /pricing page. Manual sales funnel:
@@ -226,6 +227,7 @@ model AppUser {
   proLeads        ProLead[]
   timeDrafts      TaskTimeDraft[]  @relation("TimeDraftEmployee")
   timeDraftsResolved TaskTimeDraft[] @relation("TimeDraftResolvedBy")
+  incomeDraftsResolved CrmIncomeDraft[] @relation("IncomeDraftResolvedBy")
 
   @@unique([portalId, bitrixUserId])
   @@index([portalId])
@@ -271,6 +273,7 @@ model Project {
   members ProjectMember[]
   entries FinancialEntry[]
   timeDrafts TaskTimeDraft[]
+  incomeDrafts CrmIncomeDraft[]
 
   @@index([portalId])
   @@index([portalId, status])
@@ -366,6 +369,8 @@ model FinancialEntry {
 
   /// Set when this entry was created by approving a TaskTimeDraft (ADR-027).
   sourceTimeDraft TaskTimeDraft?
+  /// Set when this entry was created/is kept in sync by approving a CrmIncomeDraft (ADR-028).
+  sourceIncomeDraft CrmIncomeDraft?
 
   createdById String?
   createdBy   AppUser? @relation("EntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -501,4 +506,38 @@ model TaskTimeDraft {
   @@unique([portalId, projectId, employeeId, workDate])
   @@index([portalId, status])
   @@index([projectId])
+}
+
+// ─── Автоматизация дохода из CRM (ADR-028) ──────────────────────────────────
+
+/// Одна строка на проект (не накопительная, в отличие от TaskTimeDraft): отражает ТЕКУЩУЮ
+/// сумму сделки/смарт-процесса в Битрикс24 (поле "opportunity"). Ночной синк перезаписывает
+/// crmAmount и переоткрывает черновик (PENDING) при каждом изменении суммы в CRM — даже если
+/// он уже был APPROVED/REJECTED, потому что старое решение относилось к другой сумме. Одобрение
+/// создаёт/обновляет ОДНУ PLAN-строку дохода (resultingEntryId) — повторное одобрение при новой
+/// сумме правит её же, а не плодит вторую.
+model CrmIncomeDraft {
+  id        String @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  crmAmount Decimal  @db.Decimal(18, 2)
+  syncedAt  DateTime @default(now())
+
+  status TimeDraftStatus @default(PENDING)
+
+  resultingEntryId String?         @unique
+  resultingEntry   FinancialEntry? @relation(fields: [resultingEntryId], references: [id], onDelete: SetNull)
+
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   AppUser? @relation("IncomeDraftResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([portalId, projectId])
+  @@index([portalId, status])
 }

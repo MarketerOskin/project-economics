@@ -137,8 +137,8 @@ export default async function SettingsPage() {
             Роли назначаются в Bitrix24: администратор портала получает роль «Администратор»
             автоматически. Права проверяются на сервере при каждом запросе. Часовая ставка
             используется для автоматического расчёта расхода по отработанным часам — см.{' '}
-            <Link href="/time-drafts" className="text-accent underline underline-offset-2">
-              «Часы к подтверждению»
+            <Link href="/automation" className="text-accent underline underline-offset-2">
+              «Автоматизация»
             </Link>
             .
           </p>

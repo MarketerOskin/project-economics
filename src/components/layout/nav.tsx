@@ -19,7 +19,7 @@ const ITEMS: NavItem[] = [
   { href: '/', label: 'Дашборд', icon: LayoutDashboard },
   { href: '/projects', label: 'Проекты', icon: FolderKanban },
   { href: '/finance', label: 'Финансы', icon: Receipt },
-  { href: '/time-drafts', label: 'Часы к подтверждению', icon: Timer, roles: ['ADMIN', 'MANAGER'] },
+  { href: '/automation', label: 'Автоматизация', icon: Timer, roles: ['ADMIN', 'MANAGER'] },
   { href: '/settings/categories', label: 'Статьи', icon: Tags, roles: ['ADMIN', 'MANAGER'] },
   { href: '/history', label: 'История', icon: History, roles: ['ADMIN', 'MANAGER'] },
   { href: '/pricing', label: 'Тарифы', icon: Sparkles, roles: ['ADMIN', 'MANAGER'] },

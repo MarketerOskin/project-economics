@@ -5,13 +5,13 @@ import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
 
 const DEMO_ITEMS: Record<number, NormalizedCrmItem[]> = {
   [ENTITY_TYPE_ID.DEAL]: [
-    { id: '101', title: 'Внедрение Bitrix24 — «Ортис»', clientName: 'ООО «Ортис»', url: 'https://demo.bitrix24.ru/crm/deal/details/101/', entityTypeId: 2 },
-    { id: '102', title: 'Миграция данных — «Гелион»', clientName: 'АО «Гелион»', url: 'https://demo.bitrix24.ru/crm/deal/details/102/', entityTypeId: 2 },
-    { id: '103', title: 'Доработка отчётов — «Кампус»', clientName: 'ООО «Кампус»', url: 'https://demo.bitrix24.ru/crm/deal/details/103/', entityTypeId: 2 },
+    { id: '101', title: 'Внедрение Bitrix24 — «Ортис»', clientName: 'ООО «Ортис»', url: 'https://demo.bitrix24.ru/crm/deal/details/101/', entityTypeId: 2, opportunity: '450000' },
+    { id: '102', title: 'Миграция данных — «Гелион»', clientName: 'АО «Гелион»', url: 'https://demo.bitrix24.ru/crm/deal/details/102/', entityTypeId: 2, opportunity: '180000' },
+    { id: '103', title: 'Доработка отчётов — «Кампус»', clientName: 'ООО «Кампус»', url: 'https://demo.bitrix24.ru/crm/deal/details/103/', entityTypeId: 2, opportunity: '95000' },
   ],
   [ENTITY_TYPE_ID.COMPANY]: [
-    { id: '201', title: 'ООО «Ортис»', clientName: 'ООО «Ортис»', url: 'https://demo.bitrix24.ru/crm/company/details/201/', entityTypeId: 4 },
-    { id: '202', title: 'АО «Гелион»', clientName: 'АО «Гелион»', url: 'https://demo.bitrix24.ru/crm/company/details/202/', entityTypeId: 4 },
+    { id: '201', title: 'ООО «Ортис»', clientName: 'ООО «Ортис»', url: 'https://demo.bitrix24.ru/crm/company/details/201/', entityTypeId: 4, opportunity: null },
+    { id: '202', title: 'АО «Гелион»', clientName: 'АО «Гелион»', url: 'https://demo.bitrix24.ru/crm/company/details/202/', entityTypeId: 4, opportunity: null },
   ],
 };
 

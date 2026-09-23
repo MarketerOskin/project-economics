@@ -53,7 +53,7 @@ describe('CRM browse + import (ТЗ §8)', () => {
     const res = await crmRoute(req('/api/crm?entityTypeId=2', { cookie: await ck(s.portalId, s.managerId, 'MANAGER') }));
     const body = await res.json();
     expect(body.items).toEqual([
-      { id: '55', title: 'Сделка №55', clientName: null, url: 'https://test.bitrix24.ru/crm/deal/details/55/', entityTypeId: 2 },
+      { id: '55', title: 'Сделка №55', clientName: null, url: 'https://test.bitrix24.ru/crm/deal/details/55/', entityTypeId: 2, opportunity: null },
     ]);
   });
 
