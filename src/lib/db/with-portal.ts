@@ -25,6 +25,7 @@ export type ScopedClient = Pick<
   | 'crmImportSource'
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
+  | 'salesFunnelSnapshot'
 >;
 
 export function withPortal(portalId: string, client: ScopedClient = db) {
@@ -206,6 +207,11 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       update: (id: string, data: Prisma.CrmIncomeDraftUncheckedUpdateInput) =>
         client.crmIncomeDraft.update({ where: { id }, data }),
+    },
+
+    salesFunnelSnapshot: {
+      findMany: (args?: Omit<Prisma.SalesFunnelSnapshotFindManyArgs, 'where'>) =>
+        client.salesFunnelSnapshot.findMany({ ...args, where: { portalId } }),
     },
 
     member: {

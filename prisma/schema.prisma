@@ -145,6 +145,7 @@ model PortalInstallation {
   crmImportSources CrmImportSource[]
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
+  salesFunnelSnapshots SalesFunnelSnapshot[]
 }
 
 /// A "I want PRO" request submitted from the app's /pricing page. Manual sales funnel:
@@ -540,4 +541,31 @@ model CrmIncomeDraft {
 
   @@unique([portalId, projectId])
   @@index([portalId, status])
+}
+
+// ─── Статистика продаж по воронкам (ADR-029) ────────────────────────────────
+
+enum DealSemantic {
+  IN_PROGRESS
+  WON
+  LOST
+}
+
+/// Ночной снепшот сделок портала, сгруппированных по воронке (Bitrix "категория" сделки) и
+/// статусу — читается напрямую, ничего не пишет в финансы проекта (в отличие от
+/// TaskTimeDraft/CrmIncomeDraft). Позволяет клиенту видеть "первичные продажи" и "абонентское
+/// обслуживание" (разные воронки) раздельно, а не одной слитной суммой.
+model SalesFunnelSnapshot {
+  id           String @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  categoryId   Int
+  categoryName String
+  semantic     DealSemantic
+  dealCount    Int
+  totalAmount  Decimal @db.Decimal(18, 2)
+  syncedAt     DateTime @default(now())
+
+  @@unique([portalId, categoryId, semantic])
+  @@index([portalId])
 }
