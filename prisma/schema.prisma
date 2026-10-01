@@ -29,6 +29,11 @@ enum ProjectStatus {
 enum ProjectSource {
   MANUAL
   BITRIX_CRM
+  /// Imported from Bitrix24's native "Проекты" module (sonet_group, PROJECT=Y) — a different
+  /// REST domain from crm.item.* and with no entityTypeId concept, so it's a separate source
+  /// kind rather than another CrmEntityType (ADR-031). Snapshot fields reuse crmEntityId/
+  /// crmEntityTitle/crmEntityUrl generically; crmEntityType/crmEntityTypeId stay null.
+  BITRIX_PROJECT
 }
 
 enum CrmEntityType {

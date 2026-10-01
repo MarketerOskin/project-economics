@@ -14,6 +14,7 @@ import { Segmented } from '@/components/ui/segmented';
 import { UpsellNotice } from '@/components/ui/upsell-notice';
 import { MemberSelect } from './member-select';
 import { CrmImport, type CrmSelection } from './crm-import';
+import { BitrixGroupImport, type BitrixGroupSelection } from './bitrix-group-import';
 
 const formSchema = z
   .object({
@@ -50,8 +51,9 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
   const isEdit = Boolean(initial?.id);
   const [members, setMembers] = React.useState<string[]>(initial?.memberIds ?? []);
   const [submitting, setSubmitting] = React.useState(false);
-  const [source, setSource] = React.useState<'MANUAL' | 'BITRIX_CRM'>('MANUAL');
+  const [source, setSource] = React.useState<'MANUAL' | 'BITRIX_CRM' | 'BITRIX_PROJECT'>('MANUAL');
   const [crm, setCrm] = React.useState<CrmSelection | null>(null);
+  const [bitrixGroup, setBitrixGroup] = React.useState<BitrixGroupSelection | null>(null);
 
   const {
     register,
@@ -79,6 +81,11 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
     }
   };
 
+  const pickBitrixGroup = (v: BitrixGroupSelection | null) => {
+    setBitrixGroup(v);
+    if (v) setValue('name', v.title);
+  };
+
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
     const payload = {
@@ -91,6 +98,9 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
       ...(isEdit ? {} : { memberIds: members }),
       ...(!isEdit && isPro && source === 'BITRIX_CRM' && crm
         ? { source: 'BITRIX_CRM', crmEntityTypeId: crm.entityTypeId, crmEntityId: crm.id }
+        : {}),
+      ...(!isEdit && isPro && source === 'BITRIX_PROJECT' && bitrixGroup
+        ? { source: 'BITRIX_PROJECT', bitrixGroupId: bitrixGroup.id }
         : {}),
     };
     try {
@@ -132,10 +142,12 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
           onChange={(v) => {
             setSource(v);
             if (v === 'MANUAL') pickCrm(null);
+            if (v !== 'BITRIX_PROJECT') pickBitrixGroup(null);
           }}
           options={[
             { value: 'MANUAL', label: 'Создать вручную' },
-            { value: 'BITRIX_CRM', label: isPro ? 'Выбрать из Bitrix24' : 'Выбрать из Bitrix24 · Pro' },
+            { value: 'BITRIX_CRM', label: isPro ? 'Выбрать из CRM' : 'Выбрать из CRM · Pro' },
+            { value: 'BITRIX_PROJECT', label: isPro ? 'Выбрать из «Проекты»' : 'Выбрать из «Проекты» · Pro' },
           ]}
         />
       ) : null}
@@ -147,6 +159,16 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
           </Field>
         ) : (
           <UpsellNotice feature="Импорт проекта из Bitrix24 CRM" />
+        )
+      ) : null}
+
+      {!isEdit && source === 'BITRIX_PROJECT' ? (
+        isPro ? (
+          <Field label="Проект Битрикс24" error={undefined} hint="Из раздела «Проекты» (не CRM)">
+            <BitrixGroupImport value={bitrixGroup} onChange={pickBitrixGroup} />
+          </Field>
+        ) : (
+          <UpsellNotice feature="Импорт проекта из раздела «Проекты» Bitrix24" />
         )
       ) : null}
 

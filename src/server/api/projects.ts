@@ -8,6 +8,7 @@ import { FREE_LIMITS, requirePro } from '@/lib/billing/plan';
 import { createProjectSchema, listProjectsQuerySchema, setMembersSchema, updateProjectSchema } from '@/server/dto/project';
 import { getProjectDetail, queryProjects } from '@/server/services/project-read';
 import { listImportSources } from '@/server/services/crm-sources';
+import { resolveBitrixProjectGroup } from '@/server/services/bitrix-groups';
 import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
 import type { HandlerContext } from '@/server/handler';
 
@@ -38,6 +39,9 @@ export async function createProject({ req, session, scope }: HandlerContext) {
   if (input.source === 'BITRIX_CRM') {
     requirePro(session.plan, 'Импорт проекта из Битрикс24 CRM');
   }
+  if (input.source === 'BITRIX_PROJECT') {
+    requirePro(session.plan, 'Импорт проекта из раздела «Проекты» Битрикс24');
+  }
   if (session.plan !== 'PRO') {
     const activeCount = await scope.project.count({ status: { not: 'ARCHIVED' } });
     if (activeCount >= FREE_LIMITS.maxActiveProjects) {
@@ -55,13 +59,20 @@ export async function createProject({ req, session, scope }: HandlerContext) {
     }
   }
 
-  // Resolve the CRM entity snapshot (title / client / url) when importing from Bitrix24.
+  // Resolve the CRM/project-group entity snapshot (title / client / url) when importing from Bitrix24.
   let crm: {
     crmEntityType: 'DEAL' | 'COMPANY' | 'SMART_PROCESS' | null;
+    crmEntityId: string | null;
     crmEntityTitle: string | null;
     crmEntityUrl: string | null;
     clientName: string | null;
-  } = { crmEntityType: null, crmEntityTitle: null, crmEntityUrl: null, clientName: input.clientName ?? null };
+  } = {
+    crmEntityType: null,
+    crmEntityId: input.crmEntityId ?? null,
+    crmEntityTitle: null,
+    crmEntityUrl: null,
+    clientName: input.clientName ?? null,
+  };
 
   if (input.source === 'BITRIX_CRM' && input.crmEntityTypeId && input.crmEntityId) {
     // Only a source the admin configured (built-in Deal/Company, or an added Smart Process,
@@ -81,9 +92,22 @@ export async function createProject({ req, session, scope }: HandlerContext) {
           : input.crmEntityTypeId === ENTITY_TYPE_ID.DEAL
             ? 'DEAL'
             : 'SMART_PROCESS',
+      crmEntityId: input.crmEntityId,
       crmEntityTitle: item.title,
       crmEntityUrl: item.url,
       clientName: input.clientName ?? item.clientName ?? null,
+    };
+  }
+
+  if (input.source === 'BITRIX_PROJECT' && input.bitrixGroupId) {
+    const group = await resolveBitrixProjectGroup(session, input.bitrixGroupId);
+    if (!group) throw badRequest('Проект не найден в разделе «Проекты» Битрикс24');
+    crm = {
+      crmEntityType: null,
+      crmEntityId: group.id,
+      crmEntityTitle: group.title,
+      crmEntityUrl: group.url,
+      clientName: input.clientName ?? null,
     };
   }
 
@@ -100,7 +124,7 @@ export async function createProject({ req, session, scope }: HandlerContext) {
       sourceType: input.source,
       crmEntityType: crm.crmEntityType,
       crmEntityTypeId: input.crmEntityTypeId ?? null,
-      crmEntityId: input.crmEntityId ?? null,
+      crmEntityId: crm.crmEntityId,
       crmEntityTitle: crm.crmEntityTitle,
       crmEntityUrl: crm.crmEntityUrl,
       createdById: user.id,

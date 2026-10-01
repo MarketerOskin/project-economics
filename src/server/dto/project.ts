@@ -37,9 +37,10 @@ const endAfterStart = <T extends { startDate?: Date; endDate?: Date }>(v: T, ctx
 export const createProjectSchema = z
   .object(baseProjectShape)
   .extend({
-    source: z.enum(['MANUAL', 'BITRIX_CRM']).default('MANUAL'),
+    source: z.enum(['MANUAL', 'BITRIX_CRM', 'BITRIX_PROJECT']).default('MANUAL'),
     crmEntityTypeId: z.number().int().optional(),
     crmEntityId: z.string().optional(),
+    bitrixGroupId: z.string().optional(),
   })
   .superRefine(endAfterStart);
 
