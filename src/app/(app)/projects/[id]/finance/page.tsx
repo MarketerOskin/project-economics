@@ -33,7 +33,7 @@ export default async function ProjectFinancePage({
         {canMutate ? <EntryFormDialog lockedProjectId={id} label="Операция" /> : null}
       </div>
       {rows.length === 0 ? (
-        <p className="rounded-[14px] border border-dashed border-border py-10 text-center text-sm text-fg-tertiary">
+        <p className="border border-dashed border-border py-10 text-center text-sm text-fg-tertiary">
           Операций по проекту пока нет
         </p>
       ) : (

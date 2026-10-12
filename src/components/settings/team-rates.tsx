@@ -54,7 +54,7 @@ function RateInput({ userId, initial }: { userId: string; initial: string | null
 
 export function TeamRates({ users }: { users: TeamMemberDto[] }) {
   return (
-    <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+    <ul className="divide-y divide-border border border-border bg-surface">
       {users.map((u) => (
         <li key={u.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
           <span className="text-fg">

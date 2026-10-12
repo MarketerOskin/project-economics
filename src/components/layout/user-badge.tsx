@@ -14,7 +14,7 @@ export function UserBadge() {
   const { session, loading } = useSession();
 
   if (loading) {
-    return <div className="h-9 w-40 animate-pulse rounded-[10px] bg-surface-muted" />;
+    return <div className="h-9 w-40 animate-pulse bg-surface-muted" />;
   }
   if (!session) return null;
 

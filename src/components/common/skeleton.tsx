@@ -1,12 +1,12 @@
 import { cn } from '@/lib/cn';
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-[8px] bg-surface-muted', className)} />;
+  return <div className={cn('animate-pulse bg-surface-muted', className)} />;
 }
 
 export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-border bg-surface">
+    <div className="overflow-hidden border border-border bg-surface">
       <div className="border-b border-border px-4 py-3">
         <Skeleton className="h-4 w-32" />
       </div>

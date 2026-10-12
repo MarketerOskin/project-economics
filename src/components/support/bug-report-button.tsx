@@ -41,7 +41,7 @@ export function BugReportButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Сообщить о проблеме"
-        className="fixed bottom-4 right-4 z-30 flex size-11 items-center justify-center rounded-full border border-border bg-surface text-fg-secondary shadow-lg transition-colors hover:text-fg"
+        className="fixed bottom-4 right-4 z-30 flex size-11 items-center justify-center border border-border bg-surface text-fg-secondary transition-colors hover:text-fg"
       >
         <Bug className="size-5" />
       </button>

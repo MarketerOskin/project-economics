@@ -66,7 +66,7 @@ export function FilterMenu({
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            'inline-flex h-9 items-center gap-2 rounded-[10px] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
+            'inline-flex h-9 items-center gap-2 border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
             activeKeys.length > 0
               ? 'border-accent bg-accent-soft text-accent'
               : 'border-border bg-surface',
@@ -136,7 +136,7 @@ export function FilterMenu({
       {activeKeys.length > 0 ? (
         <button
           onClick={() => set(Object.fromEntries(activeKeys.map((k) => [k, null])))}
-          className="inline-flex h-9 items-center rounded-[10px] border border-border bg-surface px-2.5 text-sm text-fg-secondary hover:text-fg"
+          className="inline-flex h-9 items-center border border-border bg-surface px-2.5 text-sm text-fg-secondary hover:text-fg"
           aria-label="Сбросить фильтры"
         >
           <X className="size-3.5" />

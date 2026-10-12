@@ -65,10 +65,10 @@ export function EntriesTable({
 
   return (
     <>
-      <div className="overflow-x-auto rounded-[14px] border border-border bg-surface">
+      <div className="overflow-x-auto border border-border bg-surface">
         <table className="w-full min-w-[860px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border text-xs text-fg-tertiary">
+            <tr className="border-b border-border font-mono text-[11px] uppercase tracking-[0.06em] text-fg-tertiary">
               <th className="px-4 py-2.5 text-left font-medium">Дата</th>
               <th className="px-4 py-2.5 text-left font-medium">План / факт</th>
               <th className="px-4 py-2.5 text-left font-medium">Тип</th>
@@ -93,7 +93,7 @@ export function EntriesTable({
                 <td className="px-4 py-3">
                   <span
                     className={cn(
-                      'rounded-full px-2 py-0.5 text-xs',
+                      'px-2 py-0.5 text-xs',
                       e.budgetType === 'FACT'
                         ? 'bg-accent-soft text-accent'
                         : 'bg-surface-muted text-fg-tertiary',
@@ -129,7 +129,7 @@ export function EntriesTable({
                 <td className="px-2 py-3">
                   {canMutate && !e.deletedAt ? (
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="rounded-[6px] p-1 text-fg-tertiary hover:bg-surface-muted hover:text-fg">
+                      <DropdownMenuTrigger className="p-1 text-fg-tertiary hover:bg-surface-muted hover:text-fg">
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>

@@ -11,7 +11,7 @@ export function Tip({ label, children }: { label: string; children: React.ReactN
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             sideOffset={5}
-            className="z-50 rounded-[8px] bg-fg px-2 py-1 text-xs text-white shadow-lg"
+            className="z-50 border border-border bg-surface-muted px-2 py-1 text-xs text-fg"
           >
             {label}
             <TooltipPrimitive.Arrow className="fill-fg" />

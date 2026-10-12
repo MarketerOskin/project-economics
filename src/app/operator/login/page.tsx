@@ -30,9 +30,9 @@ export default function OperatorLoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-[18px] border border-border bg-surface p-6 shadow-sm">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-4 border border-border bg-surface p-6">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Вход оператора</h1>
+          <h1 className="text-lg font-bold uppercase tracking-tight">Вход оператора</h1>
           <p className="mt-1 text-sm text-fg-secondary">Служебная панель — не для клиентов Bitrix24</p>
         </div>
 

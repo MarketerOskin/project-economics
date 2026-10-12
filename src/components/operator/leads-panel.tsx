@@ -73,12 +73,12 @@ function LeadCard({ lead, onChanged }: { lead: LeadRow; onChanged: () => void | 
   };
 
   return (
-    <div className="rounded-[14px] border border-border bg-surface px-4 py-3">
+    <div className="border border-border bg-surface px-4 py-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium">{lead.portalIsDemo ? 'Демо-портал' : lead.portalDomain}</span>
-            <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', STATUS_STYLE[lead.status])}>
+            <span className={cn('inline-flex items-center px-2 py-0.5 text-xs font-medium', STATUS_STYLE[lead.status])}>
               {STATUS_LABEL[lead.status]}
             </span>
           </div>

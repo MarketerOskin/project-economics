@@ -54,7 +54,7 @@ function DraftRow({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-sm">
+    <div className="flex flex-wrap items-center gap-3 border border-border bg-surface px-4 py-3 text-sm">
       <div className="min-w-[12rem] flex-1">
         <div className="font-medium text-fg">{draft.projectName}</div>
         <div className="text-xs text-fg-secondary">

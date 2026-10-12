@@ -54,7 +54,7 @@ function AddSource({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <div className="space-y-1 rounded-[10px] border border-dashed border-border p-2">
+    <div className="space-y-1 border border-dashed border-border p-2">
       {loading ? (
         <p className="px-2 py-3 text-center text-sm text-fg-tertiary">Загрузка…</p>
       ) : !types || types.length === 0 ? (
@@ -67,7 +67,7 @@ function AddSource({ onAdded }: { onAdded: () => void }) {
             key={t.entityTypeId}
             type="button"
             onClick={() => add(t.entityTypeId)}
-            className="flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-sm hover:bg-surface-muted"
+            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-surface-muted"
           >
             {t.title}
           </button>
@@ -102,14 +102,14 @@ export function CrmSourcesManager({ initial }: { initial: CrmImportSourceOption[
 
   return (
     <div className="space-y-2">
-      <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+      <ul className="divide-y divide-border border border-border bg-surface">
         {sources.map((s) => (
           <li key={`${s.entityTypeId}`} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
             <span className="text-fg">{s.label}</span>
             {s.removable && s.id ? (
               <button
                 onClick={() => setConfirmRemove(s)}
-                className="rounded-[6px] p-1 text-fg-tertiary hover:bg-negative-soft hover:text-negative"
+                className="p-1 text-fg-tertiary hover:bg-negative-soft hover:text-negative"
                 aria-label="Удалить"
               >
                 <Trash2 className="size-3.5" />

@@ -56,7 +56,7 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
           </Link>
         </div>
         {recent.rows.length === 0 ? (
-          <p className="rounded-[14px] border border-dashed border-border py-8 text-center text-sm text-fg-tertiary">
+          <p className="border border-dashed border-border py-8 text-center text-sm text-fg-tertiary">
             Операций пока нет
           </p>
         ) : (
