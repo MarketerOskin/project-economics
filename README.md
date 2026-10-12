@@ -145,6 +145,7 @@ npm run test:e2e                                   # Playwright (собирае�
 | `DEMO_MODE` | `true` — работа без Bitrix24 + переключатель ролей; `false` для реальной установки |
 | `ALLOWED_PORTAL_MEMBER_IDS` / `ALLOWED_PORTAL_DOMAINS` | белый список порталов (через запятую). Если задан — установить и открыть приложение может только портал из списка, остальные получают отказ. Пусто — проверка выключена. Демо-портал разрешён всегда |
 | `OPERATOR_EMAIL` / `OPERATOR_PASSWORD_HASH` | учётная запись `/operator` — панели, где вы вручную выдаёте тариф Pro оплатившим порталам. Хеш — через `node scripts/hash-operator-password.mjs '<пароль>'` |
+| `ANALYTICS_TZ` | часовой пояс раздела «Аналитика»: по нему режутся дни, месяцы и пакет часов. По умолчанию `Europe/Moscow` |
 | `TEST_DATABASE_URL` | БД для интеграционных тестов (`docker-compose.test.yml`, порт 5433) |
 
 ## Установка в Bitrix24
@@ -154,7 +155,8 @@ npm run test:e2e                                   # Playwright (собирае�
 3. **Адрес обработчика:** `https://<APP_URL>/api/bitrix/handler`
 4. **URL первоначальной установки:** `https://<APP_URL>/api/bitrix/install`
 5. **Права (scope):** `crm`, `placement`, `user_brief`, `basic`, `sonet_group` (импорт из
-   раздела «Проекты»), `task` (часы из задач). Если право добавлено к уже установленному
+   раздела «Проекты»), `task` (часы из задач), `calendar` (встречи из календаря проекта
+   в «Аналитике»). Если право добавлено к уже установленному
    приложению, его нужно **переустановить** на портале — старый токен новых прав не получает.
 6. Скопируйте `client_id` → `B24_CLIENT_ID`, `client_secret` → `B24_CLIENT_SECRET`,
    поставьте `DEMO_MODE=false`, перезапустите `docker compose up -d`.

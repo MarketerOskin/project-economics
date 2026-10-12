@@ -46,6 +46,8 @@ services:
       SUPPORT_BITRIX_WEBHOOK_URL: ${SUPPORT_BITRIX_WEBHOOK_URL:-}
       # Nightly hours->expense sync entrypoint secret (ADR-027).
       INTERNAL_SYNC_SECRET: ${INTERNAL_SYNC_SECRET:-}
+      # Time zone for «Аналитика»: days, months and the hours package (ADR-034).
+      ANALYTICS_TZ: ${ANALYTICS_TZ:-Europe/Moscow}
     # Host port is set by the override file (dev) or docker-compose.prod.yml (VPS),
     # so a shared server can choose a non-conflicting port.
     healthcheck:

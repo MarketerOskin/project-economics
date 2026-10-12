@@ -4,13 +4,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
 
-export function ProjectTabs({ projectId, canViewHistory }: { projectId: string; canViewHistory: boolean }) {
+export function ProjectTabs({
+  projectId,
+  canViewHistory,
+  canViewAnalytics = false,
+}: {
+  projectId: string;
+  canViewHistory: boolean;
+  canViewAnalytics?: boolean;
+}) {
   const pathname = usePathname();
   const base = `/projects/${projectId}`;
   const tabs = [
     { href: base, label: 'Обзор' },
     { href: `${base}/finance`, label: 'Финансы' },
     { href: `${base}/team`, label: 'Команда' },
+    ...(canViewAnalytics ? [{ href: `${base}/analytics`, label: 'Аналитика' }] : []),
     ...(canViewHistory ? [{ href: `${base}/history`, label: 'История' }] : []),
   ];
 
@@ -18,7 +27,7 @@ export function ProjectTabs({ projectId, canViewHistory }: { projectId: string; 
     <div className="overflow-x-auto border-b border-border px-4 sm:px-8">
       <nav className="flex gap-5 sm:gap-6">
         {tabs.map((t) => {
-          const active = t.href === base ? pathname === base : pathname === t.href;
+          const active = t.href === base ? pathname === base : pathname.startsWith(t.href);
           return (
             <Link
               key={t.href}

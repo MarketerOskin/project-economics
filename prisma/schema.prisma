@@ -264,6 +264,12 @@ model Project {
   crmEntityTitle  String?
   crmEntityUrl    String?
 
+  /// Пакет поддержки для раздела «Аналитика» (ADR-034): часов в календарный месяц,
+  /// абонентская плата за месяц и ставка за час сверх пакета. null — не задано.
+  supportHoursLimit Decimal? @db.Decimal(8, 2)
+  supportMonthlyFee Decimal? @db.Decimal(18, 2)
+  supportHourRate   Decimal? @db.Decimal(18, 2)
+
   createdById String?
   createdBy   AppUser? @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedById String?

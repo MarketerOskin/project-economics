@@ -148,3 +148,14 @@ h2,
 .recharts-wrapper text {
   font-family: var(--font-mono);
 }
+
+/* Printing (the client report, ADR-034): paper is white, app chrome is hidden via print:hidden. */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+}

@@ -23,7 +23,11 @@ export default async function ProjectLayout({
     <>
       <ProjectHeader project={project} />
       <ProjectKpi e={project.economics} />
-      <ProjectTabs projectId={project.id} canViewHistory={can.viewHistory(session.actor)} />
+      <ProjectTabs
+        projectId={project.id}
+        canViewHistory={can.viewHistory(session.actor)}
+        canViewAnalytics={can.viewAllProjects(session.actor)}
+      />
       {children}
     </>
   );
