@@ -7,7 +7,7 @@ import { Stat, StatGrid } from '@/components/analytics/stat';
 import { HoursByDayChart, TaskFlowChart } from '@/components/analytics/charts';
 import { UsageCards, type UsageCardData } from '@/components/analytics/usage';
 import { TasksTable } from '@/components/analytics/tables';
-import { AnalyticsUpsell, NoBitrixProjects, Section, Toolbar } from '@/components/analytics/page-parts';
+import { AnalyticsUpsell, NoBitrixProjects, Section, Toolbar, UnlinkedProjects } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
 import { dailySeries, monthUsage, summarizeAll, summarizeProject, taskRows } from '@/domain/analytics';
 import { formatDuration, formatHours } from '@/lib/format';
@@ -36,7 +36,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
   if (projects.length === 0 && !ctx.projectFilter) {
     return (
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-8">
-        <NoBitrixProjects />
+        <NoBitrixProjects unlinked={world.unlinked} />
       </div>
     );
   }
@@ -91,7 +91,10 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
       </div>
 
       <Section title="Часы по проектам" hint="Пакет часов задаётся на вкладке «Аналитика» проекта. Красным — сверх пакета.">
-        <UsageCards items={cards} query={periodQuery} />
+        <div className="flex flex-col gap-3">
+          <UsageCards items={cards} query={periodQuery} />
+          {ctx.projectFilter ? null : <UnlinkedProjects items={world.unlinked} compact />}
+        </div>
       </Section>
 
       <Section title="Задачи за период" hint="Созданные, закрытые или с записями времени в периоде">

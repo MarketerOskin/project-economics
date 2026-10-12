@@ -3,6 +3,7 @@ import type { ResolvedSession } from '@/lib/auth/resolve';
 import type { PortalScope } from '@/lib/db/with-portal';
 import { isDemoMode } from '@/lib/auth/demo';
 import { crmTaskBinding } from '@/lib/bitrix/tasks';
+import { syncUsersIfStale } from '@/lib/bitrix/users';
 import { fetchGroupMeetings, fetchTasks, fetchTimeEntries, type TaskSource } from '@/lib/bitrix/analytics';
 import { demoActivity } from '@/lib/demo/analytics-data';
 import { addDays, dayKey, startOfDay } from '@/domain/analytics/time';
@@ -56,6 +57,10 @@ export interface AnalyticsWorld {
   people: Map<string, AnalyticsPerson>;
   /** Oldest load among the projects shown — "данные на ЧЧ:ММ". */
   fetchedAt: Date | null;
+  /** Active projects made by hand: no Bitrix24 source yet, so no numbers until linked. */
+  unlinked: Array<{ id: string; name: string }>;
+  /** Active portal staff (Bitrix24 user ids), so the team page lists people with no activity too. */
+  staffIds: string[];
 }
 
 interface CacheEntry {
@@ -135,17 +140,20 @@ export async function loadAnalytics(
   const now = new Date();
   const demo = isDemoMode() || session.demo;
 
-  const [projects, users] = await Promise.all([
+  // Names and the team list come from the portal's staff list, not only from who has opened
+  // the app; refresh it here (hourly, or on «Обновить»).
+  if (!demo) await syncUsersIfStale(session.portal, { force: opts.refresh });
+
+  const [allProjects, users] = await Promise.all([
     scope.project.findMany({
-      where: {
-        status: { not: 'ARCHIVED' },
-        ...(demo ? {} : { sourceType: { in: ['BITRIX_PROJECT', 'BITRIX_CRM'] } }),
-        ...(opts.projectId ? { id: opts.projectId } : {}),
-      },
+      where: { status: { not: 'ARCHIVED' }, ...(opts.projectId ? { id: opts.projectId } : {}) },
       orderBy: { name: 'asc' },
     }),
     scope.user.findMany({ orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }),
   ]);
+  const projects = demo ? allProjects : allProjects.filter((p) => sourceOf(p) !== null);
+  const unlinked = demo ? [] : allProjects.filter((p) => sourceOf(p) === null).map((p) => ({ id: p.id, name: p.name }));
+  const staffIds = users.filter((u) => u.isActive).map((u) => u.bitrixUserId);
 
   const people = new Map<string, AnalyticsPerson>(
     users.map((u) => [
@@ -213,7 +221,7 @@ export async function loadAnalytics(
   }
 
   const fetchedAt = result.length ? new Date(Math.min(...result.map((r) => r.fetchedAt.getTime()))) : null;
-  return { tz, now, projects: result, people, fetchedAt };
+  return { tz, now, projects: result, people, fetchedAt, unlinked, staffIds };
 }
 
 /** Display name for a Bitrix24 user id, falling back to the task's responsible name. */

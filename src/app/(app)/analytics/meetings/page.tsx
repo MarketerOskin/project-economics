@@ -18,7 +18,7 @@ export default async function AnalyticsMeetingsPage({ searchParams }: { searchPa
   if (world.projects.length === 0 && !ctx.projectFilter) {
     return (
       <div className="px-4 py-6 sm:px-8">
-        <NoBitrixProjects />
+        <NoBitrixProjects unlinked={world.unlinked} />
       </div>
     );
   }

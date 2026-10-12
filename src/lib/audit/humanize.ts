@@ -54,6 +54,10 @@ const FIELD_LABEL: Record<string, string> = {
   supportHoursLimit: 'пакет часов в месяц',
   supportMonthlyFee: 'абонентскую плату',
   supportHourRate: 'ставку сверх пакета',
+  sourceType: 'связь с Битрикс24',
+  crmEntityTitle: 'связь с Битрикс24',
+  crmEntityId: 'связь с Битрикс24',
+  crmEntityTypeId: 'связь с Битрикс24',
 };
 
 export function humanizeAudit(row: RawAudit, projectName?: string): HumanAuditEntry {
@@ -71,7 +75,7 @@ export function humanizeAudit(row: RawAudit, projectName?: string): HumanAuditEn
       sentence = `создал проект ${projectName ? p : ''}`.trim();
       break;
     case 'PROJECT_UPDATED': {
-      const fields = row.changedFields.map((f) => FIELD_LABEL[f] ?? f);
+      const fields = [...new Set(row.changedFields.map((f) => FIELD_LABEL[f] ?? f))];
       sentence = `изменил ${fields.length ? fields.join(', ') : 'данные'} проекта ${p}`;
       if (row.changedFields.includes('name')) {
         change = `${val(row.before, 'name') ?? '—'} → ${val(row.after, 'name') ?? '—'}`;

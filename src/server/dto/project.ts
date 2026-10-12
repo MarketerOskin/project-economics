@@ -87,3 +87,9 @@ export const listProjectsQuerySchema = z.object({
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
+
+/** Link an existing project to a Bitrix24 deal / company / smart-process item or «Проекты» group. */
+export const linkBitrixSchema = z.discriminatedUnion('source', [
+  z.object({ source: z.literal('BITRIX_CRM'), crmEntityTypeId: z.number().int().positive(), crmEntityId: z.string().trim().min(1).max(64) }),
+  z.object({ source: z.literal('BITRIX_PROJECT'), bitrixGroupId: z.string().trim().min(1).max(64) }),
+]);

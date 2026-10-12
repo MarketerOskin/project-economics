@@ -11,17 +11,49 @@ export function AnalyticsUpsell() {
   );
 }
 
-export function NoBitrixProjects() {
+export function NoBitrixProjects({ unlinked }: { unlinked: Array<{ id: string; name: string }> }) {
   return (
-    <EmptyState
-      title="Нет проектов из Битрикс24"
-      description="Аналитика считается по задачам и встречам проектов, импортированных из Битрикс24: из раздела «Проекты» или из CRM. Создайте проект через «Выбрать из Битрикс24»."
-      actions={
-        <Button asChild>
-          <Link href="/projects/new">Новый проект</Link>
-        </Button>
-      }
-    />
+    <div className="flex flex-col gap-4">
+      <EmptyState
+        title="Нет проектов, связанных с Битрикс24"
+        description={
+          unlinked.length
+            ? 'Аналитика считается по задачам и встречам Битрикс24, а ваши проекты созданы вручную. Откройте проект ниже и на вкладке «Аналитика» свяжите его с проектом, сделкой или компанией в Битрикс24.'
+            : 'Аналитика считается по задачам и встречам проектов из Битрикс24. Создайте проект через «Выбрать из Битрикс24».'
+        }
+        actions={
+          unlinked.length ? undefined : (
+            <Button asChild>
+              <Link href="/projects/new">Новый проект</Link>
+            </Button>
+          )
+        }
+      />
+      {unlinked.length ? <UnlinkedProjects items={unlinked} /> : null}
+    </div>
+  );
+}
+
+/** Projects made by hand: listed so they can be linked to Bitrix24 from their «Аналитика» tab. */
+export function UnlinkedProjects({ items, compact = false }: { items: Array<{ id: string; name: string }>; compact?: boolean }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="border border-dashed border-border px-4 py-3 text-sm">
+      {compact ? (
+        <p className="mb-2 text-fg-secondary">
+          Не связаны с Битрикс24 и в аналитику не попадают ({items.length}). Свяжите их на вкладке «Аналитика» проекта:
+        </p>
+      ) : null}
+      <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+        {items.map((p) => (
+          <li key={p.id}>
+            <Link href={`/projects/${p.id}/analytics`} className="text-accent hover:underline">
+              {p.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

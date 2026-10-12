@@ -23,7 +23,15 @@ export interface AnalyticsPageContext {
   projectNames: Record<string, string>;
 }
 
-const EMPTY_WORLD = (tz: string): AnalyticsWorld => ({ tz, now: new Date(), projects: [], people: new Map(), fetchedAt: null });
+const EMPTY_WORLD = (tz: string): AnalyticsWorld => ({
+  tz,
+  now: new Date(),
+  projects: [],
+  people: new Map(),
+  fetchedAt: null,
+  unlinked: [],
+  staffIds: [],
+});
 
 /**
  * Shared prologue of every «Аналитика» page: manager/admin only, Pro only (the page renders the
