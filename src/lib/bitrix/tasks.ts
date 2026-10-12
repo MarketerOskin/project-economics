@@ -3,16 +3,25 @@ import { callBitrix } from './client';
 import { ENTITY_TYPE_ID } from './types';
 
 /**
- * Bitrix24's UF_CRM_TASK binding value for one CRM entity ("D_123" for a Deal, "T1068_7" for
- * a dynamic Smart Process item). NOT independently verified against a live portal for the
- * Smart Process case — task.elapseditem sync (ADR-027) is designed to fail soft (zero tasks
- * found, never a thrown error) specifically so a wrong prefix here degrades to "nothing to
- * sync yet" rather than breaking the nightly job for every other project.
+ * Bitrix24's UF_CRM_TASK binding value for one CRM entity: "D_123" for a Deal, "CO_5" for a
+ * Company, and for a Smart Process "T" + entityTypeId in lowercase hex ("T8a_7" for
+ * entityTypeId 138) — Bitrix's CCrmOwnerTypeAbbr for dynamic types (ADR-036).
  */
 export function crmTaskBinding(entityTypeId: number, crmEntityId: string): string {
   if (entityTypeId === ENTITY_TYPE_ID.DEAL) return `D_${crmEntityId}`;
   if (entityTypeId === ENTITY_TYPE_ID.COMPANY) return `CO_${crmEntityId}`;
-  return `T${entityTypeId}_${crmEntityId}`;
+  return `T${entityTypeId.toString(16)}_${crmEntityId}`;
+}
+
+/**
+ * Every UF_CRM_TASK value to filter by. Smart Processes also get the decimal form this app
+ * used before ADR-036: it can't match a hex binding, so it costs nothing and covers a portal
+ * that turns out to write it that way.
+ */
+export function crmTaskBindings(entityTypeId: number, crmEntityId: string): string[] {
+  const hex = crmTaskBinding(entityTypeId, crmEntityId);
+  const dec = `T${entityTypeId}_${crmEntityId}`;
+  return hex.startsWith('T') && hex !== dec ? [hex, dec] : [hex];
 }
 
 interface BitrixTaskListResult {
@@ -25,9 +34,8 @@ export async function listTaskIdsBoundToCrm(
   entityTypeId: number,
   crmEntityId: string,
 ): Promise<number[]> {
-  const binding = crmTaskBinding(entityTypeId, crmEntityId);
   const res = await callBitrix<BitrixTaskListResult>(portal, 'tasks.task.list', {
-    filter: { UF_CRM_TASK: [binding] },
+    filter: { UF_CRM_TASK: crmTaskBindings(entityTypeId, crmEntityId) },
     select: ['ID'],
   });
   return (res?.tasks ?? []).map((t) => Number(t.id)).filter((id) => Number.isFinite(id));

@@ -153,7 +153,7 @@ export function parseCalendarEvent(raw: RawCalendarEvent, projectId: string, fal
 
 // ─── Network ────────────────────────────────────────────────────────────────
 
-export type TaskSource = { kind: 'group'; groupId: string } | { kind: 'crm'; binding: string };
+export type TaskSource = { kind: 'group'; groupId: string } | { kind: 'crm'; bindings: string[] };
 
 function taskUrl(portal: PortalInstallation, source: TaskSource, task: { id: number; responsibleId: string | null }): string {
   if (source.kind === 'group') {
@@ -168,7 +168,7 @@ export async function fetchTasks(
   source: TaskSource,
   projectId: string,
 ): Promise<Array<TaskStat & { spentSeconds: number }>> {
-  const filter = source.kind === 'group' ? { GROUP_ID: source.groupId } : { UF_CRM_TASK: [source.binding] };
+  const filter = source.kind === 'group' ? { GROUP_ID: source.groupId } : { UF_CRM_TASK: source.bindings };
   const raw: RawTask[] = [];
   for (let start = 0; raw.length < MAX_TASKS_PER_PROJECT; start += PAGE) {
     const res = await callBitrix<{ tasks?: RawTask[] }>(portal, 'tasks.task.list', {

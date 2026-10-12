@@ -3,6 +3,7 @@ import { addCrmSourceSchema } from '@/server/dto/crm-source';
 import {
   addImportSource,
   listAddableSmartProcesses,
+  listAvailableSources,
   listImportSources,
   removeImportSource,
 } from '@/server/services/crm-sources';
@@ -11,6 +12,12 @@ import type { HandlerContext } from '@/server/handler';
 export async function getImportSources({ session, scope }: HandlerContext) {
   requirePermission(can.mutateProject(session.actor));
   return { sources: await listImportSources(scope) };
+}
+
+/** Everything the project picker offers: Deal, Company and every Smart Process (ADR-036). */
+export async function getAvailableSources({ session, scope }: HandlerContext) {
+  requirePermission(can.mutateProject(session.actor));
+  return { sources: await listAvailableSources(session, scope) };
 }
 
 export async function getAddableSmartProcesses({ session, scope }: HandlerContext) {
