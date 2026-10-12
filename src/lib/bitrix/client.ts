@@ -51,15 +51,41 @@ const SCOPE_BY_PREFIX: [string, string][] = [
  * privileges than provided by the access token" — useless to a portal admin. Name the
  * right to add and what to do with it instead.
  */
-export function bitrixErrorMessage(method: string, err: BitrixError): string {
-  if (err.error === 'insufficient_scope' || /higher privileges/i.test(err.error_description ?? '')) {
+export function bitrixErrorMessage(method: string, err: BitrixError, granted?: string[] | null): string {
+  if (isScopeError(err)) {
     const scope = SCOPE_BY_PREFIX.find(([prefix]) => method.startsWith(prefix))?.[1];
+    const has = granted
+      ? ` Права, которые Битрикс24 сейчас выдаёт приложению: ${granted.length ? granted.join(', ') : 'никаких'}.`
+      : '';
     return (
-      `У приложения нет доступа к этому разделу Битрикс24${scope ? ` — нужно право ${scope}` : ''}. ` +
+      `У приложения нет доступа к этому разделу Битрикс24${scope ? ` — нужно право ${scope}` : ''}.${has} ` +
       'Администратору портала: добавьте его в настройках приложения и переустановите приложение.'
     );
   }
   return redactTokens(err.error_description || err.error);
+}
+
+function isScopeError(err: BitrixError): boolean {
+  return err.error === 'insufficient_scope' || /higher privileges/i.test(err.error_description ?? '');
+}
+
+/**
+ * The rights the token actually carries (REST `scope`, which needs none). Asked only after a
+ * missing-scope error, so the message shows what the portal really granted: a right ticked in
+ * the app settings reaches the token only after a reinstall. Null when it can't be asked.
+ */
+async function grantedScopes(portal: Pick<PortalInstallation, 'domain' | 'restEndpoint'>, accessToken: string): Promise<string[] | null> {
+  try {
+    const res = await fetch(`${restBase(portal as PortalInstallation)}/scope.json`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ auth: accessToken }),
+    });
+    const json = (await res.json()) as { result?: unknown };
+    return Array.isArray(json.result) ? json.result.map(String) : null;
+  } catch {
+    return null;
+  }
 }
 
 function restBase(portal: PortalInstallation): string {
@@ -133,7 +159,8 @@ export async function callBitrixWithToken<T = unknown>(
   const json = (await res.json()) as { result?: T } | BitrixError;
   if (isBitrixError(json)) {
     await record(portal.id, method, params, started, json, json.error);
-    throw upstream(bitrixErrorMessage(method, json));
+    const granted = isScopeError(json) ? await grantedScopes(portal, accessToken) : null;
+    throw upstream(bitrixErrorMessage(method, json, granted));
   }
   await record(portal.id, method, params, started, json);
   return json.result as T;
@@ -192,7 +219,8 @@ export async function callBitrix<T = unknown>(
         if (reloaded) return callBitrix<T>(reloaded, method, params, true);
       }
     }
-    throw upstream(bitrixErrorMessage(method, json));
+    const granted = isScopeError(json) ? await grantedScopes(portal, accessToken) : null;
+    throw upstream(bitrixErrorMessage(method, json, granted));
   }
 
   await record(portal.id, method, params, started, json);
