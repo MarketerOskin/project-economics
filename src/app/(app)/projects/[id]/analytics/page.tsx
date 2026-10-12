@@ -10,6 +10,7 @@ import { HoursByDayChart, TaskFlowChart } from '@/components/analytics/charts';
 import { UsageBar } from '@/components/analytics/usage';
 import { MeetingsTable, TasksTable } from '@/components/analytics/tables';
 import { SupportPackageForm } from '@/components/analytics/support-package-form';
+import { BitrixLinkForm } from '@/components/analytics/bitrix-link-form';
 import { AnalyticsUpsell, Section, Toolbar } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
 import { Button } from '@/components/ui/button';
@@ -36,12 +37,15 @@ export default async function ProjectAnalyticsPage({
   const project = world.projects[0];
 
   if (!project) {
+    const manual = world.unlinked.some((u) => u.id === id);
     return (
-      <div className="px-4 py-6 sm:px-8">
-        <p className="max-w-2xl border border-dashed border-border px-4 py-6 text-sm text-fg-secondary">
-          Аналитика считается по задачам и встречам Битрикс24, а этот проект создан вручную и с Битрикс24 не связан.
-          Чтобы видеть часы и задачи, создайте проект через «Выбрать из Битрикс24» — из раздела «Проекты» или из CRM.
+      <div className="flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-8">
+        <p className="border border-dashed border-border px-4 py-5 text-sm text-fg-secondary">
+          {manual
+            ? 'Проект создан вручную и не связан с Битрикс24, поэтому задач, часов и встреч здесь нет. Выберите, откуда их брать: проект из раздела «Проекты» Битрикс24 (задачи и встречи календаря) или сделку, компанию, смарт-процесс (задачи, привязанные к ним). Финансы и команда проекта не изменятся.'
+            : 'Аналитика считается только по активным проектам.'}
         </p>
+        {manual && can.mutateProject(session.actor) ? <BitrixLinkForm projectId={id} /> : null}
       </div>
     );
   }

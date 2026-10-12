@@ -52,24 +52,36 @@ export async function syncUsers(portal: PortalInstallation): Promise<{ synced: n
     start += 50;
   }
 
-  // Deactivate users the portal no longer reports.
-  await db.appUser.updateMany({
-    where: { portalId: portal.id, bitrixUserId: { notIn: [...seen] }, isActive: true },
-    data: { isActive: false },
+  // Deactivate users the portal no longer reports. An empty answer is never the real staff
+  // list (the caller is on it), so it deactivates no one.
+  if (seen.size > 0) {
+    await db.appUser.updateMany({
+      where: { portalId: portal.id, bitrixUserId: { notIn: [...seen] }, isActive: true },
+      data: { isActive: false },
+    });
+  }
+  await db.portalInstallation.update({
+    where: { id: portal.id },
+    data: { usersSyncedAt: new Date() },
   });
 
   return { synced: seen.size };
 }
 
-/** Sync if the newest snapshot is older than an hour. Fire-and-forget from read paths. */
-export async function syncUsersIfStale(portal: PortalInstallation): Promise<void> {
-  const newest = await db.appUser.findFirst({
-    where: { portalId: portal.id },
-    orderBy: { lastSyncedAt: 'desc' },
-    select: { lastSyncedAt: true },
+/**
+ * Pull the employee list when the last full pull is older than an hour (or never happened).
+ * Errors are swallowed: a stale list is better than a broken page.
+ */
+export async function syncUsersIfStale(
+  portal: PortalInstallation,
+  opts: { force?: boolean } = {},
+): Promise<void> {
+  const { usersSyncedAt } = await db.portalInstallation.findUniqueOrThrow({
+    where: { id: portal.id },
+    select: { usersSyncedAt: true },
   });
-  const age = newest?.lastSyncedAt ? Date.now() - newest.lastSyncedAt.getTime() : Infinity;
-  if (age > STALE_MS) {
+  const age = usersSyncedAt ? Date.now() - usersSyncedAt.getTime() : Infinity;
+  if (opts.force || age > STALE_MS) {
     await syncUsers(portal).catch(() => undefined);
   }
 }

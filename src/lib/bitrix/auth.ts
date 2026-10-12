@@ -149,6 +149,8 @@ export async function syncCurrentUser(portal: PortalInstallation, accessToken?: 
       photoUrl: me.PERSONAL_PHOTO ?? null,
       position: me.WORK_POSITION ?? null,
       isBitrixAdmin: isAdmin,
+      // Signing in through Bitrix24 proves the account is active, whatever an older list said.
+      isActive: true,
       // Never downgrade an explicitly granted MANAGER/ADMIN just because Bitrix says non-admin.
       ...(isAdmin ? { role: 'ADMIN' } : {}),
       lastSyncedAt: new Date(),

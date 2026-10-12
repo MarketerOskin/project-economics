@@ -16,12 +16,16 @@ export default async function AnalyticsTeamPage({ searchParams }: { searchParams
   if (world.projects.length === 0 && !ctx.projectFilter) {
     return (
       <div className="px-4 py-6 sm:px-8">
-        <NoBitrixProjects />
+        <NoBitrixProjects unlinked={world.unlinked} />
       </div>
     );
   }
 
-  const rows = teamOverview(world.projects, period, world.now).filter((r) => r.totalSeconds > 0 || r.done > 0 || r.openNow > 0);
+  // Everyone on the portal's staff list, plus anyone else with activity in the period.
+  const staff = new Set(world.staffIds);
+  const rows = teamOverview(world.projects, period, world.now, world.staffIds).filter(
+    (r) => staff.has(r.userId) || r.totalSeconds > 0 || r.done > 0 || r.openNow > 0,
+  );
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 sm:px-8">

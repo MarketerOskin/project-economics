@@ -7,9 +7,7 @@ import { can, requirePermission } from '@/lib/permissions';
 import { FREE_LIMITS, requirePro } from '@/lib/billing/plan';
 import { createProjectSchema, listProjectsQuerySchema, setMembersSchema, updateProjectSchema } from '@/server/dto/project';
 import { getProjectDetail, queryProjects } from '@/server/services/project-read';
-import { listImportSources } from '@/server/services/crm-sources';
-import { resolveBitrixProjectGroup } from '@/server/services/bitrix-groups';
-import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
+import { resolveBitrixSource } from '@/server/services/bitrix-source';
 import type { HandlerContext } from '@/server/handler';
 
 function actorName(user: { firstName: string; lastName: string }): string {
@@ -75,40 +73,17 @@ export async function createProject({ req, session, scope }: HandlerContext) {
   };
 
   if (input.source === 'BITRIX_CRM' && input.crmEntityTypeId && input.crmEntityId) {
-    // Only a source the admin configured (built-in Deal/Company, or an added Smart Process,
-    // ADR-026) may be imported from — never an arbitrary entityTypeId the client happens to send.
-    const sources = await listImportSources(scope);
-    if (!sources.some((s) => s.entityTypeId === input.crmEntityTypeId)) {
-      throw badRequest('Этот тип CRM-сущности не настроен как источник проектов');
-    }
-
-    const { resolveCrmItem } = await import('@/server/services/crm');
-    const item = await resolveCrmItem(session, input.crmEntityTypeId, input.crmEntityId);
-    if (!item) throw badRequest('CRM-сущность не найдена в Bitrix24');
-    crm = {
-      crmEntityType:
-        input.crmEntityTypeId === ENTITY_TYPE_ID.COMPANY
-          ? 'COMPANY'
-          : input.crmEntityTypeId === ENTITY_TYPE_ID.DEAL
-            ? 'DEAL'
-            : 'SMART_PROCESS',
+    const found = await resolveBitrixSource(session, scope, {
+      source: 'BITRIX_CRM',
+      crmEntityTypeId: input.crmEntityTypeId,
       crmEntityId: input.crmEntityId,
-      crmEntityTitle: item.title,
-      crmEntityUrl: item.url,
-      clientName: input.clientName ?? item.clientName ?? null,
-    };
+    });
+    crm = { ...found, clientName: input.clientName ?? found.clientName };
   }
 
   if (input.source === 'BITRIX_PROJECT' && input.bitrixGroupId) {
-    const group = await resolveBitrixProjectGroup(session, input.bitrixGroupId);
-    if (!group) throw badRequest('Проект не найден в разделе «Проекты» Битрикс24');
-    crm = {
-      crmEntityType: null,
-      crmEntityId: group.id,
-      crmEntityTitle: group.title,
-      crmEntityUrl: group.url,
-      clientName: input.clientName ?? null,
-    };
+    const found = await resolveBitrixSource(session, scope, { source: 'BITRIX_PROJECT', bitrixGroupId: input.bitrixGroupId });
+    crm = { ...found, clientName: input.clientName ?? null };
   }
 
   const created = await db.$transaction(async (tx) => {
