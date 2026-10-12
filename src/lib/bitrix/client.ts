@@ -35,6 +35,32 @@ async function record(
   });
 }
 
+/** REST scope each method family needs — for a readable "add this right" message. */
+const SCOPE_BY_PREFIX: [string, string][] = [
+  ['sonet_group.', 'sonet_group (Рабочие группы и проекты)'],
+  ['tasks.', 'task (Задачи)'],
+  ['task.', 'task (Задачи)'],
+  ['crm.', 'crm (CRM)'],
+  ['user.', 'user_brief (Пользователи)'],
+  ['placement.', 'placement (Встраивание)'],
+];
+
+/**
+ * Bitrix24's own text for a missing scope is the English "The request requires higher
+ * privileges than provided by the access token" — useless to a portal admin. Name the
+ * right to add and what to do with it instead.
+ */
+export function bitrixErrorMessage(method: string, err: BitrixError): string {
+  if (err.error === 'insufficient_scope' || /higher privileges/i.test(err.error_description ?? '')) {
+    const scope = SCOPE_BY_PREFIX.find(([prefix]) => method.startsWith(prefix))?.[1];
+    return (
+      `У приложения нет доступа к этому разделу Битрикс24${scope ? ` — нужно право ${scope}` : ''}. ` +
+      'Администратору портала: добавьте его в настройках приложения и переустановите приложение.'
+    );
+  }
+  return redactTokens(err.error_description || err.error);
+}
+
 function restBase(portal: PortalInstallation): string {
   if (portal.restEndpoint) return portal.restEndpoint.replace(/\/$/, '');
   return `https://${portal.domain}/rest`;
@@ -106,7 +132,7 @@ export async function callBitrixWithToken<T = unknown>(
   const json = (await res.json()) as { result?: T } | BitrixError;
   if (isBitrixError(json)) {
     await record(portal.id, method, params, started, json, json.error);
-    throw upstream(redactTokens(json.error_description || json.error));
+    throw upstream(bitrixErrorMessage(method, json));
   }
   await record(portal.id, method, params, started, json);
   return json.result as T;
@@ -165,7 +191,7 @@ export async function callBitrix<T = unknown>(
         if (reloaded) return callBitrix<T>(reloaded, method, params, true);
       }
     }
-    throw upstream(redactTokens(json.error_description || json.error));
+    throw upstream(bitrixErrorMessage(method, json));
   }
 
   await record(portal.id, method, params, started, json);

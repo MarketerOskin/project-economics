@@ -14,7 +14,7 @@ import { Segmented } from '@/components/ui/segmented';
 import { UpsellNotice } from '@/components/ui/upsell-notice';
 import { MemberSelect } from './member-select';
 import { CrmImport, type CrmSelection } from './crm-import';
-import { BitrixGroupImport, type BitrixGroupSelection } from './bitrix-group-import';
+import type { BitrixGroupSelection } from './bitrix-group-import';
 
 const formSchema = z
   .object({
@@ -51,7 +51,7 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
   const isEdit = Boolean(initial?.id);
   const [members, setMembers] = React.useState<string[]>(initial?.memberIds ?? []);
   const [submitting, setSubmitting] = React.useState(false);
-  const [source, setSource] = React.useState<'MANUAL' | 'BITRIX_CRM' | 'BITRIX_PROJECT'>('MANUAL');
+  const [source, setSource] = React.useState<'MANUAL' | 'BITRIX'>('MANUAL');
   const [crm, setCrm] = React.useState<CrmSelection | null>(null);
   const [bitrixGroup, setBitrixGroup] = React.useState<BitrixGroupSelection | null>(null);
 
@@ -73,9 +73,11 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
     },
   });
 
+  // One Bitrix24 pick at a time: a CRM item and a "Проекты" group exclude each other.
   const pickCrm = (v: CrmSelection | null) => {
     setCrm(v);
     if (v) {
+      setBitrixGroup(null);
       setValue('name', v.title);
       if (v.clientName) setValue('clientName', v.clientName);
     }
@@ -83,7 +85,10 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
 
   const pickBitrixGroup = (v: BitrixGroupSelection | null) => {
     setBitrixGroup(v);
-    if (v) setValue('name', v.title);
+    if (v) {
+      setCrm(null);
+      setValue('name', v.title);
+    }
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -96,10 +101,10 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
       startDate: values.startDate || undefined,
       endDate: values.endDate || undefined,
       ...(isEdit ? {} : { memberIds: members }),
-      ...(!isEdit && isPro && source === 'BITRIX_CRM' && crm
+      ...(!isEdit && isPro && source === 'BITRIX' && crm
         ? { source: 'BITRIX_CRM', crmEntityTypeId: crm.entityTypeId, crmEntityId: crm.id }
         : {}),
-      ...(!isEdit && isPro && source === 'BITRIX_PROJECT' && bitrixGroup
+      ...(!isEdit && isPro && source === 'BITRIX' && bitrixGroup
         ? { source: 'BITRIX_PROJECT', bitrixGroupId: bitrixGroup.id }
         : {}),
     };
@@ -141,34 +146,34 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
           value={source}
           onChange={(v) => {
             setSource(v);
-            if (v === 'MANUAL') pickCrm(null);
-            if (v !== 'BITRIX_PROJECT') pickBitrixGroup(null);
+            if (v === 'MANUAL') {
+              setCrm(null);
+              setBitrixGroup(null);
+            }
           }}
           options={[
             { value: 'MANUAL', label: 'Создать вручную' },
-            { value: 'BITRIX_CRM', label: isPro ? 'Выбрать из CRM' : 'Выбрать из CRM · Pro' },
-            { value: 'BITRIX_PROJECT', label: isPro ? 'Выбрать из «Проекты»' : 'Выбрать из «Проекты» · Pro' },
+            { value: 'BITRIX', label: isPro ? 'Выбрать из Битрикс24' : 'Выбрать из Битрикс24 · Pro' },
           ]}
         />
       ) : null}
 
-      {!isEdit && source === 'BITRIX_CRM' ? (
+      {!isEdit && source === 'BITRIX' ? (
         isPro ? (
-          <Field label="CRM-сущность" error={undefined} hint="Сделка или компания из Bitrix24">
-            <CrmImport value={crm} onChange={pickCrm} />
+          <Field
+            label="Источник в Битрикс24"
+            error={undefined}
+            hint="Сделки, компании, проекты и смарт-процессы. Смарт-процессы добавляются в Настройках."
+          >
+            <CrmImport
+              value={crm}
+              onChange={pickCrm}
+              group={bitrixGroup}
+              onGroupChange={pickBitrixGroup}
+            />
           </Field>
         ) : (
-          <UpsellNotice feature="Импорт проекта из Bitrix24 CRM" />
-        )
-      ) : null}
-
-      {!isEdit && source === 'BITRIX_PROJECT' ? (
-        isPro ? (
-          <Field label="Проект Битрикс24" error={undefined} hint="Из раздела «Проекты» (не CRM)">
-            <BitrixGroupImport value={bitrixGroup} onChange={pickBitrixGroup} />
-          </Field>
-        ) : (
-          <UpsellNotice feature="Импорт проекта из раздела «Проекты» Bitrix24" />
+          <UpsellNotice feature="Импорт проекта из Битрикс24" />
         )
       ) : null}
 

@@ -5,6 +5,7 @@ import { Search, Check } from 'lucide-react';
 import { apiFetch } from '@/lib/client/api';
 import { cn } from '@/lib/cn';
 import { Segmented } from '@/components/ui/segmented';
+import { BitrixGroupImport, type BitrixGroupSelection } from './bitrix-group-import';
 
 export interface CrmSelection {
   entityTypeId: number;
@@ -25,15 +26,29 @@ interface Source {
   label: string;
 }
 
+/** Tab for Bitrix24's native "Проекты" module — not a CRM entity type (ADR-031). */
+const GROUPS_TAB = 'groups';
+/** Built-in CRM types that come before "Проекты"; smart processes follow it. */
+const BUILT_IN_TYPES = new Set([2, 4]); // Сделка, Компания
+
+/**
+ * One picker for everything a project can be imported from in Bitrix24: CRM deals,
+ * companies, the "Проекты" module and any smart processes the admin added (ADR-033).
+ */
 export function CrmImport({
   value,
   onChange,
+  group,
+  onGroupChange,
 }: {
   value: CrmSelection | null;
   onChange: (v: CrmSelection | null) => void;
+  group: BitrixGroupSelection | null;
+  onGroupChange: (v: BitrixGroupSelection | null) => void;
 }) {
   const [sources, setSources] = React.useState<Source[] | null>(null);
-  const [entityTypeId, setEntityTypeId] = React.useState<number | null>(null);
+  const [tab, setTab] = React.useState<string | null>(null);
+  const entityTypeId = tab === null || tab === GROUPS_TAB ? null : Number(tab);
   const [q, setQ] = React.useState('');
   const [items, setItems] = React.useState<Item[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -47,7 +62,7 @@ export function CrmImport({
       .then((r) => {
         if (cancelled) return;
         setSources(r.sources);
-        setEntityTypeId((current) => current ?? r.sources[0]?.entityTypeId ?? null);
+        setTab((current) => current ?? String(r.sources[0]?.entityTypeId ?? GROUPS_TAB));
       })
       .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'Не удалось загрузить'));
     return () => {
@@ -71,15 +86,57 @@ export function CrmImport({
     };
   }, [entityTypeId, q]);
 
+  const tabs = sources
+    ? [
+        ...sources.filter((s) => BUILT_IN_TYPES.has(s.entityTypeId)),
+        { entityTypeId: GROUPS_TAB, label: 'Проекты' },
+        ...sources.filter((s) => !BUILT_IN_TYPES.has(s.entityTypeId)),
+      ].map((s) => ({ value: String(s.entityTypeId), label: s.label }))
+    : [];
+
   return (
     <div className="space-y-3">
-      {sources && sources.length > 1 ? (
-        <Segmented
-          value={String(entityTypeId)}
-          onChange={(v) => setEntityTypeId(Number(v))}
-          options={sources.map((s) => ({ value: String(s.entityTypeId), label: s.label }))}
-        />
+      {tabs.length > 1 && tab !== null ? (
+        <div className="overflow-x-auto">
+          <Segmented value={tab} onChange={setTab} options={tabs} />
+        </div>
       ) : null}
+      {tab === GROUPS_TAB ? (
+        <BitrixGroupImport value={group} onChange={onGroupChange} />
+      ) : (
+        <CrmList
+          q={q}
+          setQ={setQ}
+          error={error}
+          loading={loading}
+          items={items}
+          value={value}
+          onChange={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function CrmList({
+  q,
+  setQ,
+  error,
+  loading,
+  items,
+  value,
+  onChange,
+}: {
+  q: string;
+  setQ: (q: string) => void;
+  error: string | null;
+  loading: boolean;
+  items: Item[];
+  value: CrmSelection | null;
+  onChange: (v: CrmSelection | null) => void;
+}) {
+  return (
+    <div className="space-y-3">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-tertiary" />
         <input
