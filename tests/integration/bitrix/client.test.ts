@@ -27,6 +27,20 @@ describe('callBitrix', () => {
     vi.restoreAllMocks();
   });
 
+  it('turns a missing-scope error into a readable message naming the right to add', async () => {
+    const portal = await makePortal();
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: 'insufficient_scope',
+          error_description: 'The request requires higher privileges than provided by the access token',
+        }),
+        { status: 401 },
+      ),
+    );
+    await expect(callBitrix(portal, 'sonet_group.get')).rejects.toThrow(/sonet_group[^]*переустановите/);
+  });
+
   it('calls the method and returns result', async () => {
     const portal = await makePortal();
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(

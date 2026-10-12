@@ -153,7 +153,9 @@ npm run test:e2e                                   # Playwright (собирае�
 2. Тип: **Серверное** (нужен `crm.item.*` и OAuth), «Использовать API» + встраивание.
 3. **Адрес обработчика:** `https://<APP_URL>/api/bitrix/handler`
 4. **URL первоначальной установки:** `https://<APP_URL>/api/bitrix/install`
-5. **Права (scope):** `crm`, `placement`, `user_brief`, `basic`.
+5. **Права (scope):** `crm`, `placement`, `user_brief`, `basic`, `sonet_group` (импорт из
+   раздела «Проекты»), `task` (часы из задач). Если право добавлено к уже установленному
+   приложению, его нужно **переустановить** на портале — старый токен новых прав не получает.
 6. Скопируйте `client_id` → `B24_CLIENT_ID`, `client_secret` → `B24_CLIENT_SECRET`,
    поставьте `DEMO_MODE=false`, перезапустите `docker compose up -d`.
 7. Нажмите **Установить**. Обработчик установки сохранит зашифрованные токены, создаст
