@@ -3,6 +3,7 @@ import type { PortalScope } from '@/lib/db/with-portal';
 import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
 import { listSmartProcessTypes } from '@/lib/bitrix/crm';
 import { badRequest, notFound } from '@/lib/errors';
+import type { ResolvedSession } from '@/lib/auth/resolve';
 
 /** The two entity types every portal can import from, with no setup (ТЗ default). */
 const BUILTIN_SOURCES = [
@@ -25,6 +26,43 @@ export async function listImportSources(scope: PortalScope): Promise<CrmImportSo
     ...BUILTIN_SOURCES.map((s) => ({ ...s, removable: false, id: null })),
     ...custom.map((c) => ({ entityTypeId: c.entityTypeId, label: c.label, removable: true, id: c.id })),
   ];
+}
+
+/**
+ * What a project can be picked from right now: Deal + Company plus every Smart Process the
+ * portal has, read live from crm.type.list (ADR-036) — nobody has to add them in Settings
+ * first. Sources an admin added by hand stay too, so a failed crm.type.list call (or the
+ * demo portal) still offers them.
+ */
+export async function listAvailableSources(
+  session: ResolvedSession,
+  scope: PortalScope,
+): Promise<Array<{ entityTypeId: number; label: string }>> {
+  const configured = await listImportSources(scope);
+  if (session.demo) return configured;
+  const live = await listSmartProcessTypes(session.portal).catch(() => []);
+  const seen = new Set(configured.map((s) => s.entityTypeId));
+  return [
+    ...configured.map(({ entityTypeId, label }) => ({ entityTypeId, label })),
+    ...live
+      .filter((t) => !seen.has(t.entityTypeId))
+      .map((t) => ({ entityTypeId: t.entityTypeId, label: t.title })),
+  ];
+}
+
+/**
+ * Throws unless a project may be picked from this entityTypeId: Deal/Company, an added
+ * source, or one of the portal's real Smart Processes. Bitrix24 is asked only for the last
+ * case, so browsing deals costs no extra crm.type.list call.
+ */
+export async function assertImportableSource(session: ResolvedSession, scope: PortalScope, entityTypeId: number) {
+  const configured = await listImportSources(scope);
+  if (configured.some((s) => s.entityTypeId === entityTypeId)) return;
+  if (!session.demo) {
+    const live = await listSmartProcessTypes(session.portal).catch(() => []);
+    if (live.some((t) => t.entityTypeId === entityTypeId)) return;
+  }
+  throw badRequest('Такого источника нет в Битрикс24');
 }
 
 /** Smart Processes not already added, for the "add a source" picker in Settings. */

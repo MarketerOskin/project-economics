@@ -2,7 +2,7 @@ import type { Project } from '@prisma/client';
 import type { ResolvedSession } from '@/lib/auth/resolve';
 import type { PortalScope } from '@/lib/db/with-portal';
 import { isDemoMode } from '@/lib/auth/demo';
-import { crmTaskBinding } from '@/lib/bitrix/tasks';
+import { crmTaskBindings } from '@/lib/bitrix/tasks';
 import { syncUsersIfStale } from '@/lib/bitrix/users';
 import { fetchGroupMeetings, fetchTasks, fetchTimeEntries, type TaskSource } from '@/lib/bitrix/analytics';
 import { demoActivity } from '@/lib/demo/analytics-data';
@@ -84,7 +84,7 @@ export function invalidateAnalytics(portalId: string, projectId?: string): void 
 function sourceOf(p: Project): TaskSource | null {
   if (p.sourceType === 'BITRIX_PROJECT' && p.crmEntityId) return { kind: 'group', groupId: p.crmEntityId };
   if (p.sourceType === 'BITRIX_CRM' && p.crmEntityTypeId && p.crmEntityId) {
-    return { kind: 'crm', binding: crmTaskBinding(p.crmEntityTypeId, p.crmEntityId) };
+    return { kind: 'crm', bindings: crmTaskBindings(p.crmEntityTypeId, p.crmEntityId) };
   }
   return null;
 }

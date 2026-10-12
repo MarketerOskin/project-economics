@@ -2,8 +2,12 @@ import type { PortalInstallation } from '@prisma/client';
 import { callBitrix } from './client';
 import { ENTITY_TYPE_ID, type BitrixCrmType, type CrmItem } from './types';
 
-/** Custom Smart Process types start at 1000; below that are Bitrix24's own built-in entities. */
-const SMART_PROCESS_ENTITY_TYPE_FLOOR = 1000;
+/**
+ * Custom Smart Process types are 128–191 on older portals and 1030+ on newer ones; below 128
+ * are Bitrix24's own entities (smart invoices 31, smart documents 36), which crm.type.list can
+ * also return. The old floor of 1000 hid every 128–191 Smart Process (ADR-036).
+ */
+const SMART_PROCESS_ENTITY_TYPE_FLOOR = 128;
 
 /** Every Smart Process defined on the portal (crm.type.list), for the "add a source" picker. */
 export async function listSmartProcessTypes(portal: PortalInstallation): Promise<BitrixCrmType[]> {

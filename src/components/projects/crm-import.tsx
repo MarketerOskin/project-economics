@@ -33,7 +33,7 @@ const BUILT_IN_TYPES = new Set([2, 4]); // Сделка, Компания
 
 /**
  * One picker for everything a project can be imported from in Bitrix24: CRM deals,
- * companies, the "Проекты" module and any smart processes the admin added (ADR-033).
+ * companies, the "Проекты" module and every smart process on the portal (ADR-033, ADR-036).
  */
 export function CrmImport({
   value,
@@ -54,11 +54,11 @@ export function CrmImport({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Every portal has Deal + Company built in; some admins add Smart Processes too
-  // (ADR-026) — fetch what's actually configured instead of assuming entity types.
+  // Deal + Company plus every Smart Process the portal has (ADR-036) — fetch what's really
+  // there instead of assuming entity types.
   React.useEffect(() => {
     let cancelled = false;
-    apiFetch<{ sources: Source[] }>('/api/crm/sources')
+    apiFetch<{ sources: Source[] }>('/api/crm/available-sources')
       .then((r) => {
         if (cancelled) return;
         setSources(r.sources);

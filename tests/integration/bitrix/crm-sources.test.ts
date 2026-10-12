@@ -10,6 +10,7 @@ import { POST as createProjectRoute } from '@/app/api/projects/route';
 import { GET as listSourcesRoute, POST as addSourceRoute } from '@/app/api/crm/sources/route';
 import { DELETE as removeSourceRoute } from '@/app/api/crm/sources/[id]/route';
 import { GET as addableTypesRoute } from '@/app/api/crm/smart-process-types/route';
+import { GET as availableSourcesRoute } from '@/app/api/crm/available-sources/route';
 
 process.env.SESSION_SECRET = 'crm-sources-test-secret-at-least-32-bytes-xx';
 process.env.APP_ENCRYPTION_KEY = randomBytes(32).toString('base64');
@@ -208,5 +209,56 @@ describe('CRM import sources (ADR-026)', () => {
       }),
     );
     expect(res.status).toBe(400);
+  });
+
+  describe('every Smart Process without setup (ADR-036)', () => {
+    const VK = { id: 3, title: 'Заявки ВК', entityTypeId: 138 };
+
+    it('the picker lists Deal, Company and every Smart Process on the portal', async () => {
+      const s = await seedPortal();
+      await connectPortal(s.portalId);
+      mockCrmTypeList([VK]);
+      const res = await availableSourcesRoute(
+        req('/api/crm/available-sources', { cookie: await ck(s.portalId, s.managerId, 'MANAGER') }),
+      );
+      expect((await res.json()).sources).toEqual([
+        { entityTypeId: 2, label: 'Сделки' },
+        { entityTypeId: 4, label: 'Компании' },
+        { entityTypeId: 138, label: 'Заявки ВК' },
+      ]);
+    });
+
+    it('still offers Deal and Company when Bitrix24 cannot list Smart Processes', async () => {
+      const s = await seedPortal();
+      await connectPortal(s.portalId);
+      vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('network down'));
+      const res = await availableSourcesRoute(
+        req('/api/crm/available-sources', { cookie: await ck(s.portalId, s.managerId, 'MANAGER') }),
+      );
+      expect(res.status).toBe(200);
+      expect((await res.json()).sources.map((x: { entityTypeId: number }) => x.entityTypeId)).toEqual([2, 4]);
+    });
+
+    it('a project can be created from a Smart Process nobody added in Settings', async () => {
+      const s = await seedPortal();
+      await connectPortal(s.portalId);
+      vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+        const result = String(url).includes('crm.type.list')
+          ? { types: [VK] }
+          : { item: { id: 7, title: 'Заявка №7' } };
+        return new Response(JSON.stringify({ result }), { status: 200 });
+      });
+      const res = await createProjectRoute(
+        req('/api/projects', {
+          method: 'POST',
+          cookie: await ck(s.portalId, s.managerId, 'MANAGER'),
+          body: { name: 'temp', source: 'BITRIX_CRM', crmEntityTypeId: 138, crmEntityId: '7' },
+        }),
+      );
+      expect(res.status).toBe(201);
+      const project = await testDb.project.findUniqueOrThrow({ where: { id: (await res.json()).id } });
+      expect(project.crmEntityType).toBe('SMART_PROCESS');
+      expect(project.crmEntityTypeId).toBe(138);
+    });
   });
 });

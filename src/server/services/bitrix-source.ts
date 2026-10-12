@@ -2,7 +2,7 @@ import { badRequest } from '@/lib/errors';
 import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
 import type { ResolvedSession } from '@/lib/auth/resolve';
 import type { PortalScope } from '@/lib/db/with-portal';
-import { listImportSources } from '@/server/services/crm-sources';
+import { assertImportableSource } from '@/server/services/crm-sources';
 import { resolveBitrixProjectGroup } from '@/server/services/bitrix-groups';
 
 /** What a project stores about the Bitrix24 entity it comes from. */
@@ -28,12 +28,9 @@ export async function resolveBitrixSource(
   input: BitrixSourceInput,
 ): Promise<BitrixSourceSnapshot> {
   if (input.source === 'BITRIX_CRM') {
-    // Only a source the admin configured (built-in Deal/Company, or an added Smart Process,
-    // ADR-026) may be imported from — never an arbitrary entityTypeId the client happens to send.
-    const sources = await listImportSources(scope);
-    if (!sources.some((s) => s.entityTypeId === input.crmEntityTypeId)) {
-      throw badRequest('Этот тип CRM-сущности не настроен как источник проектов');
-    }
+    // Only Deal/Company or one of the portal's real Smart Processes (ADR-036) — never an
+    // arbitrary entityTypeId the client happens to send.
+    await assertImportableSource(session, scope, input.crmEntityTypeId);
     const { resolveCrmItem } = await import('@/server/services/crm');
     const item = await resolveCrmItem(session, input.crmEntityTypeId, input.crmEntityId);
     if (!item) throw badRequest('CRM-сущность не найдена в Bitrix24');

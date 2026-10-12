@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { PortalInstallation } from '@prisma/client';
-import { crmTaskBinding, listElapsedTime, listTaskIdsBoundToCrm } from '@/lib/bitrix/tasks';
+import { crmTaskBinding, crmTaskBindings, listElapsedTime, listTaskIdsBoundToCrm } from '@/lib/bitrix/tasks';
 import { encryptToken } from '@/lib/bitrix/crypto';
 
 const portal = {
@@ -10,11 +10,17 @@ const portal = {
   authTokenEnc: encryptToken('ACCESS'),
 } as unknown as PortalInstallation;
 
-describe('crmTaskBinding (ADR-027)', () => {
+describe('crmTaskBinding (ADR-027, ADR-036)', () => {
   it('binds Deal, Company and a Smart Process by their Bitrix24 CCrmOwnerType-style prefix', () => {
     expect(crmTaskBinding(2, '101')).toBe('D_101');
     expect(crmTaskBinding(4, '201')).toBe('CO_201');
-    expect(crmTaskBinding(1068, '7')).toBe('T1068_7');
+    expect(crmTaskBinding(138, '7')).toBe('T8a_7');
+    expect(crmTaskBinding(1068, '7')).toBe('T42c_7');
+  });
+
+  it('a Smart Process also filters by the old decimal form; Deal and Company do not', () => {
+    expect(crmTaskBindings(138, '7')).toEqual(['T8a_7', 'T138_7']);
+    expect(crmTaskBindings(2, '101')).toEqual(['D_101']);
   });
 });
 
@@ -30,7 +36,8 @@ describe('Bitrix24 task time helpers', () => {
     expect(ids).toEqual([5, 9]);
 
     const body = (fetchSpy.mock.calls[0]?.[1] as RequestInit).body as URLSearchParams;
-    expect(body.get('filter[UF_CRM_TASK][0]')).toBe('T1068_7');
+    expect(body.get('filter[UF_CRM_TASK][0]')).toBe('T42c_7');
+    expect(body.get('filter[UF_CRM_TASK][1]')).toBe('T1068_7');
   });
 
   it('listElapsedTime converts MINUTES to hours and reads the log date', async () => {
