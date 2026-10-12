@@ -51,6 +51,9 @@ const FIELD_LABEL: Record<string, string> = {
   endDate: 'дата окончания',
   description: 'описание',
   amount: 'сумму',
+  supportHoursLimit: 'пакет часов в месяц',
+  supportMonthlyFee: 'абонентскую плату',
+  supportHourRate: 'ставку сверх пакета',
 };
 
 export function humanizeAudit(row: RawAudit, projectName?: string): HumanAuditEntry {

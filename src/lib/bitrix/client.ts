@@ -43,6 +43,7 @@ const SCOPE_BY_PREFIX: [string, string][] = [
   ['crm.', 'crm (CRM)'],
   ['user.', 'user_brief (Пользователи)'],
   ['placement.', 'placement (Встраивание)'],
+  ['calendar.', 'calendar (Календарь)'],
 ];
 
 /**

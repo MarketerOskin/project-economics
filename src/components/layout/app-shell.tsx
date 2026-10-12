@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [drawerOpen]);
 
   return (
-    <div className="flex min-h-screen bg-bg">
+    <div className="flex min-h-screen bg-bg print:block print:min-h-0 print:bg-white">
       {/* Backdrop — mobile only, only when the drawer is open. */}
       {drawerOpen ? (
         <div
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* One sidebar: a static column on ≥ lg, a slide-in drawer below it. */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r border-border bg-bg transition-transform duration-200',
+          'fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r border-border bg-bg transition-transform duration-200 print:hidden',
           'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:transition-none',
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
@@ -85,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar (< lg) */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-bg/90 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-bg/90 px-4 py-3 backdrop-blur lg:hidden print:hidden">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -104,7 +104,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="min-w-0 flex-1">{children}</main>
       </div>
 
-      {session ? <BugReportButton /> : null}
+      {session ? (
+        <div className="print:hidden">
+          <BugReportButton />
+        </div>
+      ) : null}
     </div>
   );
 }
