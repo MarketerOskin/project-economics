@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-md space-y-5 rounded-[18px] border border-border bg-surface p-8 text-center shadow-sm">
-        <Image src="/icon.svg" alt="" width={48} height={48} className="mx-auto rounded-[12px]" />
+      <div className="w-full max-w-md space-y-5 border border-border bg-surface p-8 text-center">
+        <Image src="/icon.svg" alt="" width={48} height={48} className="mx-auto" />
 
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Экономика проектов</h1>
+          <h1 className="text-lg font-bold uppercase tracking-tight">Экономика проектов</h1>
           <p className="mt-1 text-sm text-fg-secondary">
             Приложение для Битрикс24 — план, факт, прибыль и маржа по каждому проекту.
           </p>
@@ -26,7 +26,7 @@ export default function ContactPage() {
 
         <a
           href="mailto:MarketerOskin@yandex.ru"
-          className="inline-block rounded-[10px] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+          className="inline-block bg-accent px-4 py-2 font-mono text-[12px] font-bold uppercase text-accent-fg hover:brightness-110"
         >
           MarketerOskin@yandex.ru
         </a>

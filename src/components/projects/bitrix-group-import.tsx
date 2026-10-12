@@ -50,15 +50,15 @@ export function BitrixGroupImport({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Поиск по названию"
-          className="h-9 w-full rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+          className="h-9 w-full border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
         />
       </div>
 
       {error ? (
-        <p className="rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>
+        <p className="bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>
       ) : null}
 
-      <div className="max-h-64 space-y-1 overflow-y-auto rounded-[12px] border border-border p-1">
+      <div className="max-h-64 space-y-1 overflow-y-auto border border-border p-1">
         {loading ? (
           <p className="px-3 py-6 text-center text-sm text-fg-tertiary">Загрузка…</p>
         ) : items.length === 0 ? (
@@ -72,7 +72,7 @@ export function BitrixGroupImport({
                 type="button"
                 onClick={() => onChange(selected ? null : { id: it.id, title: it.title })}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-sm hover:bg-surface-muted',
+                  'flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-surface-muted',
                   selected && 'bg-accent-soft',
                 )}
               >

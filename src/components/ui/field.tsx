@@ -3,7 +3,7 @@ import { cn } from '@/lib/cn';
 
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
-    <label className={cn('mb-1.5 block text-sm font-medium text-fg', className)} {...props} />
+    <label className={cn('tx-mark mb-1.5 block text-fg-tertiary', className)} {...props} />
   );
 }
 
@@ -12,8 +12,8 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={cn(
-        'h-9 w-full rounded-[10px] border border-border bg-surface px-3 text-sm outline-none transition-colors',
-        'placeholder:text-fg-tertiary focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+        'h-10 w-full border border-border bg-transparent px-3 text-sm outline-none transition-colors',
+        'placeholder:text-fg-tertiary focus-visible:border-accent',
         'disabled:opacity-50',
         className,
       )}
@@ -30,8 +30,8 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'min-h-[76px] w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm outline-none',
-      'placeholder:text-fg-tertiary focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+      'min-h-[76px] w-full border border-border bg-transparent px-3 py-2 text-sm outline-none',
+      'placeholder:text-fg-tertiary focus-visible:border-accent',
       className,
     )}
     {...props}

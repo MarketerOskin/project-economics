@@ -46,7 +46,7 @@ export function MemberSelect({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className="flex h-9 w-full items-center justify-between rounded-[10px] border border-border bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+            className="flex h-9 w-full items-center justify-between border border-border bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
           >
             <span className={cn(selected.length === 0 && 'text-fg-tertiary')}>
               {selected.length === 0 ? 'Выберите сотрудников' : `Выбрано: ${selected.length}`}
@@ -58,7 +58,7 @@ export function MemberSelect({
           <Popover.Content
             align="start"
             sideOffset={6}
-            className="z-50 w-[--radix-popover-trigger-width] overflow-hidden rounded-[12px] border border-border bg-surface shadow-lg"
+            className="z-50 w-[--radix-popover-trigger-width] overflow-hidden border border-border bg-surface"
           >
             <div className="flex items-center gap-2 border-b border-border px-3">
               <Search className="size-3.5 text-fg-tertiary" />
@@ -79,7 +79,7 @@ export function MemberSelect({
                     key={u.id}
                     type="button"
                     onClick={() => toggle(u.id)}
-                    className="flex w-full items-center gap-2.5 rounded-[8px] px-2 py-1.5 text-left text-sm hover:bg-surface-muted"
+                    className="flex w-full items-center gap-2.5 px-2 py-1.5 text-left text-sm hover:bg-surface-muted"
                   >
                     <Avatar className="size-6">
                       {u.photoUrl ? <AvatarImage src={u.photoUrl} alt="" /> : null}
@@ -105,7 +105,7 @@ export function MemberSelect({
           {selected.map((u) => (
             <span
               key={u.id}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface py-0.5 pl-1 pr-2 text-xs"
+              className="inline-flex items-center gap-1.5 border border-border bg-surface py-0.5 pl-1 pr-2 text-xs"
             >
               <Avatar className="size-4">
                 {u.photoUrl ? <AvatarImage src={u.photoUrl} alt="" /> : null}

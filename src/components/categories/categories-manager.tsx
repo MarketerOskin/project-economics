@@ -71,7 +71,7 @@ function CategoryRow({ cat, onChanged }: { cat: CategoryDto; onChanged: () => vo
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-[10px] border border-border bg-surface px-3 py-2',
+        'flex items-center gap-3 border border-border bg-surface px-3 py-2',
         cat.isArchived && 'opacity-60',
       )}
     >
@@ -105,14 +105,14 @@ function CategoryRow({ cat, onChanged }: { cat: CategoryDto; onChanged: () => vo
           </span>
           <button
             onClick={() => setEditing(true)}
-            className="rounded-[6px] p-1 text-fg-tertiary hover:bg-surface-muted hover:text-fg"
+            className="p-1 text-fg-tertiary hover:bg-surface-muted hover:text-fg"
             aria-label="Редактировать"
           >
             <Pencil className="size-3.5" />
           </button>
           <button
             onClick={toggleArchive}
-            className="rounded-[6px] p-1 text-fg-tertiary hover:bg-surface-muted hover:text-fg"
+            className="p-1 text-fg-tertiary hover:bg-surface-muted hover:text-fg"
             aria-label={cat.isArchived ? 'Восстановить' : 'Архивировать'}
           >
             {cat.isArchived ? <ArchiveRestore className="size-3.5" /> : <Archive className="size-3.5" />}
@@ -121,7 +121,7 @@ function CategoryRow({ cat, onChanged }: { cat: CategoryDto; onChanged: () => vo
             onClick={() => setConfirmDelete(true)}
             disabled={cat.usageCount > 0}
             title={cat.usageCount > 0 ? 'Статья используется — только архивирование' : 'Удалить'}
-            className="rounded-[6px] p-1 text-fg-tertiary hover:bg-negative-soft hover:text-negative disabled:cursor-not-allowed disabled:opacity-30"
+            className="p-1 text-fg-tertiary hover:bg-negative-soft hover:text-negative disabled:cursor-not-allowed disabled:opacity-30"
             aria-label="Удалить"
           >
             <Trash2 className="size-3.5" />
@@ -168,7 +168,7 @@ function AddCategory({ kind, onChanged }: { kind: 'INCOME' | 'EXPENSE'; onChange
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-[10px] border border-dashed border-border px-3 py-2">
+    <div className="flex items-center gap-3 border border-dashed border-border px-3 py-2">
       <ColorDots value={color} onChange={setColor} />
       <Input
         autoFocus

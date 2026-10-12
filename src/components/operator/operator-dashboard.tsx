@@ -73,7 +73,7 @@ export function OperatorDashboard({ operatorEmail }: { operatorEmail: string }) 
         >
           Заявки на Pro
           {overview && overview.newLeadCount > 0 ? (
-            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-medium text-accent-fg">
+            <span className="inline-flex min-w-[1.25rem] items-center justify-center bg-accent px-1.5 py-0.5 text-[11px] font-medium text-accent-fg">
               {overview.newLeadCount}
             </span>
           ) : null}

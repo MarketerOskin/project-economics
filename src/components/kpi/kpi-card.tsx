@@ -18,17 +18,17 @@ export function KpiCard({ label, factValue, planValue, deviation, percent, point
   const negative = factNum !== null && factNum < 0;
 
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-5">
-      <div className="text-xs font-medium uppercase tracking-wide text-fg-tertiary">{label}</div>
+    <div className="border border-border bg-surface p-5 transition-colors hover:border-accent">
+      <div className="tx-mark text-accent">{label}</div>
       <div
         className={cn(
-          'mt-2 text-[26px] font-semibold leading-none tracking-tight nums',
+          'font-display mt-3 text-[30px] font-bold leading-none tracking-tight nums',
           negative && 'text-negative',
         )}
       >
         {percent ? formatPercentStr(factValue) : formatRubStr(factValue)}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-fg-tertiary">
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-fg-tertiary">
         <span>План: {percent ? formatPercentStr(planValue) : formatRubStr(planValue)}</span>
         {points !== undefined ? (
           <DeviationBadge text={formatPointsStr(points)} value={points ? Number(points) : null} />

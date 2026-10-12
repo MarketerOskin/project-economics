@@ -51,8 +51,8 @@ export default async function SettingsPage() {
 
       <div className="flex flex-col gap-8 px-4 sm:px-8 py-6">
         <section className="max-w-2xl">
-          <h2 className="mb-3 text-sm font-semibold text-fg">Тариф</h2>
-          <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+          <h2 className="tx-mark mb-3 text-accent">Тариф</h2>
+          <div className="flex items-center justify-between border border-border bg-surface px-4 py-3 text-sm">
             <div>
               <span className={plan === 'PRO' ? 'font-medium text-accent' : 'font-medium text-fg'}>
                 {plan === 'PRO' ? 'Pro' : 'Free'}
@@ -75,8 +75,8 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
-          <h2 className="mb-3 text-sm font-semibold text-fg">Интеграция и портал</h2>
-          <dl className="divide-y divide-border rounded-xl border border-border bg-surface">
+          <h2 className="tx-mark mb-3 text-accent">Интеграция и портал</h2>
+          <dl className="divide-y divide-border border border-border bg-surface">
             {rows.map(([label, value]) => (
               <div key={label} className="flex items-start justify-between gap-6 px-4 py-3 text-sm">
                 <dt className="text-fg-secondary">{label}</dt>
@@ -87,7 +87,7 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
-          <h2 className="mb-3 text-sm font-semibold text-fg">Данные портала</h2>
+          <h2 className="tx-mark mb-3 text-accent">Данные портала</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               ['Проекты', projects],
@@ -95,7 +95,7 @@ export default async function SettingsPage() {
               ['Статьи', categories],
               ['Записей в истории', auditEntries],
             ].map(([label, n]) => (
-              <div key={String(label)} className="rounded-xl border border-border bg-surface px-4 py-3">
+              <div key={String(label)} className="border border-border bg-surface px-4 py-3">
                 <div className="text-2xl font-semibold tabular-nums">{n}</div>
                 <div className="mt-0.5 text-xs text-fg-secondary">{label}</div>
               </div>
@@ -111,7 +111,7 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
-          <h2 className="mb-3 text-sm font-semibold text-fg">Импорт проектов из CRM</h2>
+          <h2 className="tx-mark mb-3 text-accent">Импорт проектов из CRM</h2>
           <p className="text-sm text-fg-secondary">
             У кого-то проекты — это сделки, у кого-то смарт-процессы. Настройте, откуда их
             можно импортировать, на{' '}
@@ -123,7 +123,7 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
-          <h2 className="mb-3 text-sm font-semibold text-fg">Команда ({users.length})</h2>
+          <h2 className="tx-mark mb-3 text-accent">Команда ({users.length})</h2>
           <TeamRates
             users={users.map((u) => ({
               id: u.id,

@@ -262,7 +262,7 @@ export function EntryForm({
               placeholder="2000"
             />
           </Field>
-          <div className="col-span-2 rounded-[10px] bg-surface-muted px-3 py-2 text-sm">
+          <div className="col-span-2 bg-surface-muted px-3 py-2 text-sm">
             Итого:{' '}
             <span className="font-medium nums">
               {liveAmount ? formatRub(liveAmount) : '—'}
@@ -304,7 +304,7 @@ export function EntryForm({
       </button>
 
       {showExtra ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-[12px] border border-border p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border border-border p-4">
           {direction === 'EXPENSE' ? (
             <Field label="Подрядчик">
               <Input

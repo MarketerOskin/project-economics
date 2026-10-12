@@ -37,10 +37,10 @@ export function ProjectsTable({ rows }: { rows: ProjectListRow[] }) {
   };
 
   return (
-    <div className="overflow-x-auto rounded-[14px] border border-border bg-surface">
+    <div className="overflow-x-auto border border-border bg-surface">
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-border text-xs text-fg-tertiary">
+          <tr className="border-b border-border font-mono text-[11px] uppercase tracking-[0.06em] text-fg-tertiary">
             {COLUMNS.map((c) => (
               <th
                 key={c.key}
@@ -49,7 +49,7 @@ export function ProjectsTable({ rows }: { rows: ProjectListRow[] }) {
                 <button
                   onClick={() => setSort(c.key)}
                   className={cn(
-                    'inline-flex items-center gap-1 hover:text-fg',
+                    'inline-flex items-center gap-1 uppercase tracking-[0.06em] hover:text-accent',
                     c.align === 'right' && 'flex-row-reverse',
                     sort === c.key && 'text-fg',
                   )}

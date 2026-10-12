@@ -14,7 +14,7 @@ export function HistoryFeed({ entries }: { entries: HumanAuditEntry[] }) {
       {entries.map((e) => (
         <li
           key={e.id}
-          className="flex gap-4 rounded-[12px] border border-border bg-surface px-4 py-3"
+          className="flex gap-4 border border-border bg-surface px-4 py-3"
         >
           <div
             className={cn(

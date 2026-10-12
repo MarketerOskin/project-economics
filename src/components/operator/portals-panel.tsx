@@ -39,7 +39,7 @@ function PlanBadge({ plan, effective }: { plan: string; effective: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center px-2 py-0.5 text-xs font-medium',
         effective === 'PRO' ? 'bg-accent-soft text-accent' : 'bg-surface-muted text-fg-tertiary',
       )}
     >
@@ -127,7 +127,7 @@ function PortalEditor({
         ) : (
           <ul className="max-h-52 space-y-2 overflow-y-auto text-sm">
             {history.map((g) => (
-              <li key={g.id} className="rounded-[10px] border border-border bg-surface px-3 py-2">
+              <li key={g.id} className="border border-border bg-surface px-3 py-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{g.plan === 'PRO' ? 'Pro' : 'Free'}</span>
                   <span className="text-xs text-fg-tertiary">{formatDateTime(new Date(g.createdAt))}</span>
@@ -180,7 +180,7 @@ export function PortalsPanel() {
       ) : portals.length === 0 ? (
         <p className="text-sm text-fg-tertiary">Ничего не найдено</p>
       ) : (
-        <div className="overflow-hidden rounded-[14px] border border-border">
+        <div className="overflow-hidden border border-border">
           {portals.map((p) => (
             <div key={p.id} className="border-b border-border last:border-b-0">
               <button

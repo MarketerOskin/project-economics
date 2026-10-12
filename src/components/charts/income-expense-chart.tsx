@@ -50,7 +50,7 @@ export function IncomeExpenseChart({ data, showPlan }: { data: Point[]; showPlan
           </linearGradient>
         </defs>
         <CartesianGrid stroke={CHART.grid} vertical={false} />
-        <XAxis dataKey="bucket" tickFormatter={monthLabel} {...axisProps} />
+        <XAxis dataKey="bucket" tickFormatter={monthLabel} minTickGap={16} {...axisProps} />
         <YAxis tickFormatter={compact} width={56} {...axisProps} />
         <Tooltip content={<ChartTooltip labelFormatter={(l) => monthLabel(String(l))} />} />
         <Area

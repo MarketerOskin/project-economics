@@ -75,7 +75,7 @@ export function FinanceFilters({
           onKeyDown={(e) => e.key === 'Enter' && set({ q: q || null })}
           onBlur={() => set({ q: q || null })}
           placeholder="Поиск по описанию"
-          className="h-9 w-full rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30 sm:w-52"
+          className="h-9 w-full border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30 sm:w-52"
         />
       </div>
     </div>
@@ -113,14 +113,14 @@ export function Pagination({
         <button
           disabled={page <= 1}
           onClick={() => go(page - 1)}
-          className="rounded-[8px] border border-border px-2.5 py-1 disabled:opacity-40"
+          className="border border-border px-2.5 py-1 disabled:opacity-40"
         >
           Назад
         </button>
         <button
           disabled={page >= pages}
           onClick={() => go(page + 1)}
-          className="rounded-[8px] border border-border px-2.5 py-1 disabled:opacity-40"
+          className="border border-border px-2.5 py-1 disabled:opacity-40"
         >
           Вперёд
         </button>

@@ -71,7 +71,7 @@ export function TeamManager({
       ) : (
         <ul className="space-y-2">
           {members.map((m) => (
-            <li key={m.id} className="flex items-center gap-3 rounded-[10px] border border-border bg-surface px-3 py-2">
+            <li key={m.id} className="flex items-center gap-3 border border-border bg-surface px-3 py-2">
               <Avatar>
                 {m.photoUrl ? <AvatarImage src={m.photoUrl} alt="" /> : null}
                 <AvatarFallback>{initials(m.fullName)}</AvatarFallback>

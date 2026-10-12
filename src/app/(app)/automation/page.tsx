@@ -28,12 +28,12 @@ export default async function AutomationPage() {
       />
       <div className="flex flex-col gap-8 px-4 sm:px-8 py-6">
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-fg">Часы к подтверждению</h2>
+          <h2 className="tx-mark mb-3 text-accent">Часы к подтверждению</h2>
           <TimeDraftsManager initial={timeDrafts} expenseCategories={categories.filter((c) => c.kind === 'EXPENSE')} />
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-fg">Доход по сделкам</h2>
+          <h2 className="tx-mark mb-3 text-accent">Доход по сделкам</h2>
           <IncomeDraftsManager initial={incomeDrafts} incomeCategories={categories.filter((c) => c.kind === 'INCOME')} />
         </section>
       </div>

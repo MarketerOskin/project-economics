@@ -37,7 +37,7 @@ export function PeriodPicker() {
   return (
     <div className="flex items-center gap-2">
       <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-border bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30">
+        <DropdownMenuTrigger className="inline-flex h-9 items-center gap-2 border border-border bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/30">
           <CalendarDays className="size-4 text-fg-tertiary" />
           {PERIOD_LABELS[preset]}
         </DropdownMenuTrigger>

@@ -46,10 +46,10 @@ export function Nav({ role, onNavigate }: { role: AppRole; onNavigate?: () => vo
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex items-center gap-3 rounded-[10px] px-3 py-2 text-sm transition-colors',
+              'flex items-center gap-3 border-l-2 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.04em] transition-colors',
               active
-                ? 'bg-surface font-medium text-fg shadow-sm'
-                : 'text-fg-secondary hover:bg-surface/60 hover:text-fg',
+                ? 'border-accent bg-accent font-bold text-accent-fg'
+                : 'border-transparent text-fg-secondary hover:border-accent hover:text-accent',
             )}
           >
             <Icon className="size-[18px]" />

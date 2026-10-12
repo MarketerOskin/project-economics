@@ -60,9 +60,9 @@ export function HowItWorksSections() {
   return (
     <div className="flex flex-col gap-4 px-4 py-6 sm:px-8">
       {HOW_IT_WORKS_SECTIONS.map(({ icon: Icon, title, body }) => (
-        <section key={title} className="rounded-[16px] border border-border bg-surface p-5">
+        <section key={title} className="border border-border bg-surface p-5">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <span className="flex size-8 items-center justify-center bg-accent-soft text-accent">
               <Icon className="size-4" />
             </span>
             <h2 className="text-[15px] font-medium text-fg">{title}</h2>

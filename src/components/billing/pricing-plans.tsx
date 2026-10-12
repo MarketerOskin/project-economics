@@ -52,13 +52,13 @@ function PlanCard({
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 rounded-[18px] border p-6',
+        'flex flex-col gap-4 border p-6',
         highlighted ? 'border-accent bg-accent-soft/40' : 'border-border bg-surface',
       )}
     >
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-lg font-bold uppercase tracking-tight">{title}</h2>
           {isCurrent ? (
             <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-fg-secondary">
               ваш тариф
@@ -146,7 +146,7 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
     currentPlan === 'PRO' ? (
       <p className="text-sm text-fg-secondary">Спасибо, что пользуетесь Pro.</p>
     ) : pending ? (
-      <div className="flex items-start gap-2 rounded-[10px] border border-dashed border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-secondary">
+      <div className="flex items-start gap-2 border border-dashed border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-secondary">
         <Clock3 className="mt-0.5 size-4 shrink-0 text-fg-tertiary" />
         <span>
           Заявка отправлена {formatDate(new Date(pending.createdAt))} ({pending.contact}) — мы свяжемся.
@@ -161,7 +161,7 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
   return (
     <div className="max-w-3xl">
       {isDemo ? (
-        <p className="mb-6 rounded-[10px] border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-secondary">
+        <p className="mb-6 border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-secondary">
           Это демо-портал — здесь всегда открыт весь функционал. Тарифы ниже относятся к
           реальной установке приложения на портал Битрикс24.
         </p>

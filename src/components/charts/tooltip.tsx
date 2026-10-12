@@ -24,7 +24,7 @@ export function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-[10px] border border-border bg-surface px-3 py-2 text-xs shadow-lg">
+    <div className="border border-border bg-surface px-3 py-2 text-xs">
       {label !== undefined ? (
         <div className="mb-1 font-medium text-fg">
           {labelFormatter ? labelFormatter(label) : label}

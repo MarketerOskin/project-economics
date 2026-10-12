@@ -27,12 +27,12 @@ export function DemoRoleSwitch() {
   if (!session?.demo) return null;
 
   return (
-    <div className="rounded-[12px] border border-dashed border-border bg-accent-soft/40 p-2">
+    <div className="border border-dashed border-border bg-accent-soft/40 p-2">
       <div className="px-1 pb-1 text-[11px] font-medium uppercase tracking-wide text-fg-tertiary">
         Демо-режим
       </div>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex w-full items-center justify-between rounded-[8px] bg-surface px-2.5 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        <DropdownMenuTrigger className="flex w-full items-center justify-between bg-surface px-2.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent">
           <span>{ROLE_LABEL[session.role]}</span>
           <ChevronsUpDown className="size-3.5 text-fg-tertiary" />
         </DropdownMenuTrigger>

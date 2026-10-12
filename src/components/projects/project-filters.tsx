@@ -30,16 +30,16 @@ export function ProjectFilters() {
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="inline-flex rounded-[10px] border border-border bg-surface p-0.5">
+      <div className="inline-flex border border-border bg-surface p-0.5">
         {STATUS_TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => update({ status: t.value })}
             className={cn(
-              'rounded-[8px] px-3 py-1.5 text-sm transition-colors',
+              'px-3 py-1.5 text-sm transition-colors',
               status === t.value
-                ? 'bg-surface-muted font-medium text-fg shadow-sm'
-                : 'text-fg-secondary hover:text-fg',
+                ? 'bg-accent font-medium text-accent-fg'
+                : 'text-fg-secondary hover:text-accent',
             )}
           >
             {t.label}
@@ -57,7 +57,7 @@ export function ProjectFilters() {
           }}
           onBlur={() => update({ q: q || null })}
           placeholder="Поиск по названию"
-          className="h-9 w-64 rounded-[10px] border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="h-9 w-64 border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
     </div>

@@ -37,10 +37,10 @@ export default async function SalesFunnelsPage() {
             Данных пока нет — ночная синхронизация ещё не прошла, либо в CRM нет сделок.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <div className="overflow-x-auto border border-border bg-surface">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left text-xs text-fg-secondary">
+                <tr className="border-b border-border text-left font-mono text-[11px] uppercase tracking-[0.06em] text-fg-tertiary">
                   <th className="px-4 py-3 font-medium">Воронка</th>
                   <th className="px-4 py-3 text-right font-medium">В работе</th>
                   <th className="px-4 py-3 text-right font-medium">Выиграно</th>
