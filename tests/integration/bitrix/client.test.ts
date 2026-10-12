@@ -41,6 +41,16 @@ describe('callBitrix', () => {
     await expect(callBitrix(portal, 'sonet_group.get')).rejects.toThrow(/sonet_group[^]*переустановите/);
   });
 
+  it('a missing-scope error lists the rights the token really has', async () => {
+    const portal = await makePortal();
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'insufficient_scope' }), { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ result: ['crm', 'user_brief', 'placement'] }), { status: 200 }));
+    await expect(callBitrix(portal, 'tasks.task.list')).rejects.toThrow(
+      /нужно право task[^]*сейчас выдаёт приложению: crm, user_brief, placement/,
+    );
+  });
+
   it('calls the method and returns result', async () => {
     const portal = await makePortal();
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
