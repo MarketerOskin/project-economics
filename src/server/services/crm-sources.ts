@@ -1,15 +1,19 @@
-import type { PortalInstallation } from '@prisma/client';
+import type { CrmRole, PortalInstallation } from '@prisma/client';
 import type { PortalScope } from '@/lib/db/with-portal';
 import { ENTITY_TYPE_ID } from '@/lib/bitrix/types';
 import { listSmartProcessTypes } from '@/lib/bitrix/crm';
 import { badRequest, notFound } from '@/lib/errors';
 import type { ResolvedSession } from '@/lib/auth/resolve';
+import { savedRoles } from './portal-setup';
+
+const ROLE_ORDER: CrmRole[] = ['PROJECTS', 'SUPPORT', 'SALES', 'TRAFFIC', 'IGNORE'];
 
 /** The two entity types every portal can import from, with no setup (ТЗ default). */
 const BUILTIN_SOURCES = [
   { entityTypeId: ENTITY_TYPE_ID.DEAL, label: 'Сделки' },
   { entityTypeId: ENTITY_TYPE_ID.COMPANY, label: 'Компании' },
 ] as const;
+const BUILTIN_IDS = new Set<number>(BUILTIN_SOURCES.map((s) => s.entityTypeId));
 
 export interface CrmImportSourceOption {
   entityTypeId: number;
@@ -24,7 +28,12 @@ export async function listImportSources(scope: PortalScope): Promise<CrmImportSo
   const custom = await scope.crmImportSource.findMany();
   return [
     ...BUILTIN_SOURCES.map((s) => ({ ...s, removable: false, id: null })),
-    ...custom.map((c) => ({ entityTypeId: c.entityTypeId, label: c.label, removable: true, id: c.id })),
+    ...custom.map((c) => ({
+      entityTypeId: c.entityTypeId,
+      label: c.label,
+      removable: true,
+      id: c.id,
+    })),
   ];
 }
 
@@ -40,14 +49,25 @@ export async function listAvailableSources(
 ): Promise<Array<{ entityTypeId: number; label: string }>> {
   const configured = await listImportSources(scope);
   if (session.demo) return configured;
-  const live = await listSmartProcessTypes(session.portal).catch(() => []);
+  const [live, roles] = await Promise.all([
+    listSmartProcessTypes(session.portal).catch(() => []),
+    savedRoles(scope),
+  ]);
   const seen = new Set(configured.map((s) => s.entityTypeId));
-  return [
+  const all = [
     ...configured.map(({ entityTypeId, label }) => ({ entityTypeId, label })),
     ...live
       .filter((t) => !seen.has(t.entityTypeId))
       .map((t) => ({ entityTypeId: t.entityTypeId, label: t.title })),
   ];
+  // «Настройка под портал» (ADR-041): sections marked «Не использовать» leave the picker, and
+  // the ones that hold projects come first. Deals and companies always stay.
+  const rank = (id: number) => ROLE_ORDER.indexOf(roles.get(id) ?? 'PROJECTS');
+  const builtIn = all.filter((s) => BUILTIN_IDS.has(s.entityTypeId));
+  const rest = all
+    .filter((s) => !BUILTIN_IDS.has(s.entityTypeId) && roles.get(s.entityTypeId) !== 'IGNORE')
+    .sort((x, y) => rank(x.entityTypeId) - rank(y.entityTypeId));
+  return [...builtIn, ...rest];
 }
 
 /**
@@ -55,7 +75,11 @@ export async function listAvailableSources(
  * source, or one of the portal's real Smart Processes. Bitrix24 is asked only for the last
  * case, so browsing deals costs no extra crm.type.list call.
  */
-export async function assertImportableSource(session: ResolvedSession, scope: PortalScope, entityTypeId: number) {
+export async function assertImportableSource(
+  session: ResolvedSession,
+  scope: PortalScope,
+  entityTypeId: number,
+) {
   const configured = await listImportSources(scope);
   if (configured.some((s) => s.entityTypeId === entityTypeId)) return;
   if (!session.demo) {
@@ -67,7 +91,10 @@ export async function assertImportableSource(session: ResolvedSession, scope: Po
 
 /** Smart Processes not already added, for the "add a source" picker in Settings. */
 export async function listAddableSmartProcesses(portal: PortalInstallation, scope: PortalScope) {
-  const [types, existing] = await Promise.all([listSmartProcessTypes(portal), scope.crmImportSource.findMany()]);
+  const [types, existing] = await Promise.all([
+    listSmartProcessTypes(portal),
+    scope.crmImportSource.findMany(),
+  ]);
   const added = new Set(existing.map((s) => s.entityTypeId));
   return types
     .filter((t) => !added.has(t.entityTypeId))
@@ -75,7 +102,11 @@ export async function listAddableSmartProcesses(portal: PortalInstallation, scop
 }
 
 /** Adds one Smart Process as an import source, verifying it's real (not a guessed id). */
-export async function addImportSource(portal: PortalInstallation, scope: PortalScope, entityTypeId: number) {
+export async function addImportSource(
+  portal: PortalInstallation,
+  scope: PortalScope,
+  entityTypeId: number,
+) {
   const types = await listSmartProcessTypes(portal);
   const type = types.find((t) => t.entityTypeId === entityTypeId);
   if (!type) throw badRequest('Такого смарт-процесса нет на этом портале');

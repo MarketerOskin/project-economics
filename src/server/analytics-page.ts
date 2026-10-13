@@ -43,7 +43,9 @@ export async function analyticsPage(
   opts: { projectId?: string } = {},
 ): Promise<AnalyticsPageContext> {
   const { session, scope } = await requirePageSession();
-  if (!can.viewAllProjects(session.actor)) redirect(opts.projectId ? `/projects/${opts.projectId}` : '/');
+  if (!can.viewAllProjects(session.actor) || session.portal.disabledSections.includes('analytics')) {
+    redirect(opts.projectId ? `/projects/${opts.projectId}` : '/');
+  }
 
   const sp = await searchParams;
   const get = (k: string) => {

@@ -199,13 +199,15 @@ function itemUrl(portal: PortalInstallation, entityTypeId: number, id: string): 
 }
 
 /** Stage semantics from crm.status.list: "S" success, "F" fail, anything else in progress. */
-function semanticOf(raw: string | null | undefined, statusId: string): 'success' | 'fail' | 'process' {
-  if (raw === 'S' || /:SUCCESS$|^WON$/.test(statusId)) return 'success';
-  if (raw === 'F' || /:FAIL$|^LOSE$/.test(statusId)) return 'fail';
+export function semanticOf(raw: string | null | undefined, statusId: string): 'success' | 'fail' | 'process' {
+  if (raw === 'S' || /:SUCCESS$|^WON$|^CONVERTED$/.test(statusId)) return 'success';
+  if (raw === 'F' || /:FAIL$|^LOSE$|^JUNK$/.test(statusId)) return 'fail';
   return 'process';
 }
 
-function stageEntityId(entityTypeId: number, categoryId: number | null): string {
+/** crm.status.list ENTITY_ID holding a type's stages: leads keep theirs in STATUS. */
+export function stageEntityId(entityTypeId: number, categoryId: number | null): string {
+  if (entityTypeId === 1) return 'STATUS';
   if (entityTypeId === ENTITY_TYPE_ID.DEAL) return categoryId ? `DEAL_STAGE_${categoryId}` : 'DEAL_STAGE';
   return `DYNAMIC_${entityTypeId}_STAGE_${categoryId ?? 0}`;
 }

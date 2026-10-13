@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/layout/app-shell';
 import { HistoryFeed } from '@/components/history/history-feed';
 import { Pagination } from '@/components/finance/finance-filters';
-import { requirePageSession } from '@/server/page-session';
+import { requirePageSession, requireSection } from '@/server/page-session';
 import { queryAudit } from '@/server/services/audit-read';
 import { can } from '@/lib/permissions';
 
@@ -15,6 +15,7 @@ export default async function HistoryPage({
 }) {
   const { session, scope } = await requirePageSession();
   if (!can.viewHistory(session.actor)) redirect('/');
+  requireSection(session, 'history');
 
   const sp = await searchParams;
   const page = Number(Array.isArray(sp.page) ? sp.page[0] : (sp.page ?? '1')) || 1;

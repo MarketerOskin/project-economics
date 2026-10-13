@@ -148,6 +148,11 @@ model PortalInstallation {
   /// the whole list look fresh so it was never pulled.
   usersSyncedAt DateTime?
 
+  /// Set when an admin finishes «Настройка под портал» (ADR-041).
+  setupCompletedAt DateTime?
+  /// App sections this portal switched off (keys from src/lib/sections.ts); hidden from the menu.
+  disabledSections String[] @default([])
+
   users      AppUser[]
   projects   Project[]
   categories FinanceCategory[]
@@ -159,6 +164,7 @@ model PortalInstallation {
   apiLogs    ApiCallLog[]
   crmImportSources CrmImportSource[]
   crmTimeFields    CrmTimeField[]
+  crmSectionRoles  CrmSectionRole[]
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
   salesFunnelSnapshots SalesFunnelSnapshot[]
@@ -611,5 +617,29 @@ model SalesFunnelSnapshot {
   syncedAt     DateTime @default(now())
 
   @@unique([portalId, categoryId, semantic])
+  @@index([portalId])
+}
+
+/// What a CRM section is for on this portal (ADR-041): leads may be all incoming traffic,
+/// deals first sales, a smart process client support.
+enum CrmRole {
+  TRAFFIC
+  SALES
+  SUPPORT
+  PROJECTS
+  IGNORE
+}
+
+model CrmSectionRole {
+  id           String   @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  entityTypeId Int
+  /// Snapshot of the section's title at save time.
+  label        String
+  role         CrmRole
+  updatedAt    DateTime @updatedAt
+
+  @@unique([portalId, entityTypeId])
   @@index([portalId])
 }

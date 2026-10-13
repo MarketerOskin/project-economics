@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { AppRole } from '@prisma/client';
 import { LayoutDashboard, FolderKanban, Receipt, Tags, History, Settings, Sparkles, HelpCircle, LifeBuoy, Timer, TrendingUp, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { sectionOfPath } from '@/lib/sections';
 
 interface NavItem {
   href: string;
@@ -21,7 +22,7 @@ const ITEMS: NavItem[] = [
   { href: '/finance', label: 'Финансы', icon: Receipt },
   { href: '/analytics', label: 'Аналитика', icon: BarChart3, roles: ['ADMIN', 'MANAGER'] },
   { href: '/automation', label: 'Автоматизация', icon: Timer, roles: ['ADMIN', 'MANAGER'] },
-  { href: '/sales-funnels', label: 'Продажи по воронкам', icon: TrendingUp, roles: ['ADMIN', 'MANAGER'] },
+  { href: '/sales-funnels', label: 'Продажи и обращения', icon: TrendingUp, roles: ['ADMIN', 'MANAGER'] },
   { href: '/settings/categories', label: 'Статьи', icon: Tags, roles: ['ADMIN', 'MANAGER'] },
   { href: '/history', label: 'История', icon: History, roles: ['ADMIN', 'MANAGER'] },
   { href: '/pricing', label: 'Тарифы', icon: Sparkles, roles: ['ADMIN', 'MANAGER'] },
@@ -30,12 +31,12 @@ const ITEMS: NavItem[] = [
   { href: '/implementation', label: 'Заявка на внедрение', icon: LifeBuoy },
 ];
 
-export function Nav({ role, onNavigate }: { role: AppRole; onNavigate?: () => void }) {
+export function Nav({ role, disabled = [], onNavigate }: { role: AppRole; disabled?: string[]; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="flex flex-col gap-0.5">
-      {ITEMS.filter((i) => !i.roles || i.roles.includes(role)).map((item) => {
+      {ITEMS.filter((i) => (!i.roles || i.roles.includes(role)) && !disabled.includes(sectionOfPath(i.href) ?? '')).map((item) => {
         const active =
           item.href === '/' || item.exact
             ? pathname === item.href

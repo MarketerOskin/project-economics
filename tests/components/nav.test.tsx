@@ -7,7 +7,7 @@ vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 describe('Nav role gating (ТЗ §7)', () => {
   it('shows every section for ADMIN', () => {
     render(<Nav role="ADMIN" />);
-    for (const label of ['Дашборд', 'Проекты', 'Финансы', 'Автоматизация', 'Продажи по воронкам', 'Статьи', 'История', 'Настройки', 'Как это работает']) {
+    for (const label of ['Дашборд', 'Проекты', 'Финансы', 'Автоматизация', 'Продажи и обращения', 'Статьи', 'История', 'Настройки', 'Как это работает']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
   });
@@ -19,7 +19,7 @@ describe('Nav role gating (ТЗ §7)', () => {
     expect(screen.getByRole('link', { name: 'Финансы' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Как это работает' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Автоматизация' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Продажи по воронкам' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Продажи и обращения' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Статьи' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'История' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Настройки' })).not.toBeInTheDocument();
@@ -30,5 +30,13 @@ describe('Nav role gating (ТЗ §7)', () => {
     expect(screen.getByRole('link', { name: 'Статьи' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'История' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Настройки' })).not.toBeInTheDocument();
+  });
+
+  it('hides the sections the portal switched off (ADR-041)', () => {
+    render(<Nav role="ADMIN" disabled={['automation', 'history']} />);
+    expect(screen.queryByRole('link', { name: 'Автоматизация' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'История' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Аналитика' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Финансы' })).toBeInTheDocument();
   });
 });

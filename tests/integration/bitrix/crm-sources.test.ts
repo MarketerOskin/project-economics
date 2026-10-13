@@ -228,6 +228,22 @@ describe('CRM import sources (ADR-026)', () => {
       ]);
     });
 
+    it('hides sections marked «Не использовать» and puts project sections first (ADR-041)', async () => {
+      const s = await seedPortal();
+      await connectPortal(s.portalId);
+      await testDb.crmSectionRole.createMany({
+        data: [
+          { portalId: s.portalId, entityTypeId: 138, label: 'Заявки ВК', role: 'SUPPORT' },
+          { portalId: s.portalId, entityTypeId: 140, label: 'HR', role: 'IGNORE' },
+        ],
+      });
+      mockCrmTypeList([VK, { id: 2, title: 'HR', entityTypeId: 140 }, { id: 3, title: 'Отчет по проектам', entityTypeId: 142 }]);
+      const res = await availableSourcesRoute(
+        req('/api/crm/available-sources', { cookie: await ck(s.portalId, s.managerId, 'MANAGER') }),
+      );
+      expect((await res.json()).sources.map((x: { entityTypeId: number }) => x.entityTypeId)).toEqual([2, 4, 142, 138]);
+    });
+
     it('still offers Deal and Company when Bitrix24 cannot list Smart Processes', async () => {
       const s = await seedPortal();
       await connectPortal(s.portalId);

@@ -35,9 +35,10 @@ describe('onboarding checklist', () => {
     expect(progress.steps.map((st) => st.done)).toEqual([false, false, false]);
   });
 
-  it('admins also see the optional time-fields step, which does not hold completion back', async () => {
+  it('admins also see «Настройка под портал» first and the optional time-fields step', async () => {
     const s = await seedPortal();
     const progress = await getOnboardingProgress(withPortal(s.portalId, testDb), { settings: true });
+    expect(progress.steps[0]).toMatchObject({ key: 'setup', done: false, href: '/setup' });
     const time = progress.steps.find((st) => st.key === 'time');
     expect(time).toMatchObject({ done: false, optional: true, href: '/settings/time-fields' });
   });
