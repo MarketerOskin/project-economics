@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FolderKanban, Plus } from 'lucide-react';
+import { FolderKanban, ListPlus, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/layout/app-shell';
 import { EmptyState } from '@/components/common/empty-state';
 import { ProjectFilters } from '@/components/projects/project-filters';
@@ -33,12 +33,20 @@ export default async function ProjectsPage({
         subtitle="Экономика по каждому проекту"
         actions={
           canCreate ? (
-            <Button asChild>
-              <Link href="/projects/new">
-                <Plus className="size-4" />
-                Создать проект
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="secondary">
+                <Link href="/projects/import">
+                  <ListPlus className="size-4" />
+                  Добавить списком
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/projects/new">
+                  <Plus className="size-4" />
+                  Создать проект
+                </Link>
+              </Button>
+            </div>
           ) : null
         }
       />

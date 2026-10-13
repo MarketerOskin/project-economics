@@ -7,6 +7,7 @@ import { GET as listRoute, POST as createRoute } from '@/app/api/projects/route'
 import { DELETE as deleteRoute, GET as getRoute, PATCH as patchRoute } from '@/app/api/projects/[id]/route';
 import { POST as archiveRoute } from '@/app/api/projects/[id]/archive/route';
 import { PUT as membersRoute } from '@/app/api/projects/[id]/members/route';
+import { GET as linkedRoute } from '@/app/api/projects/linked-sources/route';
 
 process.env.SESSION_SECRET = 'projects-api-test-secret-at-least-32-bytes';
 
@@ -156,6 +157,21 @@ describe('projects API — permissions (ТЗ §66)', () => {
     );
     expect(employee.status).toBe(403);
     expect(await testDb.project.findUnique({ where: { id: projectA.id } })).not.toBeNull();
+  });
+
+  it('linked-sources lists Bitrix24 entities that already have a project (ADR-043)', async () => {
+    const s = await seedPortal();
+    await testDb.project.createMany({
+      data: [
+        { portalId: s.portalId, name: 'Сделка', sourceType: 'BITRIX_CRM', crmEntityTypeId: 2, crmEntityId: '15' },
+        { portalId: s.portalId, name: 'Группа', sourceType: 'BITRIX_PROJECT', crmEntityId: '7', status: 'ARCHIVED' },
+        { portalId: s.portalId, name: 'Ручной' },
+      ],
+    });
+    const res = await linkedRoute(mkReq('/api/projects/linked-sources', { cookie: await ctx(s.portalId, s.managerId, 'MANAGER') }));
+    expect((await res.json()).keys.sort()).toEqual(['crm:2:15', 'group:7']);
+    const employee = await linkedRoute(mkReq('/api/projects/linked-sources', { cookie: await ctx(s.portalId, s.employeeId, 'EMPLOYEE') }));
+    expect(employee.status).toBe(403);
   });
 
   it('members PUT diffs membership and logs each change', async () => {

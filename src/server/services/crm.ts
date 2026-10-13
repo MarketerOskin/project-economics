@@ -19,12 +19,14 @@ export async function browseCrm(
   session: ResolvedSession,
   entityTypeId: number,
   q?: string,
+  start?: number,
 ): Promise<NormalizedCrmItem[]> {
   if (isDemoMode() || session.demo) {
+    if (start) return [];
     const items = DEMO_ITEMS[entityTypeId] ?? [];
     return q ? items.filter((i) => i.title.toLowerCase().includes(q.toLowerCase())) : items;
   }
-  return listCrmItems(session.portal, entityTypeId, { q });
+  return listCrmItems(session.portal, entityTypeId, { q, start });
 }
 
 export async function resolveCrmItem(
