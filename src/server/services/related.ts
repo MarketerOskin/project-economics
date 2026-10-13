@@ -51,11 +51,15 @@ export async function loadRelated(
     return { groups: hit.groups, names: hit.names, error: null };
   try {
     const timeFields = await timeFieldMaps(scope);
+    // Sections set to «Не использовать» (ADR-041) are not shown.
+    const skipTypes = new Set(
+      (await scope.crmSectionRole.findMany()).filter((r) => r.role === 'IGNORE').map((r) => r.entityTypeId),
+    );
     const groups = await fetchRelatedItems(
       session.portal,
       project.crmEntityTypeId,
       project.crmEntityId,
-      { timeFields },
+      { timeFields, skipTypes },
     );
     const unknown = new Set<string>();
     for (const g of groups) {

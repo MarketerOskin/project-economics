@@ -221,10 +221,10 @@ export async function fetchRelatedItems(
   portal: PortalInstallation,
   target: number,
   id: string,
-  opts: { timeFields?: Map<number, TimeFieldMap>; onlyTypes?: Set<number> } = {},
+  opts: { timeFields?: Map<number, TimeFieldMap>; onlyTypes?: Set<number>; skipTypes?: Set<number> } = {},
 ): Promise<RelatedGroup[]> {
   const relations = (await findRelationFields(portal, target)).filter(
-    (r) => !opts.onlyTypes || opts.onlyTypes.has(r.entityTypeId),
+    (r) => (!opts.onlyTypes || opts.onlyTypes.has(r.entityTypeId)) && !opts.skipTypes?.has(r.entityTypeId),
   );
   const byType = new Map<number, RelatedGroup>();
 
