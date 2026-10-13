@@ -30,7 +30,8 @@ export function bridgeTokenFromUrlOnce(): void {
   window.history.replaceState(null, '', clean);
 }
 
-function readToken(): string | null {
+/** The bridged session token for this tab, if the cookie fallback is in use. */
+export function readToken(): string | null {
   try {
     return window.localStorage.getItem(TOKEN_KEY);
   } catch {
