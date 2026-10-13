@@ -158,6 +158,7 @@ model PortalInstallation {
   proLeads   ProLead[]
   apiLogs    ApiCallLog[]
   crmImportSources CrmImportSource[]
+  crmTimeFields    CrmTimeField[]
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
   salesFunnelSnapshots SalesFunnelSnapshot[]
@@ -483,6 +484,26 @@ model CrmImportSource {
   /// shown in the import picker; not kept in sync if renamed on the Bitrix24 side.
   label        String
   createdAt    DateTime @default(now())
+
+  @@unique([portalId, entityTypeId])
+  @@index([portalId])
+}
+
+/// Where a CRM type keeps time spent on an item (ADR-040): e.g. «Заявки BK» has one field for
+/// hours and one for minutes. Elements of that type linked to a project add this time to the
+/// project's analytics on top of task time tracking.
+model CrmTimeField {
+  id           String   @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  entityTypeId Int
+  /// Snapshot of the type's title at save time, for the settings list.
+  label        String
+  hoursField   String?
+  minutesField String?
+  /// Field holding who did the work (type employee); null = the item's responsible.
+  userField    String?
+  updatedAt    DateTime @updatedAt
 
   @@unique([portalId, entityTypeId])
   @@index([portalId])

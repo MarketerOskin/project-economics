@@ -23,6 +23,7 @@ export type ScopedClient = Pick<
   | 'auditLog'
   | 'proLead'
   | 'crmImportSource'
+  | 'crmTimeField'
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
   | 'salesFunnelSnapshot'
@@ -141,6 +142,19 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       /** Scoped delete: returns a count instead of throwing, so callers can 404 cleanly. */
       remove: (id: string) => client.crmImportSource.deleteMany({ where: { id, portalId } }),
+    },
+
+    crmTimeField: {
+      findMany: () => client.crmTimeField.findMany({ where: { portalId }, orderBy: { label: 'asc' } }),
+
+      upsert: (entityTypeId: number, data: { label: string; hoursField: string | null; minutesField: string | null; userField: string | null }) =>
+        client.crmTimeField.upsert({
+          where: { portalId_entityTypeId: { portalId, entityTypeId } },
+          create: { ...data, entityTypeId, portalId },
+          update: data,
+        }),
+
+      remove: (entityTypeId: number) => client.crmTimeField.deleteMany({ where: { portalId, entityTypeId } }),
     },
 
     timeDraft: {

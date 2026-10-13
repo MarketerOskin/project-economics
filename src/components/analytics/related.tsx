@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { formatDateIn } from '@/lib/format';
+import { formatDateIn, formatDuration } from '@/lib/format';
 import type { RelatedGroup } from '@/lib/bitrix/related';
 
 const TH = 'px-3 py-2.5 font-medium';
@@ -45,6 +45,7 @@ export function RelatedItems({
               <span className="font-mono text-[11px] text-fg-tertiary">
                 всего {g.items.length}
                 {g.truncated ? '+' : ''} · в работе {count('process')} · завершено {count('success')} · отменено {count('fail')}
+                {g.seconds !== null ? ` · время ${formatDuration(g.seconds)}` : ''}
                 {' · по полю '}
                 {g.via.join(', ')}
               </span>
@@ -56,6 +57,7 @@ export function RelatedItems({
                     <th className={TH}>Название</th>
                     <th className={TH}>Стадия</th>
                     <th className={TH}>Ответственный</th>
+                    {g.seconds !== null ? <th className={TH}>Время</th> : null}
                     <th className={TH}>Создано</th>
                     <th className={TH}>Смена стадии</th>
                   </tr>
@@ -73,6 +75,7 @@ export function RelatedItems({
                         </td>
                         <td className={cn(TD, stage && SEMANTIC_TONE[stage.semantic])}>{stage?.name ?? '—'}</td>
                         <td className={TD}>{(i.assignedById && names[i.assignedById]) || '—'}</td>
+                        {g.seconds !== null ? <td className={cn(TD, 'nums')}>{formatDuration(i.seconds)}</td> : null}
                         <td className={cn(TD, 'nums')}>{formatDateIn(i.createdAt, tz)}</td>
                         <td className={cn(TD, 'nums')}>{formatDateIn(i.movedAt, tz)}</td>
                       </tr>

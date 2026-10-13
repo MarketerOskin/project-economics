@@ -123,6 +123,18 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
+          <h2 className="tx-mark mb-3 text-accent">Учёт времени</h2>
+          <p className="text-sm text-fg-secondary">
+            По умолчанию часы берутся из учёта времени в задачах Битрикс24. Если в смарт-процессе или сделках время
+            записывают в отдельные поля (например, «часы» и «минуты»), сопоставьте их на{' '}
+            <Link href="/settings/time-fields" className="text-accent underline underline-offset-2">
+              отдельной странице
+            </Link>
+            .
+          </p>
+        </section>
+
+        <section className="max-w-2xl">
           <h2 className="tx-mark mb-3 text-accent">Команда ({users.length})</h2>
           <TeamRates
             users={users.map((u) => ({

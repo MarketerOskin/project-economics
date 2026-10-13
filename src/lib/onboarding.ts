@@ -1,16 +1,18 @@
 import type { PortalScope } from '@/lib/db/with-portal';
 
 /**
- * First-run onboarding for a freshly installed (real, non-demo) portal. Three steps,
+ * First-run onboarding for a freshly installed (real, non-demo) portal. Four steps,
  * each derived from real data — never a manually-ticked checkbox, so it can't lie about
  * where the portal actually is. Shown on the dashboard until dismissed or all steps done.
  */
 export interface OnboardingStep {
-  key: 'project' | 'team' | 'entry';
+  key: 'project' | 'team' | 'entry' | 'time';
   label: string;
   description: string;
   href: string;
   done: boolean;
+  /** Not every portal needs it; the checklist counts as complete without it. */
+  optional?: boolean;
 }
 
 export interface OnboardingProgress {
@@ -18,11 +20,16 @@ export interface OnboardingProgress {
   complete: boolean;
 }
 
-export async function getOnboardingProgress(scope: PortalScope): Promise<OnboardingProgress> {
-  const [projectCount, memberCount, entryCount] = await Promise.all([
+/** `settings`: the viewer can change portal settings, so settings steps are shown to them. */
+export async function getOnboardingProgress(
+  scope: PortalScope,
+  opts: { settings?: boolean } = {},
+): Promise<OnboardingProgress> {
+  const [projectCount, memberCount, entryCount, timeFields] = await Promise.all([
     scope.project.count(),
     scope.member.count(),
     scope.entry.count(),
+    scope.crmTimeField.findMany(),
   ]);
 
   const steps: OnboardingStep[] = [
@@ -48,6 +55,16 @@ export async function getOnboardingProgress(scope: PortalScope): Promise<Onboard
       done: entryCount > 0,
     },
   ];
+  if (opts.settings) {
+    steps.push({
+      key: 'time',
+      label: 'Проверьте учёт времени',
+      description: 'Если часы пишут в поля смарт-процесса или сделки, укажите эти поля',
+      href: '/settings/time-fields',
+      done: timeFields.length > 0,
+      optional: true,
+    });
+  }
 
-  return { steps, complete: steps.every((s) => s.done) };
+  return { steps, complete: steps.every((s) => s.done || s.optional) };
 }

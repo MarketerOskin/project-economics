@@ -35,7 +35,7 @@ export default async function ProjectAnalyticsPage({
   const { id } = await params;
   const ctx = await analyticsPage(searchParams, { projectId: id });
   if (!ctx.pro) return <AnalyticsUpsell />;
-  const { world, period, filters, names, periodQuery, session, scope } = ctx;
+  const { world, period, filters, periodQuery, session, scope } = ctx;
   const project = world.projects[0];
 
   if (!project) {
@@ -67,7 +67,10 @@ export default async function ProjectAnalyticsPage({
   const meetings = meetingRows(project.meetings, period, now, filters.employeeId);
   const canEdit = can.mutateProject(session.actor);
   const raw = await scope.project.findByIdOrThrow(id);
-  const related = project.sourceKind === 'crm' ? await loadRelated(session, raw) : null;
+  const staffNames = Object.fromEntries([...world.people].map(([uid, p]) => [uid, p.name]));
+  const related = project.sourceKind === 'crm' ? await loadRelated(session, scope, raw, staffNames) : null;
+  // Responsibles of linked elements the staff list doesn't know (fired people too).
+  const names = { ...ctx.names, ...(related?.names ?? {}) };
 
   const peopleOptions = Object.entries(names)
     .filter(([uid]) => project.tasks.some((t) => t.responsibleId === uid) || project.entries.some((e) => e.userId === uid) || project.meetings.some((x) => x.attendeeIds.includes(uid)))

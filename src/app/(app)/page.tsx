@@ -54,7 +54,7 @@ export default async function DashboardPage({
   const hasData = data.projects.length > 0;
 
   const showOnboarding = canCreateProject && !session.demo && !session.portal.onboardingDismissedAt;
-  const onboarding = showOnboarding ? await getOnboardingProgress(scope) : null;
+  const onboarding = showOnboarding ? await getOnboardingProgress(scope, { settings: can.manageSettings(session.actor) }) : null;
 
   return (
     <>

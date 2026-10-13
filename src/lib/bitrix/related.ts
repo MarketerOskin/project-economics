@@ -1,7 +1,7 @@
 import type { PortalInstallation } from '@prisma/client';
 import { batchBitrix, callBitrix } from './client';
 import { listSmartProcessTypes } from './crm';
-import { ENTITY_TYPE_ID } from './types';
+import { ENTITY_TYPE_ID, type BitrixUser } from './types';
 
 /**
  * Elements of other CRM types that point at a project's own Bitrix24 entity (ADR-039): a
@@ -25,12 +25,24 @@ export interface RelationField {
   valueFor: (id: string) => string;
 }
 
+/** Where a CRM type keeps time spent on an item (ADR-040). Field names as crm.item.fields gives them. */
+export interface TimeFieldMap {
+  hoursField: string | null;
+  minutesField: string | null;
+  /** Who did the work (an employee field); null = the item's responsible. */
+  userField: string | null;
+}
+
 export interface RelatedItem {
   id: string;
   title: string;
   stageId: string | null;
   categoryId: number | null;
   assignedById: string | null;
+  /** Time from the type's mapped fields; null when the type has none mapped or the item has none. */
+  seconds: number | null;
+  /** Who the time belongs to: the mapped employee field, else the responsible. */
+  workerId: string | null;
   createdAt: Date | null;
   movedAt: Date | null;
   url: string;
@@ -45,6 +57,8 @@ export interface RelatedGroup {
   /** Stage id -> { name, semantic } for the stages these items are in. */
   stages: Record<string, { name: string; semantic: 'success' | 'fail' | 'process' }>;
   truncated: boolean;
+  /** Sum of the items' time, or null when the type has no time fields mapped. */
+  seconds: number | null;
 }
 
 interface RawField {
@@ -146,6 +160,30 @@ interface RawItem {
   assignedById?: number | string | null;
   createdTime?: string | null;
   movedTime?: string | null;
+  [field: string]: unknown;
+}
+
+/** A number from a CRM field value: "1,5", 2, ["1", "2"] (a multiple field sums). */
+export function numberOf(v: unknown): number {
+  if (Array.isArray(v)) return v.reduce<number>((sum, x) => sum + numberOf(x), 0);
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (typeof v === 'string') {
+    const n = Number.parseFloat(v.replace(/\s/g, '').replace(',', '.'));
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+/** Seconds of work recorded on one item through the mapped hours/minutes fields. Pure. */
+export function itemSeconds(raw: Record<string, unknown>, map: TimeFieldMap): number {
+  const hours = map.hoursField ? numberOf(raw[map.hoursField]) : 0;
+  const minutes = map.minutesField ? numberOf(raw[map.minutesField]) : 0;
+  return Math.max(0, Math.round(hours * 3600 + minutes * 60));
+}
+
+function idOf(v: unknown): string | null {
+  const one = Array.isArray(v) ? v[0] : v;
+  return one != null && one !== '' && one !== 0 && one !== '0' ? String(one) : null;
 }
 
 function toDate(v: string | null | undefined): Date | null {
@@ -172,22 +210,43 @@ function stageEntityId(entityTypeId: number, categoryId: number | null): string 
   return `DYNAMIC_${entityTypeId}_STAGE_${categoryId ?? 0}`;
 }
 
-/** All elements that point at CRM entity `target`/`id`, grouped by their CRM type. */
-export async function fetchRelatedItems(portal: PortalInstallation, target: number, id: string): Promise<RelatedGroup[]> {
-  const relations = await findRelationFields(portal, target);
+/**
+ * All elements that point at CRM entity `target`/`id`, grouped by their CRM type. With
+ * `timeFields`, items of a mapped type carry the time recorded in those fields; `onlyTypes`
+ * limits the walk to those types (analytics only needs the ones with time).
+ */
+export async function fetchRelatedItems(
+  portal: PortalInstallation,
+  target: number,
+  id: string,
+  opts: { timeFields?: Map<number, TimeFieldMap>; onlyTypes?: Set<number> } = {},
+): Promise<RelatedGroup[]> {
+  const relations = (await findRelationFields(portal, target)).filter(
+    (r) => !opts.onlyTypes || opts.onlyTypes.has(r.entityTypeId),
+  );
   const byType = new Map<number, RelatedGroup>();
 
   for (const rel of relations) {
+    const time = opts.timeFields?.get(rel.entityTypeId) ?? null;
+    const timeSelect = time ? [time.hoursField, time.minutesField, time.userField].filter((f): f is string => Boolean(f)) : [];
     const group =
       byType.get(rel.entityTypeId) ??
-      ({ entityTypeId: rel.entityTypeId, title: rel.typeTitle, via: [], items: [], stages: {}, truncated: false } as RelatedGroup);
+      ({
+        entityTypeId: rel.entityTypeId,
+        title: rel.typeTitle,
+        via: [],
+        items: [],
+        stages: {},
+        truncated: false,
+        seconds: time ? 0 : null,
+      } as RelatedGroup);
     const seen = new Set(group.items.map((i) => i.id));
     let found = 0;
     for (let start = 0; start < MAX_ITEMS_PER_FIELD; start += PAGE) {
       const res = await callBitrix<{ items?: RawItem[] }>(portal, 'crm.item.list', {
         entityTypeId: rel.entityTypeId,
         filter: { [rel.field]: rel.valueFor(id) },
-        select: ['id', 'title', 'stageId', 'categoryId', 'assignedById', 'createdTime', 'movedTime'],
+        select: ['id', 'title', 'stageId', 'categoryId', 'assignedById', 'createdTime', 'movedTime', ...timeSelect],
         order: { id: 'desc' },
         start,
       });
@@ -197,12 +256,17 @@ export async function fetchRelatedItems(portal: PortalInstallation, target: numb
         found++;
         if (seen.has(itemId)) continue;
         seen.add(itemId);
+        const assignedById = idOf(raw.assignedById);
+        const seconds = time ? itemSeconds(raw, time) : null;
+        if (seconds !== null) group.seconds = (group.seconds ?? 0) + seconds;
         group.items.push({
           id: itemId,
           title: raw.title || `#${itemId}`,
           stageId: raw.stageId ?? null,
           categoryId: raw.categoryId != null && raw.categoryId !== '' ? Number(raw.categoryId) : null,
-          assignedById: raw.assignedById != null ? String(raw.assignedById) : null,
+          assignedById,
+          seconds,
+          workerId: (time?.userField ? idOf(raw[time.userField]) : null) ?? assignedById,
           createdAt: toDate(raw.createdTime),
           movedAt: toDate(raw.movedTime),
           url: itemUrl(portal, rel.entityTypeId, itemId),
@@ -247,4 +311,35 @@ async function attachStageNames(portal: PortalInstallation, groups: RelatedGroup
       if (i.stageId) g.stages[i.stageId] = names[i.stageId] ?? { name: i.stageId, semantic: semanticOf(null, i.stageId) };
     }
   }
+}
+
+export interface ItemField {
+  name: string;
+  title: string;
+  type: string;
+  multiple: boolean;
+}
+
+/** One CRM type's fields, for picking where time is kept (settings, ADR-040). */
+export async function listItemFields(portal: PortalInstallation, entityTypeId: number): Promise<ItemField[]> {
+  const res = await callBitrix<{ fields?: Record<string, RawField & { isMultiple?: boolean }> }>(portal, 'crm.item.fields', {
+    entityTypeId,
+  });
+  return Object.entries(res?.fields ?? {})
+    .map(([name, f]) => ({ name, title: f.title || f.formLabel || name, type: f.type ?? 'string', multiple: Boolean(f.isMultiple) }))
+    .sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+}
+
+/** Names of Bitrix24 users by id, fired ones included (the staff list keeps only active people). */
+export async function fetchUserNames(portal: PortalInstallation, ids: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (let i = 0; i < ids.length; i += PAGE) {
+    const chunk = ids.slice(i, i + PAGE);
+    const res = await callBitrix<BitrixUser[]>(portal, 'user.get', { FILTER: { ID: chunk } });
+    for (const u of Array.isArray(res) ? res : []) {
+      const name = `${u.NAME ?? ''} ${u.LAST_NAME ?? ''}`.trim();
+      if (name) out[String(u.ID)] = name;
+    }
+  }
+  return out;
 }
