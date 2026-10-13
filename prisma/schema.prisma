@@ -168,6 +168,7 @@ model PortalInstallation {
   crmSectionRoles  CrmSectionRole[]
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
+  supportPostings  SupportPosting[]
   salesFunnelSnapshots SalesFunnelSnapshot[]
 }
 
@@ -306,6 +307,7 @@ model Project {
   entries FinancialEntry[]
   timeDrafts TaskTimeDraft[]
   incomeDrafts CrmIncomeDraft[]
+  supportPostings SupportPosting[]
 
   @@index([portalId])
   @@index([portalId, status])
@@ -592,6 +594,32 @@ model CrmIncomeDraft {
 
   @@unique([portalId, projectId])
   @@index([portalId, status])
+}
+
+// ─── Поддержка по часам → финансы (ADR-045) ─────────────────────────────────
+
+/// One support month of a project written into finance: the income entry and the
+/// per-specialist expense entries it created, and the totals at that moment (to show
+/// «изменилось» when Bitrix24 hours move later). Re-posting replaces those entries.
+model SupportPosting {
+  id        String @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 'YYYY-MM' in the analytics time zone.
+  month String
+
+  seconds       Int
+  incomeAmount  Decimal @db.Decimal(18, 2)
+  expenseAmount Decimal @db.Decimal(18, 2)
+  /// FinancialEntry ids created by this posting (not FK'd: entries are soft-deleted, kept).
+  entryIds String[]
+
+  postedAt   DateTime @default(now())
+  postedById String?
+
+  @@unique([portalId, projectId, month])
 }
 
 // ─── Статистика продаж по воронкам (ADR-029) ────────────────────────────────

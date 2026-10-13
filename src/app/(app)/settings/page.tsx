@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ArrowRight, Calculator, Clock, Database, SlidersHorizontal, Tags } from 'lucide-react';
 import { PageHeader } from '@/components/layout/app-shell';
 import { TeamRates } from '@/components/settings/team-rates';
 import { requirePageSession } from '@/server/page-session';
@@ -12,9 +13,87 @@ function fmtDate(d: Date | string | null | undefined): string {
   return new Date(d).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+interface SettingsLink {
+  href: string;
+  title: string;
+  text: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+function SettingsLinks({ links }: { links: SettingsLink[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {links.map((l) => (
+        <Link
+          key={l.href}
+          href={l.href}
+          className="group flex gap-3 border border-border bg-surface p-4 transition-colors hover:border-accent"
+        >
+          <l.icon className="mt-0.5 size-5 shrink-0 text-accent" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5 font-medium text-fg group-hover:text-accent">
+              {l.title}
+              <ArrowRight className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+            </span>
+            <span className="mt-1 block text-sm text-fg-secondary">{l.text}</span>
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default async function SettingsPage() {
   const { session, scope } = await requirePageSession();
-  if (!can.manageSettings(session.actor)) redirect('/');
+  const admin = can.manageSettings(session.actor);
+  if (!admin && !can.mutateFinance(session.actor)) redirect('/');
+
+  const links: SettingsLink[] = [
+    ...(session.portal.disabledSections.includes('automation')
+      ? []
+      : [
+          {
+            href: '/settings/auto-finance',
+            title: 'Авторасчёт финансов',
+            text: 'Доход и расход поддержки по часам, расходы по задачам и доход из сделок, без ручного ввода',
+            icon: Calculator,
+          },
+        ]),
+    { href: '/settings/categories', title: 'Статьи доходов и расходов', text: 'Справочник статей для операций', icon: Tags },
+    ...(admin
+      ? [
+          {
+            href: '/setup',
+            title: 'Настройка под портал',
+            text: 'Для чего у вас лиды, сделки и смарт-процессы, какие разделы показывать',
+            icon: SlidersHorizontal,
+          },
+          {
+            href: '/settings/crm-sources',
+            title: 'Импорт проектов из CRM',
+            text: 'Из каких разделов Битрикс24 можно создавать проекты',
+            icon: Database,
+          },
+          {
+            href: '/settings/time-fields',
+            title: 'Учёт времени',
+            text: 'Поля CRM, из которых брать часы и минуты, если время пишут не в задачах',
+            icon: Clock,
+          },
+        ]
+      : []),
+  ];
+
+  if (!admin) {
+    return (
+      <>
+        <PageHeader title="Настройки" subtitle="Расчёты и справочники" />
+        <div className="px-4 py-6 sm:px-8">
+          <SettingsLinks links={links} />
+        </div>
+      </>
+    );
+  }
 
   const { portal, plan } = session;
   const [projects, entries, categories, auditEntries, users] = await Promise.all([
@@ -50,6 +129,8 @@ export default async function SettingsPage() {
       <PageHeader title="Настройки" subtitle="Интеграция с Bitrix24, данные портала и команда" />
 
       <div className="flex flex-col gap-8 px-4 sm:px-8 py-6">
+        <SettingsLinks links={links} />
+
         <section className="max-w-2xl">
           <h2 className="tx-mark mb-3 text-accent">Тариф</h2>
           <div className="flex items-center justify-between border border-border bg-surface px-4 py-3 text-sm">
@@ -101,51 +182,12 @@ export default async function SettingsPage() {
               </div>
             ))}
           </div>
-          <p className="mt-3 text-sm text-fg-secondary">
-            Статьи доходов и расходов настраиваются на{' '}
-            <Link href="/settings/categories" className="text-accent underline underline-offset-2">
-              отдельной странице
-            </Link>
-            .
-          </p>
         </section>
 
-        <section className="max-w-2xl">
-          <h2 className="tx-mark mb-3 text-accent">Импорт проектов из CRM</h2>
-          <p className="text-sm text-fg-secondary">
-            У кого-то проекты — это сделки, у кого-то смарт-процессы. Настройте, откуда их
-            можно импортировать, на{' '}
-            <Link href="/settings/crm-sources" className="text-accent underline underline-offset-2">
-              отдельной странице
-            </Link>
-            .
-          </p>
-        </section>
 
-        <section className="max-w-2xl">
-          <h2 className="tx-mark mb-3 text-accent">Настройка под портал</h2>
-          <p className="text-sm text-fg-secondary">
-            Для чего у вас лиды, сделки и смарт-процессы и какие разделы приложения показывать —{' '}
-            <Link href="/setup" className="text-accent underline underline-offset-2">
-              настроить
-            </Link>
-            .
-          </p>
-        </section>
 
-        <section className="max-w-2xl">
-          <h2 className="tx-mark mb-3 text-accent">Учёт времени</h2>
-          <p className="text-sm text-fg-secondary">
-            По умолчанию часы берутся из учёта времени в задачах Битрикс24. Если в смарт-процессе или сделках время
-            записывают в отдельные поля (например, «часы» и «минуты»), сопоставьте их на{' '}
-            <Link href="/settings/time-fields" className="text-accent underline underline-offset-2">
-              отдельной странице
-            </Link>
-            .
-          </p>
-        </section>
 
-        <section className="max-w-2xl">
+        <section id="team" className="max-w-2xl scroll-mt-4">
           <h2 className="tx-mark mb-3 text-accent">Команда ({users.length})</h2>
           <TeamRates
             users={users.map((u) => ({
@@ -159,9 +201,9 @@ export default async function SettingsPage() {
           <p className="mt-3 text-sm text-fg-secondary">
             Роли назначаются в Bitrix24: администратор портала получает роль «Администратор»
             автоматически. Права проверяются на сервере при каждом запросе. Часовая ставка
-            используется для автоматического расчёта расхода по отработанным часам — см.{' '}
-            <Link href="/automation" className="text-accent underline underline-offset-2">
-              «Автоматизация»
+            используется для расчёта расхода по отработанным часам — см.{' '}
+            <Link href="/settings/auto-finance" className="text-accent underline underline-offset-2">
+              «Авторасчёт финансов»
             </Link>
             .
           </p>

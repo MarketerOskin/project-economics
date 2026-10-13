@@ -205,7 +205,7 @@ export default async function ProjectReportPage({ params, searchParams }: { para
                     <th>Месяц</th>
                     <th className="num">Абонентская плата</th>
                     <th className="num">Использовано / пакет</th>
-                    <th className="num">Сверх пакета</th>
+                    <th className="num">Часы к оплате</th>
                     <th className="num">Доплата</th>
                   </tr>
                 </thead>
@@ -217,7 +217,7 @@ export default async function ProjectReportPage({ params, searchParams }: { para
                       <td className="num">
                         {formatHours(mo.totalSeconds)} / {mo.limitSeconds !== null ? `${formatHours(mo.limitSeconds)} ч` : '—'}
                       </td>
-                      <td className="num">{formatHours(mo.overageSeconds)} ч</td>
+                      <td className="num">{formatHours(mo.billableSeconds)} ч</td>
                       <td className="num">{formatRub(mo.overageCost)}</td>
                     </tr>
                   ))}

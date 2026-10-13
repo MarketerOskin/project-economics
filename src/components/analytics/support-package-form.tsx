@@ -42,13 +42,18 @@ export function SupportPackageForm({ projectId, initial }: { projectId: string; 
 
   return (
     <form onSubmit={submit} className="grid gap-4 border border-border bg-surface p-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto] sm:items-end">
-      <Field label="Часов в месяц" htmlFor="sp-hours" error={errors.hoursLimit} hint="Пусто — без лимита">
+      <Field label="Часов в месяц" htmlFor="sp-hours" error={errors.hoursLimit} hint="Пусто — без пакета">
         <Input id="sp-hours" inputMode="decimal" value={values.hoursLimit} onChange={set('hoursLimit')} placeholder="4" />
       </Field>
       <Field label={`Абонентская плата, ${RUB_SIGN} в месяц`} htmlFor="sp-fee" error={errors.monthlyFee}>
         <Input id="sp-fee" inputMode="decimal" value={values.monthlyFee} onChange={set('monthlyFee')} placeholder="0" />
       </Field>
-      <Field label={`Ставка сверх пакета, ${RUB_SIGN} за час`} htmlFor="sp-rate" error={errors.hourRate}>
+      <Field
+        label={`Цена часа, ${RUB_SIGN}`}
+        htmlFor="sp-rate"
+        error={errors.hourRate}
+        hint="Сверх пакета, а без пакета и абонентки — за каждый час"
+      >
         <Input id="sp-rate" inputMode="decimal" value={values.hourRate} onChange={set('hourRate')} placeholder="0" />
       </Field>
       <Button type="submit" disabled={saving}>

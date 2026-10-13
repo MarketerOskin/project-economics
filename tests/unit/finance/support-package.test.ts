@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { m } from '@/domain/finance/money';
-import { supportCost } from '@/domain/finance/support-package';
+import { supportCost, supportMonthResult } from '@/domain/finance/support-package';
 
 const H = 3600;
 
@@ -29,5 +29,40 @@ describe('support package cost (ADR-034)', () => {
     ]);
     expect(cost.hasPricing).toBe(false);
     expect(cost.total.toString()).toBe('0');
+  });
+});
+
+describe('support month result (ADR-045)', () => {
+  it('without a package or fee every hour is billed at the price per hour', () => {
+    const cost = supportCost({ monthlyFee: null, hourRate: m('3000') }, [
+      { label: 'Сентябрь 2026', totalSeconds: 2.5 * H, limitSeconds: null, overageSeconds: 0 },
+    ]);
+    expect(cost.months[0]!.billableSeconds).toBe(2.5 * H);
+    expect(cost.total.toString()).toBe('7500');
+  });
+
+  it('a fee without a package covers every hour', () => {
+    const cost = supportCost({ monthlyFee: m('20000'), hourRate: m('3000') }, [
+      { label: 'Сентябрь 2026', totalSeconds: 9 * H, limitSeconds: null, overageSeconds: 0 },
+    ]);
+    expect(cost.total.toString()).toBe('20000');
+  });
+
+  it('expense is each specialist hours × rate; no rate means not counted, but named', () => {
+    const r = supportMonthResult(
+      { monthlyFee: null, hourRate: m('3000') },
+      { label: 'Сентябрь 2026', totalSeconds: 3 * H, limitSeconds: null, overageSeconds: 0 },
+      [
+        { userId: '2', seconds: 1.5 * H, rate: m('1500') },
+        { userId: '7', seconds: 1 * H, rate: m('1000.50') },
+        { userId: '9', seconds: 0.5 * H, rate: null },
+        { userId: '11', seconds: 0, rate: m('5000') },
+      ],
+    );
+    expect(r.income.toString()).toBe('9000');
+    expect(r.expense.toString()).toBe('3250.5');
+    expect(r.profit.toString()).toBe('5749.5');
+    expect(r.missingRates).toEqual(['9']);
+    expect(r.workers.map((w) => w.userId)).toEqual(['2', '7', '9']);
   });
 });

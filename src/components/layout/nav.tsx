@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { AppRole } from '@prisma/client';
-import { LayoutDashboard, FolderKanban, Receipt, Tags, History, Settings, Sparkles, HelpCircle, LifeBuoy, Timer, TrendingUp, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Receipt, Tags, History, Settings, Sparkles, HelpCircle, LifeBuoy, TrendingUp, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { sectionOfPath } from '@/lib/sections';
 
@@ -21,26 +21,27 @@ const ITEMS: NavItem[] = [
   { href: '/projects', label: 'Проекты', icon: FolderKanban },
   { href: '/finance', label: 'Финансы', icon: Receipt },
   { href: '/analytics', label: 'Аналитика', icon: BarChart3, roles: ['ADMIN', 'MANAGER'] },
-  { href: '/automation', label: 'Автоматизация', icon: Timer, roles: ['ADMIN', 'MANAGER'] },
   { href: '/sales-funnels', label: 'Продажи и обращения', icon: TrendingUp, roles: ['ADMIN', 'MANAGER'] },
   { href: '/settings/categories', label: 'Статьи', icon: Tags, roles: ['ADMIN', 'MANAGER'] },
   { href: '/history', label: 'История', icon: History, roles: ['ADMIN', 'MANAGER'] },
   { href: '/pricing', label: 'Тарифы', icon: Sparkles, roles: ['ADMIN', 'MANAGER'] },
-  { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN'], exact: true },
+  { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN', 'MANAGER'] },
   { href: '/how-it-works', label: 'Как это работает', icon: HelpCircle },
   { href: '/implementation', label: 'Заявка на внедрение', icon: LifeBuoy },
 ];
 
 export function Nav({ role, disabled = [], onNavigate }: { role: AppRole; disabled?: string[]; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const items = ITEMS.filter((i) => (!i.roles || i.roles.includes(role)) && !disabled.includes(sectionOfPath(i.href) ?? ''));
+  // The most specific item wins: /settings/categories lights «Статьи», not «Настройки».
+  const matches = (i: NavItem) =>
+    i.href === '/' || i.exact ? pathname === i.href : pathname === i.href || pathname.startsWith(`${i.href}/`);
+  const activeHref = items.filter(matches).sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <nav className="flex flex-col gap-0.5">
-      {ITEMS.filter((i) => (!i.roles || i.roles.includes(role)) && !disabled.includes(sectionOfPath(i.href) ?? '')).map((item) => {
-        const active =
-          item.href === '/' || item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
+      {items.map((item) => {
+        const active = item.href === activeHref;
         const Icon = item.icon;
         return (
           <Link

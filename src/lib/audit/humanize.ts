@@ -53,7 +53,7 @@ const FIELD_LABEL: Record<string, string> = {
   amount: 'сумму',
   supportHoursLimit: 'пакет часов в месяц',
   supportMonthlyFee: 'абонентскую плату',
-  supportHourRate: 'ставку сверх пакета',
+  supportHourRate: 'цену часа',
   sourceType: 'связь с Битрикс24',
   crmEntityTitle: 'связь с Битрикс24',
   crmEntityId: 'связь с Битрикс24',
