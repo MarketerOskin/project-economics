@@ -110,7 +110,7 @@ export async function timeFieldMaps(scope: PortalScope): Promise<Map<number, Tim
  * Linked CRM elements with time in mapped fields as tasks and time records (ADR-040, ADR-046):
  * such an element is a "task" (negative id from its type and id, so it never collides with a
  * Bitrix24 task or another project's element), titled with its section; its time is one
- * record — dated when the element was finished, or created while it is still open. Elements
+ * record, dated when the element was finished, and none while it is still open. Elements
  * without field time are not rows at all (ADR-051): the work on them is in their Bitrix24
  * tasks, and an element with no tasks simply adds nothing.
  */
@@ -136,7 +136,9 @@ export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { 
         responsibleName: '',
         url: i.url,
       });
-      const at = (finished ? i.movedAt : null) ?? i.createdAt;
+      // Hours count once the element is finished, on that date (ADR-055); an open element's
+      // time is not in any period yet.
+      const at = finished ? (i.movedAt ?? i.createdAt) : null;
       const userId = i.workerId ?? i.assignedById;
       if (i.seconds && i.seconds > 0 && at && userId) {
         entries.push({ taskId: id, userId, seconds: i.seconds, at, comment: g.title });
