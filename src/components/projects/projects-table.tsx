@@ -8,6 +8,7 @@ import { StatusBadge } from './status-badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { initials } from '@/lib/text';
 import type { ProjectListRow } from '@/server/services/project-read';
+import { STREAM_KIND_LABELS } from '@/lib/streams';
 
 type SortKey = 'name' | 'income' | 'expense' | 'profit' | 'margin';
 
@@ -80,6 +81,11 @@ export function ProjectsTable({ rows }: { rows: ProjectListRow[] }) {
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-fg-tertiary">
                   <StatusBadge status={p.status} />
                   {p.clientName ? <span>{p.clientName}</span> : null}
+                  {p.kinds.map((k) => (
+                    <span key={k} className="bg-surface-muted text-fg-secondary px-1.5 py-0.5">
+                      {STREAM_KIND_LABELS[k]}
+                    </span>
+                  ))}
                 </div>
               </td>
               <td className="px-4 py-3 text-right nums">
@@ -102,7 +108,7 @@ export function ProjectsTable({ rows }: { rows: ProjectListRow[] }) {
                 {formatPercentStr(p.economics.factMargin)}
               </td>
               <td className="px-4 py-3">
-                <div className="flex -space-x-2">
+                <div className="flex -space-x-1">
                   {p.members.slice(0, 4).map((m) => (
                     <Avatar key={m.id} className="size-6 ring-2 ring-surface" title={m.fullName}>
                       {m.photoUrl ? <AvatarImage src={m.photoUrl} alt="" /> : null}

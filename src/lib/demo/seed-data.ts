@@ -19,6 +19,7 @@ type Tx = Pick<
   | 'auditLog'
   | 'marketingSpend'
   | 'marketingPlan'
+  | 'projectStream'
 >;
 
 const CATEGORIES = {
@@ -48,6 +49,18 @@ interface EntrySpec {
   counterpartyName?: string;
   invoiceNumber?: string;
   deleted?: boolean;
+  stream?: number; // index into the project's streams
+}
+
+interface StreamSpec {
+  kind: 'SUPPORT' | 'IMPLEMENTATION' | 'DEVELOPMENT';
+  name?: string;
+  startDate: string;
+  budget?: string;
+  monthlyFee?: string;
+  hourRate?: string;
+  hoursLimit?: string;
+  members: number[];
 }
 
 interface ProjectSpec {
@@ -58,6 +71,7 @@ interface ProjectSpec {
   startDate: string;
   endDate?: string;
   members: number[]; // indices into employees
+  streams?: StreamSpec[];
   entries: EntrySpec[];
 }
 
@@ -74,17 +88,23 @@ const PROJECTS: ProjectSpec[] = [
     description: 'Полное внедрение Bitrix24: воронки продаж, телефония, автоматизация.',
     status: 'ACTIVE',
     startDate: '2026-01-15',
-    members: [0, 1],
+    members: [0, 1, 2],
+    streams: [
+      { kind: 'IMPLEMENTATION', startDate: '2026-01-15', budget: '2400000', members: [0, 1] },
+      { kind: 'SUPPORT', name: 'Сопровождение после запуска', startDate: '2026-05-01', monthlyFee: '120000', hourRate: '3000', hoursLimit: '40', members: [2] },
+    ],
     entries: [
-      { category: 'income', direction: 'INCOME', budget: 'PLAN', date: '2026-02-01', amount: '2400000' },
-      { category: 'income', direction: 'INCOME', budget: 'FACT', date: '2026-02-10', amount: '1200000', counterpartyName: 'ООО «Альфа-Трейд»', invoiceNumber: 'СЧ-014' },
-      { category: 'income', direction: 'INCOME', budget: 'FACT', date: '2026-04-05', amount: '1300000', counterpartyName: 'ООО «Альфа-Трейд»', invoiceNumber: 'СЧ-041' },
-      { category: 'external', direction: 'EXPENSE', budget: 'PLAN', date: '2026-02-01', amount: '900000' },
-      { category: 'external', direction: 'EXPENSE', budget: 'FACT', date: '2026-02-20', hours: '210', rate: '2200', employee: 0, description: 'Настройка воронок и прав' },
-      { category: 'internal', direction: 'EXPENSE', budget: 'FACT', date: '2026-03-15', hours: '120', rate: '1800', employee: 1, description: 'Аналитика и обучение' },
-      { category: 'ai', direction: 'EXPENSE', budget: 'PLAN', date: '2026-02-01', amount: '60000' },
-      { category: 'ai', direction: 'EXPENSE', budget: 'FACT', date: '2026-03-01', amount: '48000', description: 'Классификация обращений' },
-      { category: 'server', direction: 'EXPENSE', budget: 'FACT', date: '2026-03-01', amount: '18000' },
+      { category: 'income', direction: 'INCOME', budget: 'PLAN', date: '2026-02-01', amount: '2400000', stream: 0 },
+      { category: 'income', direction: 'INCOME', budget: 'FACT', date: '2026-02-10', amount: '1200000', counterpartyName: 'ООО «Альфа-Трейд»', invoiceNumber: 'СЧ-014', stream: 0 },
+      { category: 'income', direction: 'INCOME', budget: 'FACT', date: '2026-04-05', amount: '1300000', counterpartyName: 'ООО «Альфа-Трейд»', invoiceNumber: 'СЧ-041', stream: 0 },
+      { category: 'external', direction: 'EXPENSE', budget: 'PLAN', date: '2026-02-01', amount: '900000', stream: 0 },
+      { category: 'external', direction: 'EXPENSE', budget: 'FACT', date: '2026-02-20', hours: '210', rate: '2200', employee: 0, description: 'Настройка воронок и прав', stream: 0 },
+      { category: 'internal', direction: 'EXPENSE', budget: 'FACT', date: '2026-03-15', hours: '120', rate: '1800', employee: 1, description: 'Аналитика и обучение', stream: 0 },
+      { category: 'ai', direction: 'EXPENSE', budget: 'PLAN', date: '2026-02-01', amount: '60000', stream: 0 },
+      { category: 'ai', direction: 'EXPENSE', budget: 'FACT', date: '2026-03-01', amount: '48000', description: 'Классификация обращений', stream: 0 },
+      { category: 'server', direction: 'EXPENSE', budget: 'FACT', date: '2026-03-01', amount: '18000', stream: 0 },
+      { category: 'income', direction: 'INCOME', budget: 'FACT', date: '2026-05-05', amount: '120000', counterpartyName: 'ООО «Альфа-Трейд»', invoiceNumber: 'СЧ-055', description: 'Абонентская плата, май', stream: 1 },
+      { category: 'internal', direction: 'EXPENSE', budget: 'FACT', date: '2026-05-28', hours: '34', rate: '1800', employee: 2, description: 'Заявки по сопровождению', stream: 1 },
     ],
   },
   {
@@ -231,7 +251,7 @@ export async function seedDemoPortal(tx: Tx): Promise<{ created: boolean; portal
       lastSyncedAt: new Date(),
     },
   });
-  const employees = [];
+  const employees: { id: string }[] = [];
   for (let i = 0; i < EMPLOYEES.length; i++) {
     const e = EMPLOYEES[i]!;
     employees.push(
@@ -283,6 +303,25 @@ export async function seedDemoPortal(tx: Tx): Promise<{ created: boolean; portal
       },
     });
 
+    const streamIds: string[] = [];
+    for (const st of p.streams ?? []) {
+      const row = await tx.projectStream.create({
+        data: {
+          portalId,
+          projectId: project.id,
+          kind: st.kind,
+          name: st.name ?? null,
+          startDate: new Date(st.startDate),
+          budget: st.budget ?? null,
+          monthlyFee: st.monthlyFee ?? null,
+          hourRate: st.hourRate ?? null,
+          hoursLimit: st.hoursLimit ?? null,
+          memberIds: st.members.map((idx) => employees[idx]!.id),
+        },
+      });
+      streamIds.push(row.id);
+    }
+
     for (const idx of p.members) {
       await tx.projectMember.create({
         data: { portalId, projectId: project.id, userId: employees[idx]!.id, addedById: manager.id },
@@ -318,6 +357,7 @@ export async function seedDemoPortal(tx: Tx): Promise<{ created: boolean; portal
           hours: e.hours ?? null,
           hourlyRate: e.rate ?? null,
           employeeId: e.employee != null ? employees[e.employee]!.id : null,
+          streamId: e.stream != null ? (streamIds[e.stream] ?? null) : null,
           contractorName: e.contractorName ?? null,
           counterpartyName: e.counterpartyName ?? null,
           invoiceNumber: e.invoiceNumber ?? null,

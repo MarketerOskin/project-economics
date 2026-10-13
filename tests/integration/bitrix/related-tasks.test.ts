@@ -125,18 +125,14 @@ describe('linked elements in project tasks and hours (ADR-046)', () => {
     return { s, project, session, scope: withPortal(s.portalId) };
   }
 
-  it('every linked element is a task row, and tasks bound to it bring their time', async () => {
+  it('a linked element without its own time is not a task row; tasks bound to it bring their time (ADR-051)', async () => {
     const { project, session, scope } = await setup();
     const { taskFilters } = mockBitrix();
 
     const world = await loadAnalytics(session, scope, { projectId: project.id, refresh: true });
     const p = world.projects[0]!;
     expect(p.error).toBeNull();
-    expect(p.tasks.map((t) => t.title)).toEqual([
-      'Заявки BK: Доработки по дашборду',
-      'Собрать выгрузку',
-    ]);
-    expect(p.tasks[0]!.id).toBe(-(1044 * 10_000_000 + 3097));
+    expect(p.tasks.map((t) => t.title)).toEqual(['Собрать выгрузку']);
     expect(p.entries).toEqual([
       {
         taskId: 501,

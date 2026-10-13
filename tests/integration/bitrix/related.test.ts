@@ -160,5 +160,7 @@ describe('time in CRM fields (ADR-040)', () => {
     expect(entries).toEqual([
       { taskId: tasks[0]!.id, userId: '12', seconds: 8100, at: new Date('2026-10-05T07:00:00Z'), comment: 'Заявки BK' },
     ]);
+    // An element without field time is not a task row (ADR-051): only its own tasks count.
+    expect(relatedAsActivity([{ ...g, items: [{ ...g.items[0]!, seconds: 0 }] }], 'proj-1')).toEqual({ tasks: [], entries: [] });
   });
 });

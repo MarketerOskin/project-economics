@@ -82,6 +82,8 @@ export const listProjectsQuerySchema = z.object({
   from: isoDate.optional(),
   to: isoDate.optional(),
   memberId: z.string().optional(),
+  /** Projects with an active direction of this kind (ADR-052). */
+  kind: z.enum(['SUPPORT', 'IMPLEMENTATION', 'DEVELOPMENT', 'CONSULTING', 'OTHER']).optional(),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;

@@ -195,28 +195,35 @@ h2,
   }
 }
 
-/* Sortable table headers (ADR-050): a faint arrow on hover, a bright one on the sorted column. */
-th.sortable-th::after {
+/* Sortable table headers (ADR-050): every header of a table sorts on click (TableSort). */
+main table:not([data-no-sort]) thead th:not(:empty) {
+  cursor: pointer;
+  user-select: none;
+}
+/* Absolutely positioned at its static spot: the arrow sits after the label without taking
+   room, so right-aligned headers stay flush with their numbers. */
+main table:not([data-no-sort]) thead th:not(:empty)::after {
   content: '↕';
+  position: absolute;
   margin-left: 0.35em;
   opacity: 0;
   transition: opacity 0.15s;
 }
-th.sortable-th:hover::after {
+main table:not([data-no-sort]) thead th:not(:empty):hover::after {
   opacity: 0.45;
 }
-th.sortable-th[aria-sort='descending']::after {
+main table thead th[aria-sort='descending']::after {
   content: '↓';
   opacity: 1;
   color: var(--accent);
 }
-th.sortable-th[aria-sort='ascending']::after {
+main table thead th[aria-sort='ascending']::after {
   content: '↑';
   opacity: 1;
   color: var(--accent);
 }
 @media print {
-  th.sortable-th::after {
-    content: none;
+  main table thead th::after {
+    content: none !important;
   }
 }

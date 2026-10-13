@@ -31,6 +31,8 @@ import { DEMO_SOURCES, DEMO_STAGES, demoElements } from '@/lib/demo/marketing-de
 import type { ResolvedSession } from '@/lib/auth/resolve';
 import { listCrmSections } from './portal-setup';
 import type { CreateSpendInput, SavePlanInput } from '@/server/dto/marketing';
+import { stageSemantic } from '@/domain/crm/stages';
+import { loadStageRules } from './stage-rules';
 
 /**
  * Marketing and sales by channel (ADR-048). Leads come from the CRM sections marked as
@@ -136,11 +138,18 @@ export async function loadMarketingData(
     data.errors.push(`Источники: ${message(err)}`);
   }
 
+  // The portal's own reading of stages (ADR-051) wins over Bitrix24's semantics.
+  const rules = await loadStageRules(scope);
+  const ruled = (items: CrmElement[]) =>
+    items.map((i) =>
+      i.stageId ? { ...i, semantic: stageSemantic(rules, i.entityTypeId, i.stageId, i.semantic) } : i,
+    );
+
   const funnels = new Set<string>(['STATUS']);
   for (const s of sections.filter((x) => x.role === 'TRAFFIC')) {
     try {
       const r = await fetchElements(portal, s.entityTypeId, created);
-      data.leads.push(...r.items);
+      data.leads.push(...ruled(r.items));
       data.truncated ||= r.truncated;
       for (const st of Object.values(r.stages)) funnels.add(st.funnel);
     } catch (err) {
@@ -153,8 +162,8 @@ export async function loadMarketingData(
         fetchElements(portal, s.entityTypeId, created),
         fetchElements(portal, s.entityTypeId, closed),
       ]);
-      data.created.push(...c.items);
-      data.won.push(...w.items.filter((i) => i.semantic === 'success'));
+      data.created.push(...ruled(c.items));
+      data.won.push(...ruled(w.items).filter((i) => i.semantic === 'success'));
       Object.assign(data.stages, c.stages, w.stages);
       data.truncated ||= c.truncated || w.truncated;
     } catch (err) {

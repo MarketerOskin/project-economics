@@ -56,7 +56,7 @@ export function OneCRequest() {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="border-accent text-accent hover:bg-accent hover:text-bg my-1.5 inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors"
+          className="border-accent text-accent hover:bg-accent hover:text-bg my-1.5 inline-flex shrink-0 items-center gap-2 border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors"
         >
           <Plug className="size-3.5" />
           Интеграция с 1С

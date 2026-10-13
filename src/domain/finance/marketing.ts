@@ -6,7 +6,8 @@ import { m, sum, ZERO, type Decimal } from './money';
  * counted from the budget actually spent, never from money paid into an account.
  */
 
-export type StageSemantic = 'success' | 'fail' | 'process';
+export type { StageSemantic } from '@/domain/crm/stages';
+import type { StageSemantic } from '@/domain/crm/stages';
 
 /** One CRM element (lead, deal or smart-process item) as marketing needs it. */
 export interface CrmElement {

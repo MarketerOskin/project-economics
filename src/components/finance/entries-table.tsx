@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EntryForm, type EntryFormInitial } from './entry-form';
 import type { EntryRow } from '@/server/services/finance-read';
+import { streamTitle } from '@/lib/streams';
 
 const DIRECTION_LABEL = { INCOME: 'Доход', EXPENSE: 'Расход' } as const;
 
@@ -33,6 +34,7 @@ function toInitial(e: EntryRow): EntryFormInitial {
     hours: e.hours,
     hourlyRate: e.hourlyRate,
     employeeId: e.employeeId,
+    streamId: e.streamId,
     description: e.description,
     comment: e.comment,
     contractorName: e.contractorName,
@@ -111,6 +113,7 @@ export function EntriesTable({
                     />
                     {e.category.name}
                   </span>
+                  {e.stream ? <span className="block text-xs text-fg-tertiary">{streamTitle(e.stream)}</span> : null}
                 </td>
                 {showProject ? <td className="px-4 py-3">{e.projectName}</td> : null}
                 <td className="max-w-[220px] truncate px-4 py-3 text-fg-secondary">

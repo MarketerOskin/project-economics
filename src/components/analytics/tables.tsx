@@ -123,7 +123,7 @@ export function TasksTable({
             className="border-border border-b last:border-0"
           >
             <td className={cn(TD, 'text-fg-tertiary font-mono text-xs')}>{r.task.id}</td>
-            <td className={cn(TD, 'max-w-[28rem]')}>
+            <td className={cn(TD, 'max-w-[28rem] min-w-[14rem]')}>
               <TaskLink
                 projectId={r.task.projectId}
                 id={r.task.id}
@@ -132,7 +132,7 @@ export function TasksTable({
               />
             </td>
             {projectNames ? (
-              <td className={cn(TD, 'text-fg-secondary')}>
+              <td className={cn(TD, 'text-fg-secondary min-w-[10rem]')}>
                 <Link
                   href={`/projects/${r.task.projectId}/analytics`}
                   className="hover:text-accent"

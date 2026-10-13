@@ -7,7 +7,12 @@ const TH = 'px-3 py-2.5 font-medium';
 const TD = 'px-3 py-2.5';
 const SHOWN = 50;
 
-const SEMANTIC_TONE = { success: 'text-positive', fail: 'text-fg-tertiary', process: 'text-accent' } as const;
+const SEMANTIC_TONE = {
+  success: 'text-positive',
+  closed: 'text-fg-secondary',
+  fail: 'text-fg-tertiary',
+  process: 'text-accent',
+} as const;
 
 /** Elements of other CRM types linked to the project's entity (ADR-039), one block per type. */
 export function RelatedItems({
@@ -36,7 +41,7 @@ export function RelatedItems({
   return (
     <div className="flex flex-col gap-5">
       {groups.map((g) => {
-        const count = (s: 'success' | 'fail' | 'process') =>
+        const count = (s: 'success' | 'fail' | 'process' | 'closed') =>
           g.items.filter((i) => (i.stageId ? g.stages[i.stageId]?.semantic : 'process') === s).length;
         return (
           <div key={g.entityTypeId} className="flex flex-col gap-2">
@@ -44,7 +49,7 @@ export function RelatedItems({
               <h3 className="font-medium">{g.title}</h3>
               <span className="font-mono text-[11px] text-fg-tertiary">
                 всего {g.items.length}
-                {g.truncated ? '+' : ''} · в работе {count('process')} · завершено {count('success')} · отменено {count('fail')}
+                {g.truncated ? '+' : ''} · в работе {count('process')} · завершено {count('success') + count('closed')} · отменено {count('fail')}
                 {g.seconds !== null ? ` · время ${formatDuration(g.seconds)}` : ''}
                 {' · по полю '}
                 {g.via.join(', ')}

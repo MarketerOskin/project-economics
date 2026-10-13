@@ -33,7 +33,7 @@ export function ProjectHeader({ project }: { project: ProjectDetail }) {
 
         <div className="flex items-center gap-2">
           {project.members.length > 0 ? (
-            <div className="mr-1 flex -space-x-2">
+            <div className="mr-1 flex -space-x-1">
               {project.members.slice(0, 5).map((m) => (
                 <Tip key={m.id} label={m.fullName}>
                   <Avatar className="size-7 ring-2 ring-bg">

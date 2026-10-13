@@ -170,7 +170,7 @@ export default async function DashboardPage({
             )}
 
             <div>
-              <h2 className="text-fg-secondary mb-3 text-sm font-medium">Проекты за период</h2>
+              <h2 className="tx-mark text-accent mb-3">Проекты за период</h2>
               <DashboardProjectsTable projects={data.projects} />
             </div>
           </>

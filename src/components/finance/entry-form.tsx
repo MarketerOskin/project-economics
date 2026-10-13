@@ -12,6 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { Segmented } from '@/components/ui/segmented';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { StreamKind } from '@prisma/client';
+import { streamTitle } from '@/lib/streams';
+
+const NO_STREAM = 'none';
 
 interface Option {
   id: string;
@@ -41,6 +45,7 @@ export interface EntryFormInitial {
   hours: string | null;
   hourlyRate: string | null;
   employeeId: string | null;
+  streamId?: string | null;
   description: string | null;
   comment: string | null;
   contractorName: string | null;
@@ -74,6 +79,8 @@ export function EntryForm({
   const [hours, setHours] = React.useState(initial?.hours ?? '');
   const [rate, setRate] = React.useState(initial?.hourlyRate ?? '');
   const [employeeId, setEmployeeId] = React.useState(initial?.employeeId ?? '');
+  const [streamId, setStreamId] = React.useState(initial?.streamId ?? '');
+  const [streams, setStreams] = React.useState<Array<{ id: string; kind: StreamKind; name: string | null }>>([]);
   const [showExtra, setShowExtra] = React.useState(
     Boolean(
       initial?.description ||
@@ -107,6 +114,25 @@ export function EntryForm({
       .catch(() => undefined);
   }, []);
 
+  // Directions of the chosen project (ADR-052); the select shows only when it has some.
+  React.useEffect(() => {
+    if (!projectId) return;
+    let live = true;
+    apiFetch<{ streams: Array<{ id: string; kind: StreamKind; name: string | null }> }>(
+      `/api/projects/${projectId}/streams`,
+    )
+      .then((r) => {
+        if (!live) return;
+        setStreams(r.streams);
+        setStreamId((cur) => (r.streams.some((s) => s.id === cur) ? cur : ''));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
+
+  const projectStreams = projectId ? streams : [];
   const visibleCategories = categories.filter((c) => c.kind === direction);
 
   // INCOME is always FIXED (ТЗ §14). Derive rather than store.
@@ -143,6 +169,7 @@ export function EntryForm({
       calculationMode: effectiveMode,
       ...(effectiveMode === 'FIXED' ? { amount } : { hours, hourlyRate: rate }),
       ...(employeeId ? { employeeId } : {}),
+      ...(projectStreams.length || isEdit ? { streamId } : {}),
     };
     for (const [k, v] of Object.entries(extra)) if (v) body[k] = v;
 
@@ -194,6 +221,24 @@ export function EntryForm({
               {projects.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      ) : null}
+
+      {projectStreams.length ? (
+        <Field label="Направление" error={errors.streamId}>
+          <Select value={streamId || NO_STREAM} onValueChange={(v) => setStreamId(v === NO_STREAM ? '' : v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_STREAM}>Весь проект</SelectItem>
+              {projectStreams.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {streamTitle(s)}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type StreamKind } from '@prisma/client';
 import type { PortalScope } from '@/lib/db/with-portal';
 import type { Actor } from '@/lib/permissions';
 import { can, requirePermission } from '@/lib/permissions';
@@ -18,6 +18,8 @@ export interface EntryRow {
   category: { id: string; name: string; accentColor: string };
   employeeId: string | null;
   employee: string | null;
+  streamId: string | null;
+  stream: { kind: StreamKind; name: string | null } | null;
   contractorName: string | null;
   counterpartyName: string | null;
   description: string | null;
@@ -33,6 +35,7 @@ const include = {
   project: { select: { id: true, name: true } },
   category: { select: { id: true, name: true, accentColor: true } },
   employee: { select: { firstName: true, lastName: true } },
+  stream: { select: { kind: true, name: true } },
   createdBy: { select: { firstName: true, lastName: true } },
 } satisfies Prisma.FinancialEntryInclude;
 
@@ -53,6 +56,8 @@ function toRow(e: Loaded): EntryRow {
     category: e.category,
     employeeId: e.employeeId,
     employee: e.employee ? `${e.employee.firstName} ${e.employee.lastName}`.trim() : null,
+    streamId: e.streamId,
+    stream: e.stream,
     contractorName: e.contractorName,
     counterpartyName: e.counterpartyName,
     description: e.description,

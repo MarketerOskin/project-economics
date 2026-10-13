@@ -87,6 +87,7 @@ enum AuditEntityType {
   PROJECT_MEMBER
   MARKETING_SPEND
   MARKETING_PLAN
+  PROJECT_STREAM
 }
 
 // ─── Billing / plan ────────────────────────────────────────────────────────
@@ -170,6 +171,8 @@ model PortalInstallation {
   crmImportSources CrmImportSource[]
   crmTimeFields    CrmTimeField[]
   crmSectionRoles  CrmSectionRole[]
+  crmStageRules    CrmStageRule[]
+  projectStreams   ProjectStream[]
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
   supportPostings  SupportPosting[]
@@ -315,6 +318,7 @@ model Project {
   timeDrafts TaskTimeDraft[]
   incomeDrafts CrmIncomeDraft[]
   supportPostings SupportPosting[]
+  streams         ProjectStream[]
 
   @@index([portalId])
   @@index([portalId, status])
@@ -402,6 +406,10 @@ model FinancialEntry {
   documentUrl      String?
   description      String?
   comment          String?
+
+  /// Направление проекта (ADR-052): поддержка, внедрение, разработка… null — весь проект.
+  streamId String?
+  stream   ProjectStream? @relation(fields: [streamId], references: [id], onDelete: SetNull)
 
   /// Optional link from a FACT entry to the PLAN entry it realises (ТЗ §15).
   plannedEntryId String?
@@ -734,4 +742,76 @@ model MarketingConfig {
   portal          PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
   qualifiedStages String[]
   updatedAt       DateTime           @updatedAt
+}
+
+/// How a CRM stage counts (ADR-051), when the portal's own stage semantics don't say it: a
+/// smart-process stage can be "in progress" in Bitrix24 and still mean the work is over.
+enum StageOutcome {
+  PROCESS
+  CLOSED
+  SUCCESS
+  CANCELLED
+}
+
+model CrmStageRule {
+  id           String             @id @default(cuid())
+  portalId     String
+  portal       PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  entityTypeId Int
+  /// Bitrix24 stage id (STATUS_ID), e.g. DT1044_55:NEW; unique only within a CRM type.
+  stageId      String
+  outcome      StageOutcome
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([portalId, entityTypeId, stageId])
+  @@index([portalId])
+}
+
+/// What kind of work a project direction is (ADR-052).
+enum StreamKind {
+  SUPPORT
+  IMPLEMENTATION
+  DEVELOPMENT
+  CONSULTING
+  OTHER
+}
+
+/// A direction of a project (ADR-052): one client project can be on support and in
+/// development at once, paid separately and done by different teams.
+model ProjectStream {
+  id        String             @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  kind   StreamKind
+  /// Own name when the kind alone doesn't say it ("Мобильное приложение").
+  name   String?
+  status ProjectStatus @default(ACTIVE)
+
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
+
+  /// How the direction is paid: a fixed budget, a monthly fee with a package of hours, an
+  /// hour rate — any of them, all optional.
+  budget     Decimal? @db.Decimal(18, 2)
+  monthlyFee Decimal? @db.Decimal(18, 2)
+  hourRate   Decimal? @db.Decimal(18, 2)
+  hoursLimit Decimal? @db.Decimal(8, 2)
+
+  /// AppUser ids of the direction's team; any portal employee, not only project members.
+  memberIds String[]
+
+  comment String?
+
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  entries FinancialEntry[]
+
+  @@index([portalId])
+  @@index([portalId, projectId])
+  @@index([portalId, kind])
 }
