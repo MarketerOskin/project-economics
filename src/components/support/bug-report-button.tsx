@@ -7,6 +7,7 @@ import { useToast } from '@/lib/client/toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Field, Textarea } from '@/components/ui/field';
+import { bottomOf, useViewportBand } from '@/lib/client/viewport-band';
 
 /** Floating "report a bug" entry point — lands directly in the developer's own CRM. */
 export function BugReportButton() {
@@ -35,6 +36,7 @@ export function BugReportButton() {
     }
   };
 
+  const band = useViewportBand();
   return (
     <>
       <button
@@ -42,6 +44,7 @@ export function BugReportButton() {
         onClick={() => setOpen(true)}
         aria-label="Сообщить о проблеме"
         className="fixed bottom-4 right-4 z-30 flex size-11 items-center justify-center border border-border bg-surface text-fg-secondary transition-colors hover:text-fg"
+        style={bottomOf(band)}
       >
         <Bug className="size-5" />
       </button>
