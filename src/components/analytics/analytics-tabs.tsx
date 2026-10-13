@@ -8,6 +8,8 @@ const TABS = [
   { href: '/analytics', label: 'Обзор' },
   { href: '/analytics/team', label: 'Сотрудники' },
   { href: '/analytics/meetings', label: 'Встречи' },
+  { href: '/analytics/marketing', label: 'Маркетинг' },
+  { href: '/analytics/sales', label: 'Продажи' },
 ];
 
 /** Sub-navigation of «Аналитика»; carries the period (not one-shot params) between tabs. */

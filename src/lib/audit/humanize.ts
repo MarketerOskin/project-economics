@@ -70,6 +70,10 @@ export function humanizeAudit(row: RawAudit, projectName?: string): HumanAuditEn
   let sentence: string;
   let change: string | null = null;
 
+  if (row.entityType === 'MARKETING_SPEND' || row.entityType === 'MARKETING_PLAN') {
+    return { id: row.id, when: row.createdAt, who: row.actorName, action: row.action, ...marketingSentence(row) };
+  }
+
   switch (row.action) {
     case 'PROJECT_CREATED':
       sentence = `создал проект ${projectName ? p : ''}`.trim();
@@ -143,5 +147,24 @@ export function humanizeAudit(row: RawAudit, projectName?: string): HumanAuditEn
     sentence,
     change,
     action: row.action,
+  };
+}
+
+/** Marketing spend and plan (ADR-048): no project, a channel and a month instead. */
+function marketingSentence(row: RawAudit): { sentence: string; change: string | null } {
+  if (row.entityType === 'MARKETING_PLAN') {
+    const month = val(row.after, 'month') ?? val(row.before, 'month') ?? '';
+    return {
+      sentence: `${row.action === 'FINANCE_CREATED' ? 'задал' : 'изменил'} маркетинговый план на ${month}`,
+      change: row.action === 'FINANCE_UPDATED' ? `${money(val(row.before, 'amount'))} → ${money(val(row.after, 'amount'))}` : money(val(row.after, 'amount')),
+    };
+  }
+  const deleted = row.action === 'FINANCE_DELETED';
+  const snap = deleted ? row.before : row.after;
+  const what = val(snap, 'kind') === 'PAID' ? 'оплату канала' : 'расход на маркетинг';
+  const channel = val(snap, 'channel') ?? val(snap, 'sourceId');
+  return {
+    sentence: `${deleted ? 'удалил' : 'добавил'} ${what}${channel ? ` «${channel}»` : ''}`,
+    change: money(val(snap, 'amount')),
   };
 }

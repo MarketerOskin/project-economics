@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { DEMO_MEMBER_ID } from './constants';
+import { DEMO_DAILY_BUDGET } from './marketing-demo';
 
 /**
  * Realistic demo dataset (ТЗ §5, §68). Seven projects spanning every semantic state:
@@ -16,6 +17,8 @@ type Tx = Pick<
   | 'projectMember'
   | 'financialEntry'
   | 'auditLog'
+  | 'marketingSpend'
+  | 'marketingPlan'
 >;
 
 const CATEGORIES = {
@@ -340,5 +343,38 @@ export async function seedDemoPortal(tx: Tx): Promise<{ created: boolean; portal
     }
   }
 
+  await seedDemoMarketing(tx, portalId, manager.id);
+
   return { created: true, portalId };
+}
+
+/**
+ * Marketing spend and plan for the demo (ADR-048): weekly spend per paid channel and monthly
+ * top-ups for the last two months, and a plan for the current one.
+ */
+async function seedDemoMarketing(tx: Tx, portalId: string, userId: string) {
+  const today = new Date();
+  const day = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  for (let back = 63; back >= 0; back -= 7) {
+    const date = day(new Date(today.getTime() - back * 86_400_000));
+    for (const [sourceId, daily] of Object.entries(DEMO_DAILY_BUDGET)) {
+      if (!daily) continue;
+      await tx.marketingSpend.create({
+        data: { portalId, sourceId, date, kind: 'SPENT', amount: (daily * 7).toFixed(2), createdById: userId },
+      });
+    }
+  }
+  for (const back of [1, 0]) {
+    const first = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - back, 1));
+    for (const [sourceId, daily] of Object.entries(DEMO_DAILY_BUDGET)) {
+      if (!daily) continue;
+      await tx.marketingSpend.create({
+        data: { portalId, sourceId, date: first, kind: 'PAID', amount: (daily * 32).toFixed(2), note: 'Пополнение кабинета', createdById: userId },
+      });
+    }
+  }
+  const month = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}`;
+  await tx.marketingPlan.create({
+    data: { portalId, month, sourceId: '', budget: '560000.00', leads: 300, qualifiedLeads: 120, sales: 40, updatedById: userId },
+  });
 }
