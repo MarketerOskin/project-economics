@@ -91,6 +91,9 @@ export default async function ProjectAnalyticsPage({
     project.sourceKind === 'crm' ? await loadRelated(session, scope, raw, staffNames) : null;
   // Responsibles of linked elements the staff list doesn't know (fired people too).
   const names = { ...ctx.names, ...(related?.names ?? {}) };
+  // Linked elements with field time count as tasks in the numbers (ADR-040) but are listed
+  // once, under «Связанные элементы» with their own stage and time — not again as task rows.
+  const taskList = related && !related.error ? rows.filter((r) => r.task.id > 0) : rows;
 
   const team = teamOverview([project], period, now).filter(
     (r) => !filters.employeeId || r.userId === filters.employeeId,
@@ -296,7 +299,7 @@ export default async function ProjectAnalyticsPage({
       </Section>
 
       <Section title="Задачи">
-        <TasksTable rows={rows} tz={tz} names={names} />
+        <TasksTable rows={taskList} tz={tz} names={names} />
       </Section>
 
       {related ? (
