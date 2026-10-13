@@ -44,7 +44,7 @@ export function UsageCards({ items, query }: { items: UsageCardData[]; query: st
               {c.clientName ? <div className="truncate text-xs text-fg-tertiary">{c.clientName}</div> : null}
             </div>
             {c.overageSeconds > 0 ? (
-              <span className="shrink-0 bg-negative px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-black">
+              <span className="shrink-0 bg-negative px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-bg">
                 +{formatHours(c.overageSeconds)} ч
               </span>
             ) : null}
