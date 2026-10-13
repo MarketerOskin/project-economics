@@ -394,3 +394,47 @@ export function employeeProfile(userId: string, projects: ProjectActivity[], w: 
     journal,
   };
 }
+
+// ─── Overview slices (ADR-047) ──────────────────────────────────────────────
+
+export interface SourceSlice {
+  /** 'tasks', 'meetings', or `crm:<section title>` for time from linked CRM elements. */
+  key: string;
+  label: string;
+  seconds: number;
+}
+
+/**
+ * Where the period's hours came from: Bitrix24 task time, held meetings, and each CRM section
+ * whose linked elements carry time in mapped fields (ADR-040: their records have a negative
+ * task id and the section title as comment).
+ */
+export function hoursBySource(projects: ProjectActivity[], w: Window, now: Date, f: Filters = {}): SourceSlice[] {
+  const out = new Map<string, SourceSlice>();
+  const add = (key: string, label: string, s: number) => {
+    const cur = out.get(key) ?? { key, label, seconds: 0 };
+    cur.seconds += s;
+    out.set(key, cur);
+  };
+  for (const p of projects) {
+    for (const e of p.entries) {
+      if ((f.employeeId && e.userId !== f.employeeId) || !inWindow(e.at, w)) continue;
+      if (e.taskId < 0) add(`crm:${e.comment}`, e.comment || 'Элементы CRM', e.seconds);
+      else add('tasks', 'Задачи', e.seconds);
+    }
+    for (const m of p.meetings) {
+      if (held(m, now) && inWindow(m.start, w) && (!f.employeeId || m.attendeeIds.includes(f.employeeId))) {
+        add('meetings', 'Встречи', meetingSeconds(m));
+      }
+    }
+  }
+  return [...out.values()].filter((s) => s.seconds > 0).sort((a, b) => b.seconds - a.seconds);
+}
+
+/** Meetings that haven't started yet, within `days` from now, soonest first. */
+export function upcomingMeetings(meetings: Meeting[], now: Date, days = 30, employeeId?: string): Meeting[] {
+  const until = new Date(now.getTime() + days * 86_400_000);
+  return meetings
+    .filter((m) => m.start > now && m.start <= until && (!employeeId || m.attendeeIds.includes(employeeId)))
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+}
