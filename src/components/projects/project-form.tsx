@@ -163,7 +163,7 @@ export function ProjectForm({ initial }: { initial?: ProjectFormInitial }) {
           <Field
             label="Источник в Битрикс24"
             error={undefined}
-            hint="Сделки, компании, проекты и смарт-процессы. Смарт-процессы добавляются в Настройках."
+            hint="Сделки, компании, проекты или любой смарт-процесс портала."
           >
             <CrmImport
               value={crm}
