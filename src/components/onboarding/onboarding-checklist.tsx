@@ -40,7 +40,7 @@ export function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
         </button>
       </div>
 
-      <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {steps.map((step) => (
           <li key={step.key}>
             {step.done ? (

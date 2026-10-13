@@ -123,6 +123,17 @@ export default async function SettingsPage() {
         </section>
 
         <section className="max-w-2xl">
+          <h2 className="tx-mark mb-3 text-accent">Настройка под портал</h2>
+          <p className="text-sm text-fg-secondary">
+            Для чего у вас лиды, сделки и смарт-процессы и какие разделы приложения показывать —{' '}
+            <Link href="/setup" className="text-accent underline underline-offset-2">
+              настроить
+            </Link>
+            .
+          </p>
+        </section>
+
+        <section className="max-w-2xl">
           <h2 className="tx-mark mb-3 text-accent">Учёт времени</h2>
           <p className="text-sm text-fg-secondary">
             По умолчанию часы берутся из учёта времени в задачах Битрикс24. Если в смарт-процессе или сделках время

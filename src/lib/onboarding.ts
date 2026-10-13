@@ -1,12 +1,13 @@
 import type { PortalScope } from '@/lib/db/with-portal';
 
 /**
- * First-run onboarding for a freshly installed (real, non-demo) portal. Four steps,
- * each derived from real data — never a manually-ticked checkbox, so it can't lie about
- * where the portal actually is. Shown on the dashboard until dismissed or all steps done.
+ * First-run onboarding for a freshly installed (real, non-demo) portal. Three steps, five for
+ * those who manage settings; each derived from real data — never a manually-ticked checkbox,
+ * so it can't lie about where the portal actually is. Shown on the dashboard until dismissed
+ * or all required steps are done.
  */
 export interface OnboardingStep {
-  key: 'project' | 'team' | 'entry' | 'time';
+  key: 'setup' | 'project' | 'team' | 'entry' | 'time';
   label: string;
   description: string;
   href: string;
@@ -23,7 +24,7 @@ export interface OnboardingProgress {
 /** `settings`: the viewer can change portal settings, so settings steps are shown to them. */
 export async function getOnboardingProgress(
   scope: PortalScope,
-  opts: { settings?: boolean } = {},
+  opts: { settings?: boolean; setupDone?: boolean } = {},
 ): Promise<OnboardingProgress> {
   const [projectCount, memberCount, entryCount, timeFields] = await Promise.all([
     scope.project.count(),
@@ -56,6 +57,13 @@ export async function getOnboardingProgress(
     },
   ];
   if (opts.settings) {
+    steps.unshift({
+      key: 'setup',
+      label: 'Настройте под свой портал',
+      description: 'Для чего лиды, сделки и смарт-процессы и какие разделы нужны',
+      href: '/setup',
+      done: Boolean(opts.setupDone),
+    });
     steps.push({
       key: 'time',
       label: 'Проверьте учёт времени',

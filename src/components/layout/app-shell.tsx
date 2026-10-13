@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </div>
           ) : session ? (
-            <Nav role={session.role} onNavigate={closeDrawer} />
+            <Nav role={session.role} disabled={session.disabledSections ?? []} onNavigate={closeDrawer} />
           ) : null}
 
           <div className="mt-auto flex flex-col gap-3">

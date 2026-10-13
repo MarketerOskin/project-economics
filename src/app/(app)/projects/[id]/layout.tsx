@@ -26,7 +26,7 @@ export default async function ProjectLayout({
       <ProjectTabs
         projectId={project.id}
         canViewHistory={can.viewHistory(session.actor)}
-        canViewAnalytics={can.viewAllProjects(session.actor)}
+        canViewAnalytics={can.viewAllProjects(session.actor) && !session.portal.disabledSections.includes('analytics')}
       />
       {children}
     </>

@@ -4,11 +4,12 @@ export const dynamic = 'force-dynamic';
 
 /** Identity for the app shell: who am I, what role, is this demo mode. */
 export const GET = route(async ({ session }) => {
-  const { user, actor, demo, plan } = session;
+  const { user, actor, demo, plan, portal } = session;
   return {
     demo,
     role: actor.role,
     plan,
+    disabledSections: portal.disabledSections,
     user: {
       id: user.id,
       firstName: user.firstName,

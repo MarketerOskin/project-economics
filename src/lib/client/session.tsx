@@ -9,6 +9,8 @@ export interface ClientSession {
   demo: boolean;
   role: AppRole;
   plan: Plan;
+  /** Sections the portal switched off (ADR-041); hidden from the menu. */
+  disabledSections?: string[];
   user: {
     id: string;
     firstName: string;

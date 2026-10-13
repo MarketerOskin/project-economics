@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from '@prisma/client';
+import { Prisma, type CrmRole, type PrismaClient } from '@prisma/client';
 import { db } from './client';
 import { notFound } from '@/lib/errors';
 
@@ -24,6 +24,7 @@ export type ScopedClient = Pick<
   | 'proLead'
   | 'crmImportSource'
   | 'crmTimeField'
+  | 'crmSectionRole'
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
   | 'salesFunnelSnapshot'
@@ -155,6 +156,17 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
         }),
 
       remove: (entityTypeId: number) => client.crmTimeField.deleteMany({ where: { portalId, entityTypeId } }),
+    },
+
+    crmSectionRole: {
+      findMany: () => client.crmSectionRole.findMany({ where: { portalId }, orderBy: { entityTypeId: 'asc' } }),
+
+      upsert: (entityTypeId: number, data: { label: string; role: CrmRole }) =>
+        client.crmSectionRole.upsert({
+          where: { portalId_entityTypeId: { portalId, entityTypeId } },
+          create: { ...data, entityTypeId, portalId },
+          update: data,
+        }),
     },
 
     timeDraft: {
