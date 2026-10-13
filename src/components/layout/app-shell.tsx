@@ -9,6 +9,7 @@ import { Nav, NavFooter } from './nav';
 import { UserBadge } from './user-badge';
 import { DemoRoleSwitch } from './demo-role-switch';
 import { ThemeToggle } from './theme-toggle';
+import { TableSort } from './table-sort';
 import { BugReportButton } from '@/components/support/bug-report-button';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -114,7 +115,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </header>
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          {children}
+          <TableSort />
+        </main>
       </div>
 
       {session ? (

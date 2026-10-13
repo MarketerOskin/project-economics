@@ -19,7 +19,7 @@ interface LeadRow {
   requestedByName: string;
   contact: string;
   comment: string | null;
-  kind: 'PRO' | 'IMPLEMENTATION';
+  kind: 'PRO' | 'IMPLEMENTATION' | 'INTEGRATION_1C';
   status: LeadStatus;
   createdAt: string;
   handledAt: string | null;
@@ -79,7 +79,7 @@ function LeadCard({ lead, onChanged }: { lead: LeadRow; onChanged: () => void | 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium">{lead.portalIsDemo ? 'Демо-портал' : lead.portalDomain}</span>
-            <span className="text-xs text-fg-tertiary">{lead.kind === 'IMPLEMENTATION' ? 'Внедрение' : 'Pro'}</span>
+            <span className="text-xs text-fg-tertiary">{lead.kind === 'IMPLEMENTATION' ? 'Внедрение' : lead.kind === 'INTEGRATION_1C' ? 'Интеграция с 1С' : 'Pro'}</span>
             <span className={cn('inline-flex items-center px-2 py-0.5 text-xs font-medium', STATUS_STYLE[lead.status])}>
               {STATUS_LABEL[lead.status]}
             </span>

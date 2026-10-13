@@ -39,6 +39,26 @@ export interface TaskStat {
   responsibleId: string | null;
   responsibleName: string;
   url: string | null;
+  /**
+   * Kanban stage of the project's task board («Новые», «Тестирование»…) when the project is a
+   * Bitrix24 group with its own stages (ADR-050); null — the plain status is shown instead.
+   */
+  stage?: string | null;
+}
+
+/** What a task's status reads as: its board stage when there is one, else the Bitrix status. */
+export function taskStatusLabel(t: Pick<TaskStat, 'status' | 'stage'>): string {
+  return t.stage || TASK_STATUS_LABELS[t.status] || t.status;
+}
+
+/** Key for grouping and filtering by status: the stage name, or the status code. */
+export function taskStatusKey(t: Pick<TaskStat, 'status' | 'stage'>): string {
+  return t.stage ? `stage:${t.stage}` : t.status;
+}
+
+/** A status key back to its label (see taskStatusKey). */
+export function statusKeyLabel(key: string): string {
+  return key.startsWith('stage:') ? key.slice(6) : (TASK_STATUS_LABELS[key] ?? key);
 }
 
 export interface TimeEntry {

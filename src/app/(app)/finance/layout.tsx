@@ -1,4 +1,5 @@
 import { SectionTabs } from '@/components/layout/section-tabs';
+import { OneCRequest } from '@/components/billing/one-c-request';
 
 const TABS = [
   { href: '/finance/overview', label: 'Обзор' },
@@ -9,7 +10,7 @@ const TABS = [
 export default function FinanceLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <SectionTabs tabs={TABS} />
+      <SectionTabs tabs={TABS} aside={<OneCRequest />} />
       {children}
     </>
   );

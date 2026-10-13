@@ -18,7 +18,7 @@ function actorName(u: { firstName: string; lastName: string }): string {
 /** The portal's most recent still-open ("we'll get back to you") lead of this kind, if any. */
 export async function getOpenProLead(
   scope: PortalScope,
-  kind: 'PRO' | 'IMPLEMENTATION' = 'PRO',
+  kind: 'PRO' | 'IMPLEMENTATION' | 'INTEGRATION_1C' = 'PRO',
 ): Promise<ProLeadSummary | null> {
   const [lead] = await scope.proLead.findMany({
     where: { status: { in: ['NEW', 'CONTACTED'] }, kind },

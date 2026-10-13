@@ -194,3 +194,29 @@ h2,
     background: #fff !important;
   }
 }
+
+/* Sortable table headers (ADR-050): a faint arrow on hover, a bright one on the sorted column. */
+th.sortable-th::after {
+  content: '↕';
+  margin-left: 0.35em;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+th.sortable-th:hover::after {
+  opacity: 0.45;
+}
+th.sortable-th[aria-sort='descending']::after {
+  content: '↓';
+  opacity: 1;
+  color: var(--accent);
+}
+th.sortable-th[aria-sort='ascending']::after {
+  content: '↑';
+  opacity: 1;
+  color: var(--accent);
+}
+@media print {
+  th.sortable-th::after {
+    content: none;
+  }
+}

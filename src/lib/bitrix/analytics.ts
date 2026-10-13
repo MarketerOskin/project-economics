@@ -16,7 +16,7 @@ const MAX_MEETING_SECONDS = 12 * 3600;
 
 const TASK_SELECT = [
   'ID', 'TITLE', 'STATUS', 'GROUP_ID', 'CREATED_DATE', 'DATE_START', 'CLOSED_DATE',
-  'RESPONSIBLE_ID', 'TIME_SPENT_IN_LOGS', 'DEADLINE',
+  'RESPONSIBLE_ID', 'TIME_SPENT_IN_LOGS', 'DEADLINE', 'STAGE_ID',
 ];
 
 function toInt(v: unknown): number {
@@ -41,6 +41,7 @@ export interface RawTask {
   responsibleId?: string | number;
   responsible?: { name?: string };
   timeSpentInLogs?: string | number;
+  stageId?: string | number;
 }
 
 export function parseTask(raw: RawTask, projectId: string, urlFor: (task: { id: number; responsibleId: string | null }) => string): TaskStat & { spentSeconds: number } {
@@ -60,6 +61,31 @@ export function parseTask(raw: RawTask, projectId: string, urlFor: (task: { id: 
     url: urlFor({ id, responsibleId }),
     spentSeconds: toInt(raw.timeSpentInLogs),
   };
+}
+
+interface RawStage {
+  ID?: string | number;
+  TITLE?: string;
+  SORT?: string | number;
+}
+
+/**
+ * Stage names of a group's task board (task.stages.get), id -> title (ADR-050). Tasks that
+ * were never moved carry STAGE_ID 0 and sit in the first stage. Empty when the group has no
+ * board or the call is refused — the plain status is shown then.
+ */
+export async function fetchTaskStages(portal: PortalInstallation, groupId: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  try {
+    const raw = await callBitrix<Record<string, RawStage> | RawStage[]>(portal, 'task.stages.get', { entityId: groupId });
+    const list = (Array.isArray(raw) ? raw : Object.values(raw ?? {})).filter((r) => r.ID && r.TITLE);
+    list.sort((a, b) => toInt(a.SORT) - toInt(b.SORT));
+    for (const r of list) out.set(String(toInt(r.ID)), String(r.TITLE));
+    if (list[0]) out.set('0', String(list[0].TITLE));
+  } catch {
+    // No board or no access: statuses stay as they are.
+  }
+  return out;
 }
 
 export interface RawElapsed {
@@ -181,7 +207,16 @@ export async function fetchTasks(
     raw.push(...page);
     if (page.length < PAGE) break;
   }
-  return raw.slice(0, MAX_TASKS_PER_PROJECT).map((r) => parseTask(r, projectId, (t) => taskUrl(portal, source, t)));
+  const tasks = raw.slice(0, MAX_TASKS_PER_PROJECT).map((r) => parseTask(r, projectId, (t) => taskUrl(portal, source, t)));
+  if (source.kind === 'group' && tasks.length) {
+    const stages = await fetchTaskStages(portal, source.groupId);
+    if (stages.size) {
+      raw.slice(0, MAX_TASKS_PER_PROJECT).forEach((r, i) => {
+        tasks[i]!.stage = stages.get(String(toInt(r.stageId))) ?? null;
+      });
+    }
+  }
+  return tasks;
 }
 
 /** Time records of the given tasks, 50 tasks per batch request. */

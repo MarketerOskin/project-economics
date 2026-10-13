@@ -4,7 +4,7 @@ import { analyticsPage, type SearchParams } from '@/server/analytics-page';
 import { AnalyticsUpsell } from '@/components/analytics/page-parts';
 import { PrintButton } from '@/components/analytics/print-button';
 import { ReportHoursChart } from '@/components/analytics/report-chart';
-import { dailySeries, meetingRows, meetingSeconds, monthUsage, summarizeProject, taskRows, TASK_STATUS_LABELS } from '@/domain/analytics';
+import { dailySeries, meetingRows, meetingSeconds, monthUsage, summarizeProject, taskRows, taskStatusLabel } from '@/domain/analytics';
 import { m } from '@/domain/finance/money';
 import { supportCost } from '@/domain/finance/support-package';
 import { formatDateIn, formatDateTimeIn, formatDuration, formatHours, formatRub, formatTimeIn } from '@/lib/format';
@@ -156,7 +156,7 @@ export default async function ProjectReportPage({ params, searchParams }: { para
                     <td>{r.task.id}</td>
                     <td className="whitespace-nowrap">{formatDateIn(r.task.created, tz)}</td>
                     <td>{r.task.title}</td>
-                    <td className={r.task.status === '5' ? 'font-semibold text-[#3a7d0a]' : 'font-semibold'}>{TASK_STATUS_LABELS[r.task.status] ?? r.task.status}</td>
+                    <td className={r.task.status === '5' ? 'font-semibold text-[#3a7d0a]' : 'font-semibold'}>{taskStatusLabel(r.task)}</td>
                     <td className="whitespace-nowrap">{formatDuration(r.reactionSeconds)}</td>
                     <td>{r.task.responsibleId ? (names[r.task.responsibleId] ?? r.task.responsibleName) : '—'}</td>
                     <td className="num">{formatDuration(r.seconds)}</td>

@@ -171,7 +171,7 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
         <PlanCard title="Free" price={formatRubStr('0')} features={FREE_FEATURES} isCurrent={currentPlan === 'FREE' && !isDemo} footer={<p className="text-sm text-fg-tertiary">Бесплатно, до 3 активных проектов</p>} />
         <PlanCard
           title="Pro"
-          price={`${formatRubStr('1000')} / мес за портал`}
+          price={`${formatRubStr('5000')} / мес за портал`}
           features={PRO_FEATURES}
           highlighted
           isCurrent={currentPlan === 'PRO' && !isDemo}

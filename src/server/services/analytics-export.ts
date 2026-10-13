@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import {
-  TASK_STATUS_LABELS,
+  taskStatusLabel,
   meetingRows,
   meetingSeconds,
   monthUsage,
@@ -100,7 +100,7 @@ export async function buildAnalyticsWorkbook(
       id: r.task.id,
       title: r.task.title,
       project: projectName[r.task.projectId] ?? '',
-      status: TASK_STATUS_LABELS[r.task.status] ?? r.task.status,
+      status: taskStatusLabel(r.task),
       created: formatDateTimeIn(r.task.created, tz),
       started: formatDateTimeIn(r.task.started, tz),
       closed: formatDateTimeIn(r.task.closed, tz),
