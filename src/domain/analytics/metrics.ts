@@ -30,13 +30,17 @@ export interface Filters {
 }
 
 const inWindow = (d: Date | null, w: Window): d is Date => d !== null && d >= w.start && d < w.end;
-const isOpen = (t: TaskStat) => t.status !== TASK_STATUS.COMPLETED && t.status !== TASK_STATUS.DECLINED;
-const isDoneIn = (t: TaskStat, w: Window) => t.status === TASK_STATUS.COMPLETED && inWindow(t.closed, w);
+const isOpen = (t: TaskStat) =>
+  t.status !== TASK_STATUS.COMPLETED && t.status !== TASK_STATUS.DECLINED;
+const isDoneIn = (t: TaskStat, w: Window) =>
+  t.status === TASK_STATUS.COMPLETED && inWindow(t.closed, w);
 /** A meeting enters hours only once it has started (future ones stay in the schedule). */
 const held = (m: Meeting, now: Date) => m.start <= now;
 
 function taskMatches(t: TaskStat, f: Filters): boolean {
-  return (!f.employeeId || t.responsibleId === f.employeeId) && (!f.status || t.status === f.status);
+  return (
+    (!f.employeeId || t.responsibleId === f.employeeId) && (!f.status || t.status === f.status)
+  );
 }
 
 function avg(xs: number[]): number | null {
@@ -80,7 +84,9 @@ export function monthUsage(p: ProjectActivity, w: Window, tz: string, now: Date)
   const limitSeconds = p.limitHours !== null ? Math.round(p.limitHours * 3600) : null;
   return monthsTouched(w, tz).map(([y, m]) => {
     const mp = monthPeriod(y, m, tz);
-    const taskSeconds = p.entries.filter((e) => inWindow(e.at, mp)).reduce((a, e) => a + e.seconds, 0);
+    const taskSeconds = p.entries
+      .filter((e) => inWindow(e.at, mp))
+      .reduce((a, e) => a + e.seconds, 0);
     const meetSeconds = p.meetings
       .filter((x) => held(x, now) && inWindow(x.start, mp))
       .reduce((a, x) => a + meetingSeconds(x), 0);
@@ -101,7 +107,12 @@ export function monthUsage(p: ProjectActivity, w: Window, tz: string, now: Date)
  * Seconds each person put into a project in one calendar month ('YYYY-MM'): their time
  * records plus, in full, every meeting they attended that has started (ADR-045).
  */
-export function monthSecondsByPerson(p: ProjectActivity, month: string, tz: string, now: Date): Map<string, number> {
+export function monthSecondsByPerson(
+  p: ProjectActivity,
+  month: string,
+  tz: string,
+  now: Date,
+): Map<string, number> {
   const [y, mo] = month.split('-').map(Number) as [number, number];
   const mp = monthPeriod(y, mo, tz);
   const out = new Map<string, number>();
@@ -148,7 +159,10 @@ function summarizeParts(
     .filter((e) => (!f.employeeId || e.userId === f.employeeId) && inWindow(e.at, w))
     .reduce((a, e) => a + e.seconds, 0);
   const heldMeetings = meetings.filter(
-    (m) => held(m, now) && inWindow(m.start, w) && (!f.employeeId || m.attendeeIds.includes(f.employeeId)),
+    (m) =>
+      held(m, now) &&
+      inWindow(m.start, w) &&
+      (!f.employeeId || m.attendeeIds.includes(f.employeeId)),
   );
   const meetSeconds = heldMeetings.reduce((a, m) => a + meetingSeconds(m), 0);
   return {
@@ -166,12 +180,22 @@ function summarizeParts(
   };
 }
 
-export function summarizeProject(p: ProjectActivity, w: Window, now: Date, f: Filters = {}): Summary {
+export function summarizeProject(
+  p: ProjectActivity,
+  w: Window,
+  now: Date,
+  f: Filters = {},
+): Summary {
   return summarizeParts(p.tasks, p.entries, p.meetings, w, now, f);
 }
 
 /** The same summary over several projects at once (overview KPIs). */
-export function summarizeAll(projects: ProjectActivity[], w: Window, now: Date, f: Filters = {}): Summary {
+export function summarizeAll(
+  projects: ProjectActivity[],
+  w: Window,
+  now: Date,
+  f: Filters = {},
+): Summary {
   return summarizeParts(
     projects.flatMap((p) => p.tasks),
     projects.flatMap((p) => p.entries),
@@ -192,7 +216,12 @@ export interface TaskRow {
 }
 
 /** Tasks created, closed or worked on inside the window, newest first. */
-export function taskRows(tasks: TaskStat[], entries: TimeEntry[], w: Window, f: Filters = {}): TaskRow[] {
+export function taskRows(
+  tasks: TaskStat[],
+  entries: TimeEntry[],
+  w: Window,
+  f: Filters = {},
+): TaskRow[] {
   const byTask = new Map<number, number>();
   for (const e of entries) {
     if ((!f.employeeId || e.userId === f.employeeId) && inWindow(e.at, w)) {
@@ -208,7 +237,11 @@ export function taskRows(tasks: TaskStat[], entries: TimeEntry[], w: Window, f: 
       reactionSeconds: reactionSeconds(t),
       resolutionSeconds: resolutionSeconds(t),
     }))
-    .sort((a, b) => (b.task.created?.getTime() ?? 0) - (a.task.created?.getTime() ?? 0) || b.task.id - a.task.id);
+    .sort(
+      (a, b) =>
+        (b.task.created?.getTime() ?? 0) - (a.task.created?.getTime() ?? 0) ||
+        b.task.id - a.task.id,
+    );
 }
 
 // ─── Series ─────────────────────────────────────────────────────────────────
@@ -231,7 +264,10 @@ export function dailySeries(
   f: Filters = {},
 ): DayPoint[] {
   const points = new Map<string, DayPoint>(
-    daysBetween(w.start, w.end, tz).map((day) => [day, { day, taskSeconds: 0, meetingSeconds: 0, created: 0, closed: 0 }]),
+    daysBetween(w.start, w.end, tz).map((day) => [
+      day,
+      { day, taskSeconds: 0, meetingSeconds: 0, created: 0, closed: 0 },
+    ]),
   );
   for (const p of projects) {
     for (const e of p.entries) {
@@ -241,7 +277,11 @@ export function dailySeries(
       }
     }
     for (const m of p.meetings) {
-      if (held(m, now) && inWindow(m.start, w) && (!f.employeeId || m.attendeeIds.includes(f.employeeId))) {
+      if (
+        held(m, now) &&
+        inWindow(m.start, w) &&
+        (!f.employeeId || m.attendeeIds.includes(f.employeeId))
+      ) {
         const pt = points.get(dayKey(m.start, tz));
         if (pt) pt.meetingSeconds += meetingSeconds(m);
       }
@@ -274,7 +314,9 @@ export function statusSplit(tasks: TaskStat[], w: Window, f: Filters = {}): Stat
       counts.set(t.status, (counts.get(t.status) ?? 0) + 1);
     }
   }
-  return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([status, count]) => ({ status, count }));
+  return [...counts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([status, count]) => ({ status, count }));
 }
 
 // ─── Meetings ───────────────────────────────────────────────────────────────
@@ -284,11 +326,20 @@ export interface MeetingRow {
   held: boolean;
 }
 
-export function meetingRows(meetings: Meeting[], w: Window, now: Date, employeeId?: string): MeetingRow[] {
+export function meetingRows(
+  meetings: Meeting[],
+  w: Window,
+  now: Date,
+  employeeId?: string,
+): MeetingRow[] {
   return meetings
     .filter((m) => inWindow(m.start, w) && (!employeeId || m.attendeeIds.includes(employeeId)))
     .map((m) => ({ meeting: m, held: held(m, now) }))
-    .sort((a, b) => a.meeting.start.getTime() - b.meeting.start.getTime() || a.meeting.id.localeCompare(b.meeting.id));
+    .sort(
+      (a, b) =>
+        a.meeting.start.getTime() - b.meeting.start.getTime() ||
+        a.meeting.id.localeCompare(b.meeting.id),
+    );
 }
 
 // ─── People ─────────────────────────────────────────────────────────────────
@@ -304,7 +355,12 @@ export interface EmployeeRow {
 }
 
 /** Load per person across projects: everyone who owns a task, logged time or attended. */
-export function teamOverview(projects: ProjectActivity[], w: Window, now: Date, knownIds: string[] = []): EmployeeRow[] {
+export function teamOverview(
+  projects: ProjectActivity[],
+  w: Window,
+  now: Date,
+  knownIds: string[] = [],
+): EmployeeRow[] {
   const tasks = projects.flatMap((p) => p.tasks);
   const entries = projects.flatMap((p) => p.entries);
   const meetings = projects.flatMap((p) => p.meetings);
@@ -317,8 +373,12 @@ export function teamOverview(projects: ProjectActivity[], w: Window, now: Date, 
   const rows: EmployeeRow[] = [];
   for (const userId of ids) {
     const mine = tasks.filter((t) => t.responsibleId === userId);
-    const taskSeconds = entries.filter((e) => e.userId === userId && inWindow(e.at, w)).reduce((a, e) => a + e.seconds, 0);
-    const myMeetings = meetings.filter((m) => m.attendeeIds.includes(userId) && held(m, now) && inWindow(m.start, w));
+    const taskSeconds = entries
+      .filter((e) => e.userId === userId && inWindow(e.at, w))
+      .reduce((a, e) => a + e.seconds, 0);
+    const myMeetings = meetings.filter(
+      (m) => m.attendeeIds.includes(userId) && held(m, now) && inWindow(m.start, w),
+    );
     const meetSeconds = myMeetings.reduce((a, m) => a + meetingSeconds(m), 0);
     rows.push({
       userId,
@@ -330,7 +390,10 @@ export function teamOverview(projects: ProjectActivity[], w: Window, now: Date, 
       totalSeconds: taskSeconds + meetSeconds,
     });
   }
-  return rows.sort((a, b) => b.totalSeconds - a.totalSeconds || b.done - a.done || a.userId.localeCompare(b.userId));
+  return rows.sort(
+    (a, b) =>
+      b.totalSeconds - a.totalSeconds || b.done - a.done || a.userId.localeCompare(b.userId),
+  );
 }
 
 export interface ProjectShare {
@@ -356,7 +419,12 @@ export interface EmployeeProfile {
   journal: JournalRow[];
 }
 
-export function employeeProfile(userId: string, projects: ProjectActivity[], w: Window, now: Date): EmployeeProfile {
+export function employeeProfile(
+  userId: string,
+  projects: ProjectActivity[],
+  w: Window,
+  now: Date,
+): EmployeeProfile {
   const f: Filters = { employeeId: userId };
   const tasks = projects.flatMap((p) => p.tasks);
   const entries = projects.flatMap((p) => p.entries);
@@ -409,7 +477,12 @@ export interface SourceSlice {
  * whose linked elements carry time in mapped fields (ADR-040: their records have a negative
  * task id and the section title as comment).
  */
-export function hoursBySource(projects: ProjectActivity[], w: Window, now: Date, f: Filters = {}): SourceSlice[] {
+export function hoursBySource(
+  projects: ProjectActivity[],
+  w: Window,
+  now: Date,
+  f: Filters = {},
+): SourceSlice[] {
   const out = new Map<string, SourceSlice>();
   const add = (key: string, label: string, s: number) => {
     const cur = out.get(key) ?? { key, label, seconds: 0 };
@@ -423,7 +496,11 @@ export function hoursBySource(projects: ProjectActivity[], w: Window, now: Date,
       else add('tasks', 'Задачи', e.seconds);
     }
     for (const m of p.meetings) {
-      if (held(m, now) && inWindow(m.start, w) && (!f.employeeId || m.attendeeIds.includes(f.employeeId))) {
+      if (
+        held(m, now) &&
+        inWindow(m.start, w) &&
+        (!f.employeeId || m.attendeeIds.includes(f.employeeId))
+      ) {
         add('meetings', 'Встречи', meetingSeconds(m));
       }
     }
@@ -432,9 +509,91 @@ export function hoursBySource(projects: ProjectActivity[], w: Window, now: Date,
 }
 
 /** Meetings that haven't started yet, within `days` from now, soonest first. */
-export function upcomingMeetings(meetings: Meeting[], now: Date, days = 30, employeeId?: string): Meeting[] {
+export function upcomingMeetings(
+  meetings: Meeting[],
+  now: Date,
+  days = 30,
+  employeeId?: string,
+): Meeting[] {
   const until = new Date(now.getTime() + days * 86_400_000);
   return meetings
-    .filter((m) => m.start > now && m.start <= until && (!employeeId || m.attendeeIds.includes(employeeId)))
+    .filter(
+      (m) =>
+        m.start > now && m.start <= until && (!employeeId || m.attendeeIds.includes(employeeId)),
+    )
     .sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+
+// ─── Drill-down (ADR-049) ───────────────────────────────────────────────────
+
+/** Which tasks a figure on the overview counts: the list behind «Создано задач», «Выполнено»… */
+export type TaskView = 'all' | 'touched' | 'created' | 'done' | 'open' | 'overdue' | 'worked';
+
+export const TASK_VIEW_LABELS: Record<TaskView, string> = {
+  all: 'Все задачи периода',
+  touched: 'Созданы или закрыты',
+  created: 'Созданы за период',
+  done: 'Выполнены за период',
+  open: 'Открыты сейчас',
+  overdue: 'Просрочены',
+  worked: 'С записями времени за период',
+};
+
+/**
+ * The tasks behind one overview figure, with the same rules the figure uses, so the list's
+ * length always equals the number that was clicked. Newest first.
+ */
+export function drillTasks(
+  tasks: TaskStat[],
+  entries: TimeEntry[],
+  w: Window,
+  now: Date,
+  view: TaskView,
+  f: Filters = {},
+): TaskRow[] {
+  if (view === 'all') return taskRows(tasks, entries, w, f);
+  const byTask = new Map<number, number>();
+  for (const e of entries) {
+    if ((!f.employeeId || e.userId === f.employeeId) && inWindow(e.at, w))
+      byTask.set(e.taskId, (byTask.get(e.taskId) ?? 0) + e.seconds);
+  }
+  const keep: Record<Exclude<TaskView, 'all'>, (t: TaskStat) => boolean> = {
+    touched: (t) => taskMatches(t, f) && (inWindow(t.created, w) || inWindow(t.closed, w)),
+    created: (t) => taskMatches(t, f) && inWindow(t.created, w),
+    done: (t) => taskMatches(t, f) && isDoneIn(t, w),
+    open: (t) => taskMatches(t, f) && isOpen(t),
+    overdue: (t) => taskMatches(t, f) && isOpen(t) && t.deadline !== null && t.deadline < now,
+    // Hours count everyone's records on a task, so the employee filter applies to the records.
+    worked: (t) => (!f.status || t.status === f.status) && byTask.has(t.id),
+  };
+  return tasks
+    .filter(keep[view])
+    .map((t) => ({
+      task: t,
+      seconds: byTask.get(t.id) ?? 0,
+      reactionSeconds: reactionSeconds(t),
+      resolutionSeconds: resolutionSeconds(t),
+    }))
+    .sort(
+      (a, b) =>
+        (b.task.created?.getTime() ?? 0) - (a.task.created?.getTime() ?? 0) ||
+        b.task.id - a.task.id,
+    );
+}
+
+/** Time records of the window (optionally one person's), newest first, with their tasks. */
+export function journalRows(
+  tasks: TaskStat[],
+  entries: TimeEntry[],
+  w: Window,
+  f: Filters = {},
+): JournalRow[] {
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
+  return entries
+    .filter((e) => (!f.employeeId || e.userId === f.employeeId) && inWindow(e.at, w))
+    .map((e) => {
+      const task = taskById.get(e.taskId) ?? null;
+      return { entry: e, task, projectId: task?.projectId ?? '' };
+    })
+    .sort((a, b) => b.entry.at.getTime() - a.entry.at.getTime());
 }

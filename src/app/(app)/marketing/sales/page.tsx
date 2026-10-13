@@ -10,6 +10,7 @@ import { SalesTable } from '@/components/marketing/tables';
 import { m } from '@/domain/finance/money';
 import { formatNumber, formatPercentStr, formatRubStr } from '@/lib/format';
 import { salesReport } from '@/server/services/marketing';
+import { drillHref } from '@/lib/drill';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,12 @@ export default async function SalesPage({ searchParams }: { searchParams: Search
       </div>
     );
   }
-  const { session, scope, period, tz } = ctx;
+  const { session, scope, period, tz, periodQuery } = ctx;
+  const by = (field: 'source' | 'manager') => (kind: string, key: string | null) =>
+    drillHref('/marketing/items', periodQuery, {
+      kind,
+      [field]: key === null ? undefined : key || 'none',
+    });
   const r = await salesReport(session, scope, period, tz, { refresh: ctx.refresh });
   const t = r.total;
   const problems = [
@@ -62,19 +68,31 @@ export default async function SalesPage({ searchParams }: { searchParams: Search
           label="Создано сделок"
           value={formatNumber(m(t.created))}
           hint={`В работе ${formatNumber(m(t.inWork))}`}
+          href={by('source')('deals', null)}
         />
-        <Stat label="Продажи" value={formatNumber(m(t.sales))} hint="Выиграно за период" />
-        <Stat label="Выручка" value={formatRubStr(t.revenue)} />
-        <Stat label="Средний чек" value={formatRubStr(t.avgCheck)} />
+        <Stat
+          label="Продажи"
+          value={formatNumber(m(t.sales))}
+          hint="Выиграно за период"
+          href={by('source')('sales', null)}
+        />
+        <Stat label="Выручка" value={formatRubStr(t.revenue)} href={by('source')('sales', null)} />
+        <Stat
+          label="Средний чек"
+          value={formatRubStr(t.avgCheck)}
+          href={by('source')('sales', null)}
+        />
         <Stat
           label="Конверсия"
           value={formatPercentStr(t.conversion)}
           hint={`${formatNumber(m(t.won))} выиграно · ${formatNumber(m(t.lost))} проиграно`}
+          href={by('source')('won', null)}
         />
         <Stat
           label="Цикл сделки"
           value={r.cycleDays === null ? '—' : `${formatNumber(m(r.cycleDays))} дн.`}
           hint="От создания до победы"
+          href={by('source')('sales', null)}
         />
       </StatGrid>
 
@@ -83,7 +101,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Search
         hint="«Создано», «В работе», «Выиграно», «Проиграно» и конверсия — по сделкам, созданным за период. «Продажи» и «Выручка» — сделки, выигранные за период."
       >
         {r.byChannel.length ? (
-          <SalesTable first="Источник" rows={r.byChannel} total={t} />
+          <SalesTable first="Источник" rows={r.byChannel} total={t} href={by('source')} />
         ) : (
           <p className="text-fg-tertiary text-sm">За период сделок нет.</p>
         )}
@@ -91,7 +109,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Search
 
       <Section title="По менеджерам">
         {r.byManager.length ? (
-          <SalesTable first="Менеджер" rows={r.byManager} total={t} />
+          <SalesTable first="Менеджер" rows={r.byManager} total={t} href={by('manager')} />
         ) : (
           <p className="text-fg-tertiary text-sm">За период сделок нет.</p>
         )}

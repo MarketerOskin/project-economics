@@ -34,13 +34,14 @@ const STATUS_COLORS: Record<string, string> = {
   '7': 'var(--negative)',
 };
 
-export function SourcesCard({ slices }: { slices: SourceSlice[] }) {
+export function SourcesCard({ slices, href }: { slices: SourceSlice[]; href?: string }) {
   let crm = 0;
   const items: DonutItem[] = slices.map((s) => ({
     key: s.key,
     label: s.label,
     value: s.seconds,
     display: `${formatHours(s.seconds)} ч`,
+    href,
     color:
       s.key === 'tasks'
         ? 'var(--accent)'
@@ -56,7 +57,13 @@ export function SourcesCard({ slices }: { slices: SourceSlice[] }) {
   );
 }
 
-export function StatusesCard({ slices }: { slices: StatusSlice[] }) {
+export function StatusesCard({
+  slices,
+  hrefOf,
+}: {
+  slices: StatusSlice[];
+  hrefOf?: (status: string) => string;
+}) {
   const items: DonutItem[] = [...slices]
     .sort((a, b) => b.count - a.count)
     .map((s) => ({
@@ -64,6 +71,7 @@ export function StatusesCard({ slices }: { slices: StatusSlice[] }) {
       label: TASK_STATUS_LABELS[s.status] ?? s.status,
       value: s.count,
       display: String(s.count),
+      href: hrefOf?.(s.status),
       color: STATUS_COLORS[s.status] ?? 'var(--fg-tertiary)',
     }));
   return (

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { CHART } from '@/components/charts/chart-theme';
 
@@ -10,6 +11,8 @@ export interface DonutItem {
   /** Already formatted for the legend, e.g. "12,5 ч". */
   display: string;
   color: string;
+  /** Where the slice's list opens (ADR-049). */
+  href?: string;
 }
 
 /** Ring with the total in the middle and a legend that always names each slice (ADR-047). */
@@ -53,10 +56,22 @@ export function Donut({
       </div>
       <ul className="min-w-0 flex-1 space-y-2">
         {shown.map((i) => (
-          <li key={i.key} className="flex items-center gap-2 text-sm">
-            <span className="size-2.5 shrink-0" style={{ backgroundColor: i.color }} />
-            <span className="text-fg-secondary min-w-0 flex-1 truncate">{i.label}</span>
-            <span className="nums text-fg-tertiary">{i.display}</span>
+          <li key={i.key} className="text-sm">
+            {i.href ? (
+              <Link href={i.href} className="group flex items-center gap-2">
+                <span className="size-2.5 shrink-0" style={{ backgroundColor: i.color }} />
+                <span className="text-fg-secondary group-hover:text-accent min-w-0 flex-1 truncate group-hover:underline">
+                  {i.label}
+                </span>
+                <span className="nums text-fg-tertiary">{i.display}</span>
+              </Link>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span className="size-2.5 shrink-0" style={{ backgroundColor: i.color }} />
+                <span className="text-fg-secondary min-w-0 flex-1 truncate">{i.label}</span>
+                <span className="nums text-fg-tertiary">{i.display}</span>
+              </span>
+            )}
           </li>
         ))}
       </ul>

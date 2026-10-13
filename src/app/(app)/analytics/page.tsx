@@ -7,9 +7,21 @@ import { Stat, StatGrid } from '@/components/analytics/stat';
 import { HoursByDayChart, TaskFlowChart } from '@/components/analytics/charts';
 import { UsageCards, type UsageCardData } from '@/components/analytics/usage';
 import { TasksTable } from '@/components/analytics/tables';
-import { AnalyticsUpsell, NoBitrixProjects, Section, Toolbar, UnlinkedProjects } from '@/components/analytics/page-parts';
+import {
+  AnalyticsUpsell,
+  NoBitrixProjects,
+  Section,
+  Toolbar,
+  UnlinkedProjects,
+} from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
-import { PeopleCards, SectionHead, SourcesCard, StatusesCard, UpcomingMeetingsCard } from '@/components/analytics/overview-parts';
+import {
+  PeopleCards,
+  SectionHead,
+  SourcesCard,
+  StatusesCard,
+  UpcomingMeetingsCard,
+} from '@/components/analytics/overview-parts';
 import {
   dailySeries,
   hoursBySource,
@@ -22,10 +34,15 @@ import {
   upcomingMeetings,
 } from '@/domain/analytics';
 import { formatDuration, formatHours } from '@/lib/format';
+import { drillHref } from '@/lib/drill';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AnalyticsOverviewPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function AnalyticsOverviewPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const ctx = await analyticsPage(searchParams);
   if (!ctx.pro) return <AnalyticsUpsell />;
   const { world, period, filters, names, projectNames, periodQuery } = ctx;
@@ -37,7 +54,9 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
       <div className="flex items-center gap-2">
         <AnalyticsFilters
           projects={Object.entries(projectNames).map(([value, label]) => ({ value, label }))}
-          people={Object.entries(names).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))}
+          people={Object.entries(names)
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label))}
         />
         <ExportButton />
       </div>
@@ -65,25 +84,48 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
         totalSeconds: ps.totalSeconds,
         taskSeconds: ps.taskSeconds,
         meetingSeconds: ps.meetingSeconds,
-        limitSeconds: p.limitHours !== null ? usage.reduce((a, u) => a + (u.limitSeconds ?? 0), 0) : null,
+        limitSeconds:
+          p.limitHours !== null ? usage.reduce((a, u) => a + (u.limitSeconds ?? 0), 0) : null,
         overageSeconds: usage.reduce((a, u) => a + u.overageSeconds, 0),
         done: ps.done,
         openNow: ps.openNow,
       };
     })
     .sort((a, b) => b.overageSeconds - a.overageSeconds || b.totalSeconds - a.totalSeconds);
-  const rows = taskRows(projects.flatMap((p) => p.tasks), projects.flatMap((p) => p.entries), period, filters);
+  const rows = taskRows(
+    projects.flatMap((p) => p.tasks),
+    projects.flatMap((p) => p.entries),
+    period,
+    filters,
+  );
   const overLimit = cards.filter((c) => c.overageSeconds > 0).length;
   const staff = new Set(world.staffIds);
   const team = teamOverview(projects, period, now, world.staffIds).filter(
-    (r) => (!filters.employeeId || r.userId === filters.employeeId) && (staff.has(r.userId) || r.totalSeconds > 0),
+    (r) =>
+      (!filters.employeeId || r.userId === filters.employeeId) &&
+      (staff.has(r.userId) || r.totalSeconds > 0),
   );
   const people = Object.fromEntries(
     team.map((r) => {
       const p = world.people.get(r.userId);
-      return [r.userId, { name: names[r.userId] ?? p?.name ?? `Сотрудник ${r.userId}`, position: p?.position ?? null, photoUrl: p?.photoUrl ?? null }];
+      return [
+        r.userId,
+        {
+          name: names[r.userId] ?? p?.name ?? `Сотрудник ${r.userId}`,
+          position: p?.position ?? null,
+          photoUrl: p?.photoUrl ?? null,
+        },
+      ];
     }),
   );
+
+  const drill = (path: string, view?: string, status?: string) =>
+    drillHref(path, periodQuery, {
+      view,
+      status,
+      projectId: ctx.projectFilter,
+      employeeId: filters.employeeId,
+    });
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 sm:px-8">
@@ -91,18 +133,49 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
       <LoadNotices problems={loadProblems(world)} fetchedAt={world.fetchedAt} tz={tz} />
 
       <StatGrid>
-        <Stat label="Создано задач" value={String(s.created)} />
-        <Stat label="Выполнено" value={String(s.done)} />
-        <Stat label="Открыто сейчас" value={String(s.openNow)} hint={s.overdue ? `просрочено ${s.overdue}` : undefined} tone={s.overdue ? 'negative' : undefined} />
-        <Stat label="Реакция" value={formatDuration(s.avgReactionSeconds)} hint={`медиана ${formatDuration(s.medianReactionSeconds)}`} />
-        <Stat label="Решение" value={formatDuration(s.avgResolutionSeconds)} hint="в среднем от создания" />
+        <Stat
+          label="Создано задач"
+          value={String(s.created)}
+          href={drill('/analytics/tasks', 'created')}
+        />
+        <Stat label="Выполнено" value={String(s.done)} href={drill('/analytics/tasks', 'done')} />
+        <Stat
+          label="Открыто сейчас"
+          value={String(s.openNow)}
+          hint={s.overdue ? `просрочено ${s.overdue}` : undefined}
+          tone={s.overdue ? 'negative' : undefined}
+          href={drill('/analytics/tasks', s.overdue ? 'overdue' : 'open')}
+        />
+        <Stat
+          label="Реакция"
+          value={formatDuration(s.avgReactionSeconds)}
+          hint={`медиана ${formatDuration(s.medianReactionSeconds)}`}
+          href={drill('/analytics/tasks', 'created')}
+        />
+        <Stat
+          label="Решение"
+          value={formatDuration(s.avgResolutionSeconds)}
+          hint="в среднем от создания"
+          href={drill('/analytics/tasks', 'done')}
+        />
         <Stat
           label="Часы"
           value={formatHours(s.totalSeconds)}
           hint={`задачи ${formatHours(s.taskSeconds)} · встречи ${formatHours(s.meetingSeconds)}`}
+          href={drill('/analytics/hours')}
         />
-        <Stat label="Встреч" value={String(s.meetings)} hint="состоялось за период" />
-        <Stat label="Проектов выше лимита" value={String(overLimit)} tone={overLimit ? 'negative' : undefined} />
+        <Stat
+          label="Встреч"
+          value={String(s.meetings)}
+          hint="состоялось за период"
+          href={drill('/analytics/meetings')}
+        />
+        <Stat
+          label="Проектов выше лимита"
+          value={String(overLimit)}
+          tone={overLimit ? 'negative' : undefined}
+          href="#usage"
+        />
       </StatGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -115,25 +188,48 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <SourcesCard slices={hoursBySource(projects, period, now, filters)} />
-        <StatusesCard slices={statusSplit(projects.flatMap((p) => p.tasks), period, filters)} />
+        <SourcesCard
+          slices={hoursBySource(projects, period, now, filters)}
+          href={drill('/analytics/hours')}
+        />
+        <StatusesCard
+          slices={statusSplit(
+            projects.flatMap((p) => p.tasks),
+            period,
+            filters,
+          )}
+          hrefOf={(st) => drill('/analytics/tasks', 'touched', st)}
+        />
         <UpcomingMeetingsCard
-          meetings={upcomingMeetings(projects.flatMap((p) => p.meetings), now, 30, filters.employeeId)}
+          meetings={upcomingMeetings(
+            projects.flatMap((p) => p.meetings),
+            now,
+            30,
+            filters.employeeId,
+          )}
           tz={tz}
           projectNames={projectNames}
           allHref={`/analytics/meetings${periodQuery}`}
         />
       </div>
 
-      <Section title="Часы по проектам" hint="Пакет часов задаётся на вкладке «Аналитика» проекта. Красным — сверх пакета.">
+      <div id="usage" className="scroll-mt-4" />
+      <Section
+        title="Часы по проектам"
+        hint="Пакет часов задаётся на вкладке «Аналитика» проекта. Красным — сверх пакета."
+      >
         <div className="flex flex-col gap-3">
           <UsageCards items={cards} query={periodQuery} />
           {ctx.projectFilter ? null : <UnlinkedProjects items={world.unlinked} compact />}
         </div>
       </Section>
 
- <section>
-        <SectionHead title="Сотрудники" href={`/analytics/team${periodQuery}`} linkLabel="Вся команда" />
+      <section>
+        <SectionHead
+          title="Сотрудники"
+          href={`/analytics/team${periodQuery}`}
+          linkLabel="Вся команда"
+        />
         <PeopleCards rows={team} people={people} query={periodQuery} limit={8} />
       </section>
 

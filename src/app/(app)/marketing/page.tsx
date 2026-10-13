@@ -12,6 +12,7 @@ import { MONTHS, dayKey } from '@/domain/analytics';
 import { m } from '@/domain/finance/money';
 import { formatNumber, formatPercentStr, formatRubStr } from '@/lib/format';
 import { marketingReport } from '@/server/services/marketing';
+import { drillHref } from '@/lib/drill';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,12 @@ export default async function MarketingPage({ searchParams }: { searchParams: Se
       </div>
     );
   }
-  const { session, scope, period, tz } = ctx;
+  const { session, scope, period, tz, periodQuery } = ctx;
+  const items = (kind: string, source?: string | null) =>
+    drillHref('/marketing/items', periodQuery, {
+      kind,
+      source: source === null || source === undefined ? undefined : source || 'none',
+    });
   const r = await marketingReport(session, scope, period, tz, { refresh: ctx.refresh });
   const t = r.total;
   const problems = [
@@ -70,21 +76,29 @@ export default async function MarketingPage({ searchParams }: { searchParams: Se
           value={formatRubStr(t.spent)}
           hint={`Оплачено ${formatRubStr(t.paid)}`}
         />
-        <Stat label="Лиды" value={formatNumber(m(t.leads))} hint={`CPL ${formatRubStr(t.cpl)}`} />
+        <Stat
+          label="Лиды"
+          value={formatNumber(m(t.leads))}
+          hint={`CPL ${formatRubStr(t.cpl)}`}
+          href={items('leads')}
+        />
         <Stat
           label="Квал. лиды"
           value={formatNumber(m(t.qualified))}
           hint={`CPL-2 ${formatRubStr(t.cpl2)} · ${formatPercentStr(t.leadToQualified)}`}
+          href={items('qualified')}
         />
         <Stat
           label="Продажи"
           value={formatNumber(m(t.sales))}
           hint={`CAC ${formatRubStr(t.cac)}`}
+          href={items('sales')}
         />
         <Stat
           label="Выручка"
           value={formatRubStr(t.revenue)}
           hint={`Средний чек ${formatRubStr(t.avgCheck)}`}
+          href={items('sales')}
         />
         <Stat
           label="ROMI"
@@ -110,7 +124,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Se
         hint="Канал — источник лида или сделки в Битрикс24. CPL, CPL-2 и CAC считаются от реализованного бюджета, а не от пополнений кабинета."
       >
         {r.channels.length ? (
-          <ChannelsTable rows={r.channels} total={t} />
+          <ChannelsTable rows={r.channels} total={t} href={items} />
         ) : (
           <p className="text-fg-tertiary text-sm">
             За период нет ни лидов, ни продаж, ни расходов.

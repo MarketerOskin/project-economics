@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { useSession } from '@/lib/client/session';
 import { cn } from '@/lib/cn';
-import { Nav } from './nav';
+import { Nav, NavFooter } from './nav';
 import { UserBadge } from './user-badge';
 import { DemoRoleSwitch } from './demo-role-switch';
 import { ThemeToggle } from './theme-toggle';
@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [drawerOpen]);
 
   return (
-    <div className="flex min-h-screen bg-bg print:block print:min-h-0 print:bg-white">
+    <div className="bg-bg flex min-h-screen print:block print:min-h-0 print:bg-white">
       {/* Backdrop — mobile only, only when the drawer is open. */}
       {drawerOpen ? (
         <div
@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* One sidebar: a static column on ≥ lg, a slide-in drawer below it. */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r border-border bg-bg transition-transform duration-200 print:hidden',
+          'border-border bg-bg fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r transition-transform duration-200 print:hidden',
           'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:transition-none',
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={closeDrawer}
           aria-label="Закрыть меню"
-          className="absolute right-2 top-2 p-1.5 text-fg-tertiary hover:bg-surface hover:text-fg lg:hidden"
+          className="text-fg-tertiary hover:bg-surface hover:text-fg absolute top-2 right-2 p-1.5 lg:hidden"
         >
           <X className="size-4" />
         </button>
@@ -58,25 +58,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-3 px-2 py-1" onClick={closeDrawer}>
             <BrandMark className="size-10" />
             <div className="min-w-0">
-              <div className="font-display text-[15px] font-bold uppercase leading-tight text-accent">
+              <div className="font-display text-accent text-[15px] leading-tight font-bold uppercase">
                 Экономика проектов
               </div>
-              <div className="tx-mark mt-0.5 text-[10px] text-fg-tertiary">Токсичная компания</div>
+              <div className="tx-mark text-fg-tertiary mt-0.5 text-[10px]">Токсичная компания</div>
             </div>
           </Link>
 
           {loading ? (
             <div className="flex flex-col gap-1 px-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-8 animate-pulse bg-surface/60" />
+                <div key={i} className="bg-surface/60 h-8 animate-pulse" />
               ))}
             </div>
           ) : session ? (
-            <Nav role={session.role} disabled={session.disabledSections ?? []} onNavigate={closeDrawer} />
+            <Nav
+              role={session.role}
+              disabled={session.disabledSections ?? []}
+              onNavigate={closeDrawer}
+            />
           ) : null}
 
           <div className="mt-auto flex flex-col gap-3">
             <DemoRoleSwitch />
+            {session ? (
+              <NavFooter
+                role={session.role}
+                disabled={session.disabledSections ?? []}
+                onNavigate={closeDrawer}
+              />
+            ) : null}
             <ThemeToggle />
             <div className="px-1">
               <UserBadge />
@@ -87,18 +98,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar (< lg) */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-bg/90 px-4 py-3 backdrop-blur lg:hidden print:hidden">
+        <header className="border-border bg-bg/90 sticky top-0 z-30 flex items-center gap-3 border-b px-4 py-3 backdrop-blur lg:hidden print:hidden">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Открыть меню"
             aria-expanded={drawerOpen}
-            className="-ml-1 p-1.5 text-fg-secondary hover:bg-surface hover:text-fg"
+            className="text-fg-secondary hover:bg-surface hover:text-fg -ml-1 p-1.5"
           >
             <Menu className="size-5" />
           </button>
           <BrandMark className="size-7" />
-          <span className="font-display text-[15px] font-bold uppercase text-accent">
+          <span className="font-display text-accent text-[15px] font-bold uppercase">
             Экономика проектов
           </span>
         </header>
@@ -118,7 +129,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 /** Mascot from toxick.ru — the app's brand mark. Plain <img>: tiny static asset. */
 function BrandMark({ className }: { className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/brand-mascot.png" alt="" aria-hidden className={cn('shrink-0 object-contain', className)} />;
+  return (
+    <img
+      src="/brand-mascot.png"
+      alt=""
+      aria-hidden
+      className={cn('shrink-0 object-contain', className)}
+    />
+  );
 }
 
 /** Standard page header used across screens (ТЗ §18). */
@@ -132,12 +150,11 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-border px-4 py-5 sm:px-8 sm:py-6">
+    <header className="border-border flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b px-4 py-4 sm:px-8">
       <div>
-        <h1 className="text-2xl font-bold uppercase leading-none tracking-tight sm:text-[32px]">
-          {title}
-        </h1>
-        {subtitle ? <p className="mt-2 text-sm text-fg-tertiary">{subtitle}</p> : null}
+        {/* The menu already names the section; the title stays for screen readers and the tab. */}
+        <h1 className="sr-only">{title}</h1>
+        {subtitle ? <p className="text-fg-tertiary text-sm">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </header>

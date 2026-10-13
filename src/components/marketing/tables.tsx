@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { formatNumber, formatPercentStr, formatRubStr } from '@/lib/format';
 import { m } from '@/domain/finance/money';
@@ -9,6 +10,19 @@ import type {
 } from '@/server/services/marketing';
 
 const n = (v: number | string) => formatNumber(m(v));
+
+/** Builds the link behind a number: the kind of list and the row's source or manager. */
+export type ItemHref = (kind: string, key: string | null) => string;
+
+/** A count that opens the list it counts (ADR-049); zero stays plain text. */
+function Num({ v, href }: { v: number; href?: string }) {
+  if (!href || v === 0) return <>{n(v)}</>;
+  return (
+    <Link href={href} className="hover:text-accent underline decoration-dotted underline-offset-4">
+      {n(v)}
+    </Link>
+  );
+}
 
 const TH = 'px-3 py-2.5 font-medium';
 const TD = 'px-3 py-2.5 text-right nums';
@@ -35,17 +49,31 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ChannelCells({ c }: { c: ChannelMetricsDto }) {
+function ChannelCells({
+  c,
+  href,
+  rowKey,
+}: {
+  c: ChannelMetricsDto;
+  href?: ItemHref;
+  rowKey: string | null;
+}) {
   const romiNegative = c.romi !== null && c.romi.startsWith('-');
   return (
     <>
       <td className={TD}>{formatRubStr(c.spent)}</td>
-      <td className={TD}>{n(c.leads)}</td>
+      <td className={TD}>
+        <Num v={c.leads} href={href?.('leads', rowKey)} />
+      </td>
       <td className={TD}>{formatRubStr(c.cpl)}</td>
-      <td className={TD}>{n(c.qualified)}</td>
+      <td className={TD}>
+        <Num v={c.qualified} href={href?.('qualified', rowKey)} />
+      </td>
       <td className={TD}>{formatRubStr(c.cpl2)}</td>
       <td className={cn(TD, 'text-fg-secondary')}>{formatPercentStr(c.leadToQualified)}</td>
-      <td className={TD}>{n(c.sales)}</td>
+      <td className={TD}>
+        <Num v={c.sales} href={href?.('sales', rowKey)} />
+      </td>
       <td className={TD}>{formatRubStr(c.cac)}</td>
       <td className={TD}>{formatRubStr(c.revenue)}</td>
       <td
@@ -64,9 +92,11 @@ function ChannelCells({ c }: { c: ChannelMetricsDto }) {
 export function ChannelsTable({
   rows,
   total,
+  href,
 }: {
   rows: ChannelRowDto[];
   total: ChannelMetricsDto;
+  href?: ItemHref;
 }) {
   return (
     <Frame>
@@ -89,19 +119,25 @@ export function ChannelsTable({
         {rows.map((r) => (
           <tr key={r.sourceId || 'none'} className="border-border border-b">
             <td className="text-fg px-4 py-2.5 font-medium">
-              {r.name}
+              {href ? (
+                <Link href={href('leads', r.sourceId)} className="hover:text-accent">
+                  {r.name}
+                </Link>
+              ) : (
+                r.name
+              )}
               {!m(r.paid).isZero() ? (
                 <span className="text-fg-tertiary block font-mono text-[11px] font-normal">
                   оплачено {formatRubStr(r.paid)}
                 </span>
               ) : null}
             </td>
-            <ChannelCells c={r} />
+            <ChannelCells c={r} href={href} rowKey={r.sourceId} />
           </tr>
         ))}
         <tr className="bg-surface-muted font-medium">
           <td className="px-4 py-2.5">Итого</td>
-          <ChannelCells c={total} />
+          <ChannelCells c={total} href={href} rowKey={null} />
         </tr>
       </tbody>
     </Frame>
@@ -150,15 +186,33 @@ export function PlanFactTable({ rows }: { rows: PlanFactRowDto[] }) {
   );
 }
 
-function SalesCells({ r }: { r: SalesRowDto }) {
+function SalesCells({
+  r,
+  href,
+  rowKey,
+}: {
+  r: SalesRowDto;
+  href?: ItemHref;
+  rowKey: string | null;
+}) {
   return (
     <>
-      <td className={TD}>{n(r.created)}</td>
-      <td className={cn(TD, 'text-fg-secondary')}>{n(r.inWork)}</td>
-      <td className={cn(TD, 'text-positive')}>{n(r.won)}</td>
-      <td className={cn(TD, 'text-fg-tertiary')}>{n(r.lost)}</td>
+      <td className={TD}>
+        <Num v={r.created} href={href?.('deals', rowKey)} />
+      </td>
+      <td className={cn(TD, 'text-fg-secondary')}>
+        <Num v={r.inWork} href={href?.('inwork', rowKey)} />
+      </td>
+      <td className={cn(TD, 'text-positive')}>
+        <Num v={r.won} href={href?.('won', rowKey)} />
+      </td>
+      <td className={cn(TD, 'text-fg-tertiary')}>
+        <Num v={r.lost} href={href?.('lost', rowKey)} />
+      </td>
       <td className={TD}>{formatPercentStr(r.conversion)}</td>
-      <td className={TD}>{n(r.sales)}</td>
+      <td className={TD}>
+        <Num v={r.sales} href={href?.('sales', rowKey)} />
+      </td>
       <td className={TD}>{formatRubStr(r.revenue)}</td>
       <td className={TD}>{formatRubStr(r.avgCheck)}</td>
     </>
@@ -170,10 +224,12 @@ export function SalesTable({
   first,
   rows,
   total,
+  href,
 }: {
   first: string;
   rows: SalesRowDto[];
   total: SalesRowDto;
+  href?: ItemHref;
 }) {
   return (
     <Frame>
@@ -194,12 +250,12 @@ export function SalesTable({
         {rows.map((r) => (
           <tr key={r.key || 'none'} className="border-border border-b">
             <td className="text-fg px-4 py-2.5 font-medium">{r.name}</td>
-            <SalesCells r={r} />
+            <SalesCells r={r} href={href} rowKey={r.key} />
           </tr>
         ))}
         <tr className="bg-surface-muted font-medium">
           <td className="px-4 py-2.5">Итого</td>
-          <SalesCells r={total} />
+          <SalesCells r={total} href={href} rowKey={null} />
         </tr>
       </tbody>
     </Frame>
