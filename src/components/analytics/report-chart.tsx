@@ -4,7 +4,16 @@ import { formatDayKey, formatHours } from '@/lib/format';
  * Hours per day as a static SVG for the printable report: no JS, prints identically on paper.
  * Ink = task time, lime-olive = meetings (lime itself is unreadable on white).
  */
-export function ReportHoursChart({ data }: { data: Array<{ day: string; taskSeconds: number; meetingSeconds: number }> }) {
+export function ReportHoursChart({
+  data,
+  taskColor = '#050505',
+  meetingColor = '#9fcf00',
+}: {
+  data: Array<{ day: string; taskSeconds: number; meetingSeconds: number }>;
+  /** The company's accent and a lighter shade of it on branded reports (ADR-054). */
+  taskColor?: string;
+  meetingColor?: string;
+}) {
   const W = 720;
   const H = 170;
   const pad = { l: 28, r: 6, t: 8, b: 22 };
@@ -35,8 +44,8 @@ export function ReportHoursChart({ data }: { data: Array<{ day: string; taskSeco
         const mt = d.meetingSeconds / 3600;
         return (
           <g key={d.day}>
-            {t > 0 ? <rect x={x} y={y(t)} width={w} height={y(0) - y(t)} fill="#050505" /> : null}
-            {mt > 0 ? <rect x={x} y={y(t + mt)} width={w} height={y(t) - y(t + mt)} fill="#9fcf00" /> : null}
+            {t > 0 ? <rect x={x} y={y(t)} width={w} height={y(0) - y(t)} fill={taskColor} /> : null}
+            {mt > 0 ? <rect x={x} y={y(t + mt)} width={w} height={y(t) - y(t + mt)} fill={meetingColor} /> : null}
             {i % labelEvery === 0 ? (
               <text x={x + w / 2} y={H - 6} textAnchor="middle" fontSize="10" fill="#6d6d65">
                 {formatDayKey(d.day)}

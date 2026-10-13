@@ -7,13 +7,17 @@ import { ReportHoursChart } from '@/components/analytics/report-chart';
 import { dailySeries, meetingRows, meetingSeconds, monthUsage, summarizeProject, taskRows, taskStatusLabel } from '@/domain/analytics';
 import { m } from '@/domain/finance/money';
 import { supportCost } from '@/domain/finance/support-package';
+import { requirePageSession } from '@/server/page-session';
+import { getBrand } from '@/server/services/brand';
+import { ReportLetterhead, ReportSignoff } from '@/components/report/letterhead';
+import { reportPalette, tint } from '@/lib/brand';
 import { formatDateIn, formatDateTimeIn, formatDuration, formatHours, formatRub, formatTimeIn } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Client-facing report for one project (ADR-034): what was done, how long it took and how the
- * price is formed. A light "paper" page inside the app — the browser's print dialog saves it
+ * price is formed. A light "paper" page in the installing company's style (ADR-054) — the browser's print dialog saves it
  * as PDF, so it works inside the Bitrix24 iframe without a server-side PDF renderer.
  */
 export default async function ProjectReportPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SearchParams }) {
@@ -21,6 +25,11 @@ export default async function ProjectReportPage({ params, searchParams }: { para
   const ctx = await analyticsPage(searchParams, { projectId: id });
   if (!ctx.pro) return <AnalyticsUpsell />;
   const { world, period, names, periodQuery } = ctx;
+  const { scope } = await requirePageSession();
+  const brand = await getBrand(scope);
+  const pal = reportPalette(brand.accentColor);
+  const meetingColor = tint(pal.accent, 0.55);
+  const branded = Boolean(brand.companyName || brand.logoUrl);
   const project = world.projects[0];
   const { tz, now } = world;
 
@@ -52,33 +61,40 @@ export default async function ProjectReportPage({ params, searchParams }: { para
           <ArrowLeft className="size-4" />
           К аналитике проекта
         </Link>
-        <PrintButton />
+        <div className="flex items-center gap-3">
+          {!branded ? (
+            <Link href="/settings/brand" className="text-sm text-accent hover:underline">
+              Добавить логотип и реквизиты
+            </Link>
+          ) : null}
+          <PrintButton />
+        </div>
       </div>
 
       <article className="report mx-auto max-w-[210mm] bg-white text-[13px] leading-relaxed text-[#0b0b0b] shadow-[0_0_0_1px_#262626] print:max-w-none print:shadow-none">
         <style>{`
           .report table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          .report th { background: #050505; color: #d6ff3f; text-align: left; padding: 6px 8px; font-weight: 600; font-size: 11px; }
+          .report th { background: ${pal.soft}; color: #111; text-align: left; padding: 6px 8px; font-weight: 600; font-size: 11px; }
           .report td { padding: 6px 8px; border-bottom: 1px solid #e6e6dc; vertical-align: top; }
           .report tr { break-inside: avoid; }
           .report .num { text-align: right; white-space: nowrap; }
-          .report h2 { font-size: 16px; font-weight: 700; margin: 28px 0 10px; padding-bottom: 5px; border-bottom: 2px solid #d6ff3f; }
+          .report h2 { font-size: 16px; font-weight: 700; margin: 28px 0 10px; padding-bottom: 5px; border-bottom: 2px solid ${pal.accent}; }
           .report-muted { color: #6d6d65; }
           @media print { @page { size: A4; margin: 12mm 0 14mm; } }
         `}</style>
 
-        <header className="flex items-center gap-4 bg-[#050505] px-8 py-6 text-[#f4f4ef]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand-mascot.png" alt="" className="size-14 object-contain" />
-          <div>
-            <div className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[#d6ff3f]">Отчёт о выполненных работах</div>
-            <div className="mt-1 text-[22px] font-bold leading-tight">{project.name}</div>
-            {project.clientName ? <div className="text-sm text-[#c3c2b7]">{project.clientName}</div> : null}
-          </div>
-        </header>
+        <ReportLetterhead
+          brand={brand}
+          palette={pal}
+          kicker="Отчёт о выполненных работах"
+          title={project.name}
+          subtitle={project.clientName}
+        />
 
         <div className="px-8 pb-8">
-          <div className="mt-5 inline-block bg-[#d6ff3f] px-3 py-1 text-sm font-bold text-[#050505]">{period.label}</div>
+          <div className="mt-5 inline-block px-3 py-1 text-sm font-bold" style={{ background: pal.accent, color: pal.onAccent }}>
+            {period.label}
+          </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
@@ -109,7 +125,7 @@ export default async function ProjectReportPage({ params, searchParams }: { para
                       </span>
                     </div>
                     <div className="h-2 bg-[#ececE4]">
-                      <div className={u.overageSeconds > 0 ? 'h-full bg-[#e04848]' : 'h-full bg-[#050505]'} style={{ width: `${pct}%` }} />
+                      <div className="h-full" style={{ width: `${pct}%`, background: u.overageSeconds > 0 ? '#e04848' : pal.accent }} />
                     </div>
                   </div>
                 );
@@ -120,15 +136,15 @@ export default async function ProjectReportPage({ params, searchParams }: { para
           <h2>Часы по дням</h2>
           <div className="report-muted mb-1 flex gap-4 text-[11px]">
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 bg-[#050505]" />
+              <span className="size-2.5" style={{ background: pal.accent }} />
               задачи
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 bg-[#9fcf00]" />
+              <span className="size-2.5" style={{ background: meetingColor }} />
               встречи
             </span>
           </div>
-          <ReportHoursChart data={series} />
+          <ReportHoursChart data={series} taskColor={pal.accent} meetingColor={meetingColor} />
 
           <h2>Что сделано</h2>
           <table>
@@ -223,14 +239,14 @@ export default async function ProjectReportPage({ params, searchParams }: { para
                   ))}
                 </tbody>
               </table>
-              <div className="mt-4 flex items-center justify-between bg-[#050505] px-5 py-4 text-[#f4f4ef] break-inside-avoid">
+              <div className="mt-4 flex items-center justify-between px-5 py-4 break-inside-avoid" style={{ background: pal.accent, color: pal.onAccent }}>
                 <div>
                   Итого к оплате
                   {project.hourRate ? (
-                    <div className="text-[11px] text-[#a8a89c]">сверх пакета по ставке {formatRub(m(project.hourRate))} за час</div>
+                    <div className="text-[11px] opacity-75">сверх пакета по ставке {formatRub(m(project.hourRate))} за час</div>
                   ) : null}
                 </div>
-                <div className="text-[22px] font-bold text-[#d6ff3f]">{formatRub(cost.total)}</div>
+                <div className="text-[22px] font-bold">{formatRub(cost.total)}</div>
               </div>
               <p className="report-muted mt-3 text-[11px]">
                 Абонентская плата включает пакет часов поддержки в месяц, в него входят и задачи, и встречи. Время сверх пакета
@@ -239,7 +255,18 @@ export default async function ProjectReportPage({ params, searchParams }: { para
             </>
           ) : null}
 
-          <p className="report-muted mt-6 text-[11px]">Отчёт сформирован {formatDateTimeIn(now, tz)}.</p>
+          <ReportSignoff
+            palette={pal}
+            requisites={brand.requisites}
+            signerName={brand.signerName}
+            signerTitle={brand.signerTitle}
+            clientName={project.clientName}
+            footerNote={brand.footerNote}
+          />
+          <p className="report-muted mt-4 text-[11px]">
+            Отчёт сформирован {formatDateTimeIn(now, tz)}
+            {brand.companyName ? `, ${brand.companyName}` : ''}.
+          </p>
         </div>
       </article>
     </div>

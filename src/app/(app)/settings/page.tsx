@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, Calculator, Clock, Database, ListChecks, SlidersHorizontal, Tags } from 'lucide-react';
+import { ArrowRight, Calculator, Clock, Database, ListChecks, Palette, SlidersHorizontal, Tags } from 'lucide-react';
 import { PageHeader } from '@/components/layout/app-shell';
 import { TeamRates } from '@/components/settings/team-rates';
 import { requirePageSession } from '@/server/page-session';
@@ -79,6 +79,12 @@ export default async function SettingsPage() {
             title: 'Стадии CRM',
             text: 'Какие стадии смарт-процессов и сделок считать в работе, закрытыми, успешными и отменёнными',
             icon: ListChecks,
+          },
+          {
+            href: '/settings/brand',
+            title: 'Бренд для отчётов',
+            text: 'Логотип, цвет и реквизиты вашей компании в отчётах для клиентов',
+            icon: Palette,
           },
           {
             href: '/settings/time-fields',

@@ -26,6 +26,7 @@ export type ScopedClient = Pick<
   | 'crmTimeField'
   | 'crmSectionRole'
   | 'crmStageRule'
+  | 'portalBrand'
   | 'projectStream'
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
@@ -200,6 +201,16 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
         if (res.count === 0) throw notFound('Направление не найдено');
         return client.projectStream.findFirstOrThrow({ where: { id, portalId } });
       },
+    },
+
+    brand: {
+      get: () => client.portalBrand.findUnique({ where: { portalId } }),
+      upsert: (data: Omit<Prisma.PortalBrandUncheckedCreateInput, 'portalId'>) =>
+        client.portalBrand.upsert({
+          where: { portalId },
+          create: { ...data, portalId },
+          update: data,
+        }),
     },
 
     crmStageRule: {
