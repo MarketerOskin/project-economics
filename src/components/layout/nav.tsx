@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { AppRole } from '@prisma/client';
-import { LayoutDashboard, FolderKanban, Receipt, Tags, History, Settings, Sparkles, HelpCircle, Timer, TrendingUp, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Receipt, Tags, History, Settings, Sparkles, HelpCircle, LifeBuoy, Timer, TrendingUp, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 interface NavItem {
@@ -27,6 +27,7 @@ const ITEMS: NavItem[] = [
   { href: '/pricing', label: 'Тарифы', icon: Sparkles, roles: ['ADMIN', 'MANAGER'] },
   { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN'], exact: true },
   { href: '/how-it-works', label: 'Как это работает', icon: HelpCircle },
+  { href: '/implementation', label: 'Заявка на внедрение', icon: LifeBuoy },
 ];
 
 export function Nav({ role, onNavigate }: { role: AppRole; onNavigate?: () => void }) {

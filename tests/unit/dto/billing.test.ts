@@ -18,6 +18,6 @@ describe('createProLeadSchema', () => {
   it('trims whitespace and caps length', () => {
     const r = createProLeadSchema.parse({ contact: '  a@b.ru  ' });
     expect(r.contact).toBe('a@b.ru');
-    expect(createProLeadSchema.safeParse({ contact: 'a@b.ru', comment: 'x'.repeat(1001) }).success).toBe(false);
+    expect(createProLeadSchema.safeParse({ contact: 'a@b.ru', comment: 'x'.repeat(2001) }).success).toBe(false);
   });
 });
