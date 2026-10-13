@@ -97,6 +97,23 @@ export function monthUsage(p: ProjectActivity, w: Window, tz: string, now: Date)
   });
 }
 
+/**
+ * Seconds each person put into a project in one calendar month ('YYYY-MM'): their time
+ * records plus, in full, every meeting they attended that has started (ADR-045).
+ */
+export function monthSecondsByPerson(p: ProjectActivity, month: string, tz: string, now: Date): Map<string, number> {
+  const [y, mo] = month.split('-').map(Number) as [number, number];
+  const mp = monthPeriod(y, mo, tz);
+  const out = new Map<string, number>();
+  const add = (userId: string, s: number) => out.set(userId, (out.get(userId) ?? 0) + s);
+  for (const e of p.entries) if (inWindow(e.at, mp)) add(e.userId, e.seconds);
+  for (const x of p.meetings) {
+    if (!held(x, now) || !inWindow(x.start, mp)) continue;
+    for (const a of x.attendeeIds) add(a, meetingSeconds(x));
+  }
+  return out;
+}
+
 // ─── Project summary ────────────────────────────────────────────────────────
 
 export interface Summary {

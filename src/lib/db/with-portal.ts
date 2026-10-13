@@ -27,6 +27,7 @@ export type ScopedClient = Pick<
   | 'crmSectionRole'
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
+  | 'supportPosting'
   | 'salesFunnelSnapshot'
 >;
 
@@ -203,6 +204,25 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       update: (id: string, data: Prisma.TaskTimeDraftUncheckedUpdateInput) =>
         client.taskTimeDraft.update({ where: { id }, data }),
+    },
+
+    supportPosting: {
+      findMany: (where?: Prisma.SupportPostingWhereInput) =>
+        client.supportPosting.findMany({ where: { ...where, portalId } }),
+
+      find: (projectId: string, month: string) =>
+        client.supportPosting.findUnique({ where: { portalId_projectId_month: { portalId, projectId, month } } }),
+
+      upsert: (
+        projectId: string,
+        month: string,
+        data: Omit<Prisma.SupportPostingUncheckedCreateInput, 'portalId' | 'projectId' | 'month'>,
+      ) =>
+        client.supportPosting.upsert({
+          where: { portalId_projectId_month: { portalId, projectId, month } },
+          create: { ...data, portalId, projectId, month },
+          update: data,
+        }),
     },
 
     incomeDraft: {

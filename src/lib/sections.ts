@@ -12,9 +12,9 @@ export const OPTIONAL_SECTIONS = [
   },
   {
     key: 'automation',
-    href: '/automation',
-    label: 'Автоматизация',
-    description: 'Расходы по часам и доход из CRM',
+    href: '/settings/auto-finance',
+    label: 'Авторасчёт финансов',
+    description: 'Доход и расход по часам поддержки, расходы по задачам, доход из сделок',
   },
   {
     key: 'sales',

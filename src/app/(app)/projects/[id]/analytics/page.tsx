@@ -136,7 +136,7 @@ export default async function ProjectAnalyticsPage({
                   <tr className="border-b border-border text-left font-mono text-[11px] uppercase tracking-[0.06em] text-fg-tertiary">
                     <th className="px-3 py-2.5 font-medium">Месяц</th>
                     <th className="px-3 py-2.5 text-right font-medium">Абонентская плата</th>
-                    <th className="px-3 py-2.5 text-right font-medium">Сверх пакета</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Часы к оплате</th>
                     <th className="px-3 py-2.5 text-right font-medium">Доплата</th>
                   </tr>
                 </thead>
@@ -145,7 +145,7 @@ export default async function ProjectAnalyticsPage({
                     <tr key={mo.label} className="border-b border-border">
                       <td className="px-3 py-2.5">{mo.label}</td>
                       <td className="px-3 py-2.5 text-right nums">{formatRub(mo.fee)}</td>
-                      <td className="px-3 py-2.5 text-right nums">{formatHours(mo.overageSeconds)} ч</td>
+                      <td className="px-3 py-2.5 text-right nums">{formatHours(mo.billableSeconds)} ч</td>
                       <td className={cn('px-3 py-2.5 text-right nums', mo.overageCost.gt(0) && 'text-negative')}>{formatRub(mo.overageCost)}</td>
                     </tr>
                   ))}
