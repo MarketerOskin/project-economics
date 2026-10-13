@@ -2,7 +2,7 @@ import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import type { HumanAuditEntry } from '@/lib/audit/humanize';
 
-const DESTRUCTIVE = new Set(['FINANCE_DELETED', 'PROJECT_ARCHIVED', 'PROJECT_MEMBER_REMOVED']);
+const DESTRUCTIVE = new Set(['FINANCE_DELETED', 'PROJECT_ARCHIVED', 'PROJECT_DELETED', 'PROJECT_MEMBER_REMOVED']);
 
 export function HistoryFeed({ entries }: { entries: HumanAuditEntry[] }) {
   if (entries.length === 0) {

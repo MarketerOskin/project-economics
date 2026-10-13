@@ -4,7 +4,7 @@ import { testDb, resetDb, seedPortal } from '../../helpers/db';
 import { signSession, SESSION_COOKIE } from '@/lib/auth/session';
 import { CSRF_COOKIE, CSRF_HEADER } from '@/lib/csrf';
 import { GET as listRoute, POST as createRoute } from '@/app/api/projects/route';
-import { GET as getRoute, PATCH as patchRoute } from '@/app/api/projects/[id]/route';
+import { DELETE as deleteRoute, GET as getRoute, PATCH as patchRoute } from '@/app/api/projects/[id]/route';
 import { POST as archiveRoute } from '@/app/api/projects/[id]/archive/route';
 import { PUT as membersRoute } from '@/app/api/projects/[id]/members/route';
 
@@ -115,6 +115,47 @@ describe('projects API — permissions (ТЗ §66)', () => {
     expect(p?.status).toBe('ACTIVE');
     const actions = (await testDb.auditLog.findMany({ where: { entityId: projectA.id } })).map((a) => a.action);
     expect(actions).toEqual(expect.arrayContaining(['PROJECT_ARCHIVED', 'PROJECT_RESTORED']));
+  });
+
+  it('delete removes a project with no operations and logs it (ADR-042)', async () => {
+    const { s, projectA } = await setup();
+    const res = await deleteRoute(
+      mkReq(`/api/projects/${projectA.id}`, { method: 'DELETE', cookie: await ctx(s.portalId, s.managerId, 'MANAGER') }),
+      P(projectA.id),
+    );
+    expect(res.status).toBe(200);
+    expect(await testDb.project.findUnique({ where: { id: projectA.id } })).toBeNull();
+    const audit = await testDb.auditLog.findFirst({ where: { entityId: projectA.id, action: 'PROJECT_DELETED' } });
+    expect(audit?.before).toMatchObject({ name: projectA.name });
+  });
+
+  it('delete refuses a project with live operations, and an employee cannot delete', async () => {
+    const { s, projectA } = await setup();
+    await testDb.financialEntry.create({
+      data: {
+        portalId: s.portalId,
+        projectId: projectA.id,
+        categoryId: s.expenseCategoryId,
+        direction: 'EXPENSE',
+        budgetType: 'FACT',
+        calculationMode: 'FIXED',
+        operationDate: new Date('2026-01-01'),
+        amount: '1000',
+        createdById: s.managerId,
+        updatedById: s.managerId,
+      },
+    });
+    const refused = await deleteRoute(
+      mkReq(`/api/projects/${projectA.id}`, { method: 'DELETE', cookie: await ctx(s.portalId, s.adminId, 'ADMIN') }),
+      P(projectA.id),
+    );
+    expect(refused.status).toBe(409);
+    const employee = await deleteRoute(
+      mkReq(`/api/projects/${projectA.id}`, { method: 'DELETE', cookie: await ctx(s.portalId, s.employeeId, 'EMPLOYEE') }),
+      P(projectA.id),
+    );
+    expect(employee.status).toBe(403);
+    expect(await testDb.project.findUnique({ where: { id: projectA.id } })).not.toBeNull();
   });
 
   it('members PUT diffs membership and logs each change', async () => {

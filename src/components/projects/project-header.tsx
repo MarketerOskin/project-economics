@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { initials } from '@/lib/text';
 import { Tip } from '@/components/ui/tooltip';
 import { StatusBadge } from './status-badge';
+import { ProjectActions } from './project-actions';
 import type { ProjectDetail } from '@/server/services/project-read';
 
 export function ProjectHeader({ project }: { project: ProjectDetail }) {
@@ -59,6 +60,13 @@ export function ProjectHeader({ project }: { project: ProjectDetail }) {
               </Link>
             </Button>
           ) : null}
+          <ProjectActions
+            projectId={project.id}
+            name={project.name}
+            archived={project.status === 'ARCHIVED'}
+            canArchive={project.canArchive}
+            canDelete={project.canDelete}
+          />
         </div>
       </div>
     </div>
