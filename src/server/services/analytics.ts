@@ -22,6 +22,11 @@ import { TASK_STATUS, type Meeting, type ProjectActivity, type TaskStat, type Ti
  */
 
 const TTL_MS = 5 * 60_000;
+/**
+ * Older than TTL_MS but younger than this, cached data is shown at once and refreshed in the
+ * background (ADR-057); older still, the page waits for Bitrix24 as on a cold start.
+ */
+const STALE_MS = 24 * 60 * 60_000;
 const CONCURRENCY = 3;
 
 export function analyticsTimeZone(): string {
@@ -77,11 +82,32 @@ interface CacheEntry {
 
 const globalForCache = globalThis as unknown as { __analyticsCache?: Map<string, CacheEntry> };
 const cache = (globalForCache.__analyticsCache ??= new Map<string, CacheEntry>());
+/** Loads in progress, so two pages asking for one project share one round of Bitrix24 calls. */
+const inflight = new Map<string, Promise<CacheEntry>>();
+
+function loadOnce(key: string, load: () => Promise<CacheEntry>): Promise<CacheEntry> {
+  const running = inflight.get(key);
+  if (running) return running;
+  const p: Promise<CacheEntry> = load()
+    .then((fresh) => {
+      // Invalidated while loading (settings changed): don't cache data read under the old ones.
+      if (inflight.get(key) === p) cache.set(key, fresh);
+      return fresh;
+    })
+    .finally(() => {
+      if (inflight.get(key) === p) inflight.delete(key);
+    });
+  inflight.set(key, p);
+  return p;
+}
 
 /** Drop cached data for a portal (or one project) — e.g. after the package settings change. */
 export function invalidateAnalytics(portalId: string, projectId?: string): void {
   for (const key of cache.keys()) {
     if (key.startsWith(`${portalId}:`) && (!projectId || key === `${portalId}:${projectId}`)) cache.delete(key);
+  }
+  for (const key of inflight.keys()) {
+    if (key.startsWith(`${portalId}:`) && (!projectId || key === `${portalId}:${projectId}`)) inflight.delete(key);
   }
 }
 
@@ -313,12 +339,18 @@ export async function loadAnalytics(
     result = await pool(eligible, CONCURRENCY, async ({ p, source }) => {
       const key = `${session.portal.id}:${p.id}`;
       const cached = cache.get(key);
-      if (cached && !opts.refresh && Date.now() - cached.at < TTL_MS) {
+      const load = () => loadFromBitrix(session, p, source, tz, now, timeFields, skipTypes, stageRules);
+      const age = cached ? Date.now() - cached.at : Infinity;
+      if (cached && !opts.refresh && age < TTL_MS) {
+        return toProject(p, source, cached, null, false);
+      }
+      if (cached && !opts.refresh && age < STALE_MS) {
+        // Show what we have now; the next visit gets the refreshed data.
+        loadOnce(key, load).catch(() => undefined);
         return toProject(p, source, cached, null, false);
       }
       try {
-        const fresh = await loadFromBitrix(session, p, source, tz, now, timeFields, skipTypes, stageRules);
-        cache.set(key, fresh);
+        const fresh = await loadOnce(key, load);
         return toProject(p, source, fresh, null, false);
       } catch (err) {
         if (cached) return toProject(p, source, cached, errorText(err), true);
