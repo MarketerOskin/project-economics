@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import { analyticsPage, loadProblems, type SearchParams } from '@/server/analytics-page';
 import { AnalyticsPeriod } from '@/components/analytics/analytics-period';
@@ -16,6 +15,7 @@ import { loadRelated } from '@/server/services/related';
 import { AnalyticsUpsell, Section, Toolbar } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
 import { Button } from '@/components/ui/button';
+import { NewTabLink } from '@/components/ui/new-tab-link';
 import {
   PeopleCards,
   SourcesCard,
@@ -127,10 +127,10 @@ export default async function ProjectAnalyticsPage({
           <AnalyticsFilters people={peopleOptions} />
           <ExportButton projectId={id} />
           <Button asChild variant="secondary">
-            <Link href={`/report/projects/${id}${periodQuery}`} target="_blank">
+            <NewTabLink href={`/report/projects/${id}${periodQuery}`}>
               <FileText />
               Отчёт для клиента
-            </Link>
+            </NewTabLink>
           </Button>
         </div>
       </Toolbar>
