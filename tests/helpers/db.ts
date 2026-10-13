@@ -15,7 +15,7 @@ export async function resetDb(): Promise<void> {
   _resetRateLimit();
   await testDb.$executeRawUnsafe(`
     TRUNCATE TABLE
-      "AuditLog","FinancialEntry","ProjectMember","Project",
+      "AuditLog","MarketingSpend","MarketingPlan","MarketingConfig","FinancialEntry","ProjectMember","Project",
       "FinanceCategory","AppUser","PortalInstallation"
     RESTART IDENTITY CASCADE;
   `);

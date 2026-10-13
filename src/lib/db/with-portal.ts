@@ -28,6 +28,9 @@ export type ScopedClient = Pick<
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
   | 'supportPosting'
+  | 'marketingSpend'
+  | 'marketingPlan'
+  | 'marketingConfig'
   | 'salesFunnelSnapshot'
 >;
 
@@ -222,6 +225,56 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
           where: { portalId_projectId_month: { portalId, projectId, month } },
           create: { ...data, portalId, projectId, month },
           update: data,
+        }),
+    },
+
+    marketingSpend: {
+      findMany: (where?: Prisma.MarketingSpendWhereInput) =>
+        client.marketingSpend.findMany({
+          where: { ...where, portalId, deletedAt: null },
+          orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+        }),
+
+      async findByIdOrThrow(id: string) {
+        const row = await client.marketingSpend.findFirst({ where: { id, portalId, deletedAt: null } });
+        if (!row) throw notFound('Расход не найден');
+        return row;
+      },
+
+      create: (data: Omit<Prisma.MarketingSpendUncheckedCreateInput, 'portalId'>) =>
+        client.marketingSpend.create({ data: { ...data, portalId } }),
+
+      softDelete: (id: string, deletedById: string) =>
+        client.marketingSpend.update({ where: { id }, data: { deletedAt: new Date(), deletedById } }),
+    },
+
+    marketingPlan: {
+      findMany: (where?: Prisma.MarketingPlanWhereInput) =>
+        client.marketingPlan.findMany({ where: { ...where, portalId } }),
+
+      find: (month: string, sourceId: string) =>
+        client.marketingPlan.findUnique({ where: { portalId_month_sourceId: { portalId, month, sourceId } } }),
+
+      upsert: (
+        month: string,
+        sourceId: string,
+        data: Omit<Prisma.MarketingPlanUncheckedCreateInput, 'portalId' | 'month' | 'sourceId'>,
+      ) =>
+        client.marketingPlan.upsert({
+          where: { portalId_month_sourceId: { portalId, month, sourceId } },
+          create: { ...data, portalId, month, sourceId },
+          update: data,
+        }),
+    },
+
+    marketingConfig: {
+      get: () => client.marketingConfig.findUnique({ where: { portalId } }),
+
+      save: (qualifiedStages: string[]) =>
+        client.marketingConfig.upsert({
+          where: { portalId },
+          create: { portalId, qualifiedStages },
+          update: { qualifiedStages },
         }),
     },
 

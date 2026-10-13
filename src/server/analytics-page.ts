@@ -94,3 +94,27 @@ export function loadProblems(world: AnalyticsWorld): Array<{ name: string; text:
   }
   return out;
 }
+
+/**
+ * Prologue of «Маркетинг» and «Продажи» (ADR-048): the same access and period as the other
+ * analytics pages, without loading tasks and hours they don't use.
+ */
+export async function channelPage(searchParams: SearchParams) {
+  const { session, scope } = await requirePageSession();
+  if (!can.viewAllProjects(session.actor) || session.portal.disabledSections.includes('analytics')) redirect('/');
+  const sp = await searchParams;
+  const get = (k: string) => {
+    const v = sp[k];
+    return Array.isArray(v) ? v[0] : v;
+  };
+  const tz = analyticsTimeZone();
+  return {
+    session,
+    scope,
+    tz,
+    pro: session.plan === 'PRO',
+    canEdit: can.mutateFinance(session.actor),
+    refresh: get('refresh') === '1',
+    period: parseAnalyticsPeriod({ p: get('p'), m: get('m'), from: get('from'), to: get('to') }, tz),
+  };
+}

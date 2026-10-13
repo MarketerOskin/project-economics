@@ -85,6 +85,8 @@ enum AuditEntityType {
   CATEGORY
   USER
   PROJECT_MEMBER
+  MARKETING_SPEND
+  MARKETING_PLAN
 }
 
 // ─── Billing / plan ────────────────────────────────────────────────────────
@@ -169,6 +171,9 @@ model PortalInstallation {
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
   supportPostings  SupportPosting[]
+  marketingSpends  MarketingSpend[]
+  marketingPlans   MarketingPlan[]
+  marketingConfig  MarketingConfig?
   salesFunnelSnapshots SalesFunnelSnapshot[]
 }
 
@@ -671,4 +676,60 @@ model CrmSectionRole {
 
   @@unique([portalId, entityTypeId])
   @@index([portalId])
+}
+
+// ─── Marketing by channel (ADR-048) ────────────────────────────────────────
+
+enum MarketingSpendKind {
+  /// Budget actually spent (realised) — what CPL, CPL-2 and CAC are counted from.
+  SPENT
+  /// Money paid to the channel (account top-ups, invoices) — shown, never used in CPL/CAC.
+  PAID
+}
+
+/// Money put into a marketing channel. The channel is a Bitrix24 source (SOURCE_ID).
+model MarketingSpend {
+  id        String             @id @default(cuid())
+  portalId  String
+  portal    PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  sourceId  String
+  date      DateTime           @db.Date
+  kind      MarketingSpendKind @default(SPENT)
+  amount    Decimal            @db.Decimal(18, 2)
+  note      String?
+
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  deletedById String?
+
+  @@index([portalId, date])
+}
+
+/// Monthly plan, per channel or for all channels together (sourceId '').
+model MarketingPlan {
+  id             String             @id @default(cuid())
+  portalId       String
+  portal         PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  /// 'YYYY-MM' in the analytics time zone.
+  month          String
+  sourceId       String             @default("")
+  budget         Decimal?           @db.Decimal(18, 2)
+  leads          Int?
+  qualifiedLeads Int?
+  sales          Int?
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@unique([portalId, month, sourceId])
+}
+
+/// Per-portal marketing settings: which traffic stages count as a qualified lead.
+model MarketingConfig {
+  portalId        String             @id
+  portal          PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  qualifiedStages String[]
+  updatedAt       DateTime           @updatedAt
 }
