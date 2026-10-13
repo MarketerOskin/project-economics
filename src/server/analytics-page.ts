@@ -1,6 +1,11 @@
 import { redirect } from 'next/navigation';
 import { requirePageSession } from '@/server/page-session';
-import { analyticsTimeZone, loadAnalytics, peopleNames, type AnalyticsWorld } from '@/server/services/analytics';
+import {
+  analyticsTimeZone,
+  loadAnalytics,
+  peopleNames,
+  type AnalyticsWorld,
+} from '@/server/services/analytics';
 import { parseAnalyticsPeriod, type AnalyticsPeriod, type Filters } from '@/domain/analytics';
 import { can } from '@/lib/permissions';
 import type { ResolvedSession } from '@/lib/auth/resolve';
@@ -43,7 +48,10 @@ export async function analyticsPage(
   opts: { projectId?: string } = {},
 ): Promise<AnalyticsPageContext> {
   const { session, scope } = await requirePageSession();
-  if (!can.viewAllProjects(session.actor) || session.portal.disabledSections.includes('analytics')) {
+  if (
+    !can.viewAllProjects(session.actor) ||
+    session.portal.disabledSections.includes('analytics')
+  ) {
     redirect(opts.projectId ? `/projects/${opts.projectId}` : '/');
   }
 
@@ -55,11 +63,17 @@ export async function analyticsPage(
 
   const pro = session.plan === 'PRO';
   const tz = analyticsTimeZone();
-  const period = parseAnalyticsPeriod({ p: get('p'), m: get('m'), from: get('from'), to: get('to') }, tz);
+  const period = parseAnalyticsPeriod(
+    { p: get('p'), m: get('m'), from: get('from'), to: get('to') },
+    tz,
+  );
 
   const projectFilter = opts.projectId ?? get('projectId');
   const world = pro
-    ? await loadAnalytics(session, scope, { projectId: projectFilter, refresh: get('refresh') === '1' })
+    ? await loadAnalytics(session, scope, {
+        projectId: projectFilter,
+        refresh: get('refresh') === '1',
+      })
     : EMPTY_WORLD(tz);
 
   const keep = new URLSearchParams();
@@ -89,32 +103,48 @@ export async function analyticsPage(
 export function loadProblems(world: AnalyticsWorld): Array<{ name: string; text: string }> {
   const out: Array<{ name: string; text: string }> = [];
   for (const p of world.projects) {
-    if (p.error) out.push({ name: p.name, text: p.stale ? `${p.error} Показаны данные прошлой загрузки.` : p.error });
-    if (p.meetingsError) out.push({ name: p.name, text: `встречи не загружены — ${p.meetingsError}` });
+    if (p.error)
+      out.push({
+        name: p.name,
+        text: p.stale ? `${p.error} Показаны данные прошлой загрузки.` : p.error,
+      });
+    if (p.meetingsError)
+      out.push({ name: p.name, text: `встречи не загружены — ${p.meetingsError}` });
   }
   return out;
 }
 
 /**
- * Prologue of «Маркетинг» and «Продажи» (ADR-048): the same access and period as the other
- * analytics pages, without loading tasks and hours they don't use.
+ * Prologue of «Маркетинг» and «Продажи» (ADR-048, ADR-049): the same access and period as
+ * the analytics pages, without loading tasks and hours they don't use.
  */
 export async function channelPage(searchParams: SearchParams) {
   const { session, scope } = await requirePageSession();
-  if (!can.viewAllProjects(session.actor) || session.portal.disabledSections.includes('analytics')) redirect('/');
+  if (!can.viewAllProjects(session.actor) || session.portal.disabledSections.includes('sales'))
+    redirect('/');
   const sp = await searchParams;
   const get = (k: string) => {
     const v = sp[k];
     return Array.isArray(v) ? v[0] : v;
   };
   const tz = analyticsTimeZone();
+  const keep = new URLSearchParams();
+  for (const k of ['p', 'm', 'from', 'to']) {
+    const v = get(k);
+    if (v) keep.set(k, v);
+  }
   return {
     session,
     scope,
     tz,
+    /** "?p=…&m=…" — the period, to carry into links. */
+    periodQuery: keep.toString() ? `?${keep.toString()}` : '',
     pro: session.plan === 'PRO',
     canEdit: can.mutateFinance(session.actor),
     refresh: get('refresh') === '1',
-    period: parseAnalyticsPeriod({ p: get('p'), m: get('m'), from: get('from'), to: get('to') }, tz),
+    period: parseAnalyticsPeriod(
+      { p: get('p'), m: get('m'), from: get('from'), to: get('to') },
+      tz,
+    ),
   };
 }

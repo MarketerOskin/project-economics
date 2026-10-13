@@ -24,6 +24,7 @@ export interface StageInfo {
 
 interface RawItem {
   id: number | string;
+  title?: string | null;
   stageId?: string | null;
   categoryId?: number | string | null;
   sourceId?: string | null;
@@ -62,6 +63,7 @@ export async function fetchElements(
   let truncated = false;
   const select = [
     'id',
+    'title',
     'stageId',
     'categoryId',
     'sourceId',
@@ -101,6 +103,7 @@ export async function fetchElements(
     return {
       entityTypeId,
       id: String(i.id),
+      title: i.title ?? undefined,
       sourceId: i.sourceId ? String(i.sourceId) : null,
       assignedById: i.assignedById != null && i.assignedById !== '' ? String(i.assignedById) : null,
       stageId,
@@ -155,4 +158,15 @@ export function firstStages(stages: Record<string, StageInfo>): Set<string> {
     if (!cur || s.sort < cur.sort) first.set(s.funnel, s);
   }
   return new Set([...first.values()].map((s) => s.id));
+}
+
+/** The element's card in Bitrix24: leads, deals and smart processes each have their own path. */
+export function crmElementUrl(domain: string, entityTypeId: number, id: string): string {
+  const path =
+    entityTypeId === 1
+      ? `crm/lead/details/${id}/`
+      : entityTypeId === 2
+        ? `crm/deal/details/${id}/`
+        : `crm/type/${entityTypeId}/details/${id}/`;
+  return `https://${domain}/${path}`;
 }

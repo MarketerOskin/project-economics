@@ -161,7 +161,7 @@ describe('CRM section counts (ADR-041)', () => {
 
   it('maps menu paths to switchable sections', () => {
     expect(sectionOfPath('/analytics/team')).toBe('analytics');
-    expect(sectionOfPath('/sales-funnels')).toBe('sales');
+    expect(sectionOfPath('/marketing/funnels')).toBe('sales');
     expect(sectionOfPath('/projects')).toBeNull();
   });
 });

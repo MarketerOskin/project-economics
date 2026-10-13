@@ -1,27 +1,88 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { formatDateIn, formatDateTimeIn, formatDuration, formatHours, formatTimeIn } from '@/lib/format';
-import { TASK_STATUS_LABELS, type TaskRow, type MeetingRow, type EmployeeRow, type JournalRow } from '@/domain/analytics';
+import {
+  formatDateIn,
+  formatDateTimeIn,
+  formatDuration,
+  formatHours,
+  formatTimeIn,
+} from '@/lib/format';
+import {
+  TASK_STATUS_LABELS,
+  type TaskRow,
+  type MeetingRow,
+  type EmployeeRow,
+  type JournalRow,
+} from '@/domain/analytics';
 
 const TH = 'px-3 py-2.5 font-medium';
 const TD = 'px-3 py-2.5';
 
-function Table({ head, children, empty }: { head: React.ReactNode; children: React.ReactNode; empty?: string | null }) {
+function Table({
+  head,
+  children,
+  empty,
+}: {
+  head: React.ReactNode;
+  children: React.ReactNode;
+  empty?: string | null;
+}) {
   return (
-    <div className="overflow-x-auto border border-border bg-surface">
+    <div className="border-border bg-surface overflow-x-auto border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border text-left font-mono text-[11px] uppercase tracking-[0.06em] text-fg-tertiary">{head}</tr>
+          <tr className="border-border text-fg-tertiary border-b text-left font-mono text-[11px] tracking-[0.06em] uppercase">
+            {head}
+          </tr>
         </thead>
         <tbody>{children}</tbody>
       </table>
-      {empty ? <p className="px-4 py-8 text-center text-sm text-fg-tertiary">{empty}</p> : null}
+      {empty ? <p className="text-fg-tertiary px-4 py-8 text-center text-sm">{empty}</p> : null}
     </div>
   );
 }
 
-const STATUS_TONE: Record<string, string> = { '5': 'text-positive', '3': 'text-accent', '7': 'text-fg-tertiary' };
+/** A task's title opens its card in the app; the arrow next to it opens it in Bitrix24. */
+export function TaskLink({
+  projectId,
+  id,
+  title,
+  url,
+}: {
+  projectId: string;
+  id: number;
+  title: string;
+  url: string | null;
+}) {
+  return (
+    <span className="inline-flex items-start gap-1.5">
+      <Link
+        href={`/analytics/tasks/${id}?projectId=${projectId}`}
+        className="hover:text-accent hover:underline"
+      >
+        {title}
+      </Link>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          title="Открыть в Битрикс24"
+          className="text-fg-tertiary hover:text-accent"
+        >
+          <ExternalLink className="mt-1 size-3 shrink-0" />
+        </a>
+      ) : null}
+    </span>
+  );
+}
+
+const STATUS_TONE: Record<string, string> = {
+  '5': 'text-positive',
+  '3': 'text-accent',
+  '7': 'text-fg-tertiary',
+};
 
 export function TasksTable({
   rows,
@@ -57,44 +118,63 @@ export function TasksTable({
         }
       >
         {shown.map((r) => (
-          <tr key={`${r.task.projectId}:${r.task.id}`} className="border-b border-border last:border-0">
-            <td className={cn(TD, 'font-mono text-xs text-fg-tertiary')}>{r.task.id}</td>
+          <tr
+            key={`${r.task.projectId}:${r.task.id}`}
+            className="border-border border-b last:border-0"
+          >
+            <td className={cn(TD, 'text-fg-tertiary font-mono text-xs')}>{r.task.id}</td>
             <td className={cn(TD, 'max-w-[28rem]')}>
-              {r.task.url ? (
-                <a href={r.task.url} target="_blank" rel="noreferrer" className="inline-flex items-start gap-1 hover:text-accent">
-                  <span>{r.task.title}</span>
-                  <ExternalLink className="mt-1 size-3 shrink-0 text-fg-tertiary" />
-                </a>
-              ) : (
-                r.task.title
-              )}
+              <TaskLink
+                projectId={r.task.projectId}
+                id={r.task.id}
+                title={r.task.title}
+                url={r.task.url}
+              />
             </td>
             {projectNames ? (
               <td className={cn(TD, 'text-fg-secondary')}>
-                <Link href={`/projects/${r.task.projectId}/analytics`} className="hover:text-accent">
+                <Link
+                  href={`/projects/${r.task.projectId}/analytics`}
+                  className="hover:text-accent"
+                >
                   {projectNames[r.task.projectId] ?? '—'}
                 </Link>
               </td>
             ) : null}
-            <td className={cn(TD, 'whitespace-nowrap', STATUS_TONE[r.task.status])}>{TASK_STATUS_LABELS[r.task.status] ?? r.task.status}</td>
-            <td className={cn(TD, 'whitespace-nowrap text-fg-secondary')}>{formatDateIn(r.task.created, tz)}</td>
-            <td className={cn(TD, 'whitespace-nowrap text-fg-secondary')}>{formatDuration(r.reactionSeconds)}</td>
-            <td className={cn(TD, 'whitespace-nowrap text-fg-secondary')}>{formatDuration(r.resolutionSeconds)}</td>
+            <td className={cn(TD, 'whitespace-nowrap', STATUS_TONE[r.task.status])}>
+              {TASK_STATUS_LABELS[r.task.status] ?? r.task.status}
+            </td>
+            <td className={cn(TD, 'text-fg-secondary whitespace-nowrap')}>
+              {formatDateIn(r.task.created, tz)}
+            </td>
+            <td className={cn(TD, 'text-fg-secondary whitespace-nowrap')}>
+              {formatDuration(r.reactionSeconds)}
+            </td>
+            <td className={cn(TD, 'text-fg-secondary whitespace-nowrap')}>
+              {formatDuration(r.resolutionSeconds)}
+            </td>
             <td className={cn(TD, 'whitespace-nowrap')}>
               {r.task.responsibleId ? (
-                <Link href={`/analytics/team/${r.task.responsibleId}`} className="hover:text-accent">
+                <Link
+                  href={`/analytics/team/${r.task.responsibleId}`}
+                  className="hover:text-accent"
+                >
                   {names[r.task.responsibleId] ?? r.task.responsibleName ?? '—'}
                 </Link>
               ) : (
                 '—'
               )}
             </td>
-            <td className={cn(TD, 'whitespace-nowrap text-right nums')}>{formatDuration(r.seconds)}</td>
+            <td className={cn(TD, 'nums text-right whitespace-nowrap')}>
+              {formatDuration(r.seconds)}
+            </td>
           </tr>
         ))}
       </Table>
       {rows.length > shown.length ? (
-        <p className="mt-2 text-xs text-fg-tertiary">Показаны {shown.length} из {rows.length} задач — полный список в выгрузке Excel.</p>
+        <p className="text-fg-tertiary mt-2 text-xs">
+          Показаны {shown.length} из {rows.length} задач — полный список в выгрузке Excel.
+        </p>
       ) : null}
     </>
   );
@@ -126,14 +206,19 @@ export function MeetingsTable({
       }
     >
       {rows.map(({ meeting: m, held }) => (
-        <tr key={`${m.projectId}:${m.id}:${m.start.getTime()}`} className={cn('border-b border-border last:border-0', !held && 'text-fg-tertiary')}>
+        <tr
+          key={`${m.projectId}:${m.id}:${m.start.getTime()}`}
+          className={cn('border-border border-b last:border-0', !held && 'text-fg-tertiary')}
+        >
           <td className={cn(TD, 'whitespace-nowrap')}>{formatDateIn(m.start, tz)}</td>
           <td className={cn(TD, 'whitespace-nowrap')}>
             {formatTimeIn(m.start, tz)}–{formatTimeIn(m.end, tz)}
           </td>
           <td className={TD}>
             {m.title}
-            {!held ? <span className="ml-2 font-mono text-[10px] uppercase">запланирована</span> : null}
+            {!held ? (
+              <span className="ml-2 font-mono text-[10px] uppercase">запланирована</span>
+            ) : null}
           </td>
           {projectNames ? (
             <td className={cn(TD, 'text-fg-secondary')}>
@@ -152,14 +237,24 @@ export function MeetingsTable({
               </span>
             ))}
           </td>
-          <td className={cn(TD, 'whitespace-nowrap text-right nums')}>{formatDuration((m.end.getTime() - m.start.getTime()) / 1000)}</td>
+          <td className={cn(TD, 'nums text-right whitespace-nowrap')}>
+            {formatDuration((m.end.getTime() - m.start.getTime()) / 1000)}
+          </td>
         </tr>
       ))}
     </Table>
   );
 }
 
-export function TeamTable({ rows, names, query }: { rows: EmployeeRow[]; names: Record<string, string>; query: string }) {
+export function TeamTable({
+  rows,
+  names,
+  query,
+}: {
+  rows: EmployeeRow[];
+  names: Record<string, string>;
+  query: string;
+}) {
   return (
     <Table
       empty={rows.length === 0 ? 'За период никто не работал по проектам' : null}
@@ -175,26 +270,42 @@ export function TeamTable({ rows, names, query }: { rows: EmployeeRow[]; names: 
       }
     >
       {rows.map((r) => (
-        <tr key={r.userId} className="border-b border-border last:border-0">
+        <tr key={r.userId} className="border-border border-b last:border-0">
           <td className={TD}>
-            <Link href={`/analytics/team/${r.userId}${query}`} className="font-medium hover:text-accent">
+            <Link
+              href={`/analytics/team/${r.userId}${query}`}
+              className="hover:text-accent font-medium"
+            >
               {names[r.userId] ?? `Сотрудник ${r.userId}`}
             </Link>
           </td>
-          <td className={cn(TD, 'text-right font-medium nums')}>{formatHours(r.totalSeconds)} ч</td>
-          <td className={cn(TD, 'text-right text-fg-secondary nums')}>{formatHours(r.taskSeconds)} ч</td>
-          <td className={cn(TD, 'text-right text-fg-secondary nums')}>
+          <td className={cn(TD, 'nums text-right font-medium')}>{formatHours(r.totalSeconds)} ч</td>
+          <td className={cn(TD, 'text-fg-secondary nums text-right')}>
+            {formatHours(r.taskSeconds)} ч
+          </td>
+          <td className={cn(TD, 'text-fg-secondary nums text-right')}>
             {formatHours(r.meetingSeconds)} ч · {r.meetings}
           </td>
-          <td className={cn(TD, 'text-right nums')}>{r.done}</td>
-          <td className={cn(TD, 'text-right nums')}>{r.openNow}</td>
+          <td className={cn(TD, 'nums text-right')}>{r.done}</td>
+          <td className={cn(TD, 'nums text-right')}>{r.openNow}</td>
         </tr>
       ))}
     </Table>
   );
 }
 
-export function JournalTable({ rows, tz, projectNames }: { rows: JournalRow[]; tz: string; projectNames: Record<string, string> }) {
+export function JournalTable({
+  rows,
+  tz,
+  projectNames,
+  names,
+}: {
+  rows: JournalRow[];
+  tz: string;
+  projectNames: Record<string, string>;
+  /** Show who logged each record (lists across the team). */
+  names?: Record<string, string>;
+}) {
   return (
     <Table
       empty={rows.length === 0 ? 'Записей времени за период нет' : null}
@@ -203,18 +314,49 @@ export function JournalTable({ rows, tz, projectNames }: { rows: JournalRow[]; t
           <th className={TH}>Когда</th>
           <th className={TH}>Задача</th>
           <th className={TH}>Проект</th>
+          {names ? <th className={TH}>Сотрудник</th> : null}
           <th className={TH}>Комментарий</th>
           <th className={cn(TH, 'text-right')}>Время</th>
         </>
       }
     >
       {rows.map((r, i) => (
-        <tr key={i} className="border-b border-border last:border-0">
-          <td className={cn(TD, 'whitespace-nowrap text-fg-secondary')}>{formatDateTimeIn(r.entry.at, tz)}</td>
-          <td className={TD}>{r.task?.title ?? `Задача ${r.entry.taskId}`}</td>
-          <td className={cn(TD, 'text-fg-secondary')}>{projectNames[r.projectId] ?? '—'}</td>
+        <tr key={i} className="border-border border-b last:border-0">
+          <td className={cn(TD, 'text-fg-secondary whitespace-nowrap')}>
+            {formatDateTimeIn(r.entry.at, tz)}
+          </td>
+          <td className={TD}>
+            {r.task ? (
+              <TaskLink
+                projectId={r.task.projectId}
+                id={r.task.id}
+                title={r.task.title}
+                url={r.task.url}
+              />
+            ) : (
+              `Задача ${r.entry.taskId}`
+            )}
+          </td>
+          <td className={cn(TD, 'text-fg-secondary')}>
+            {r.projectId ? (
+              <Link href={`/projects/${r.projectId}/analytics`} className="hover:text-accent">
+                {projectNames[r.projectId] ?? '—'}
+              </Link>
+            ) : (
+              '—'
+            )}
+          </td>
+          {names ? (
+            <td className={cn(TD, 'whitespace-nowrap')}>
+              <Link href={`/analytics/team/${r.entry.userId}`} className="hover:text-accent">
+                {names[r.entry.userId] ?? `Сотрудник ${r.entry.userId}`}
+              </Link>
+            </td>
+          ) : null}
           <td className={cn(TD, 'text-fg-tertiary')}>{r.entry.comment || '—'}</td>
-          <td className={cn(TD, 'whitespace-nowrap text-right nums')}>{formatDuration(r.entry.seconds)}</td>
+          <td className={cn(TD, 'nums text-right whitespace-nowrap')}>
+            {formatDuration(r.entry.seconds)}
+          </td>
         </tr>
       ))}
     </Table>

@@ -20,6 +20,8 @@ export interface CrmElement {
   opportunity: string;
   createdAt: Date;
   closedAt: Date | null;
+  /** Element title, for the lists behind the figures (ADR-049). */
+  title?: string;
 }
 
 export interface SpendRow {

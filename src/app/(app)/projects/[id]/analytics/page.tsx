@@ -16,7 +16,12 @@ import { loadRelated } from '@/server/services/related';
 import { AnalyticsUpsell, Section, Toolbar } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
 import { Button } from '@/components/ui/button';
-import { PeopleCards, SourcesCard, StatusesCard, UpcomingMeetingsCard } from '@/components/analytics/overview-parts';
+import {
+  PeopleCards,
+  SourcesCard,
+  StatusesCard,
+  UpcomingMeetingsCard,
+} from '@/components/analytics/overview-parts';
 import {
   dailySeries,
   hoursBySource,
@@ -33,6 +38,7 @@ import { supportCost } from '@/domain/finance/support-package';
 import { can } from '@/lib/permissions';
 import { formatDuration, formatHours, formatRub } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { drillHref } from '@/lib/drill';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +59,7 @@ export default async function ProjectAnalyticsPage({
     const manual = world.unlinked.some((u) => u.id === id);
     return (
       <div className="flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-8">
-        <p className="border border-dashed border-border px-4 py-5 text-sm text-fg-secondary">
+        <p className="border-border text-fg-secondary border border-dashed px-4 py-5 text-sm">
           {manual
             ? 'Проект создан вручную и не связан с Битрикс24, поэтому задач, часов и встреч здесь нет. Выберите, откуда их брать: проект из раздела «Проекты» Битрикс24 (задачи и встречи календаря) или сделку, компанию, смарт-процесс (задачи, привязанные к ним). Финансы и команда проекта не изменятся.'
             : 'Аналитика считается только по активным проектам.'}
@@ -65,6 +71,8 @@ export default async function ProjectAnalyticsPage({
 
   const { tz, now } = world;
   const s = summarizeProject(project, period, now, filters);
+  const drill = (path: string, view?: string, status?: string) =>
+    drillHref(path, periodQuery, { view, status, projectId: id, employeeId: filters.employeeId });
   const usage = monthUsage(project, period, tz, now);
   const cost = supportCost(
     {
@@ -79,20 +87,35 @@ export default async function ProjectAnalyticsPage({
   const canEdit = can.mutateProject(session.actor);
   const raw = await scope.project.findByIdOrThrow(id);
   const staffNames = Object.fromEntries([...world.people].map(([uid, p]) => [uid, p.name]));
-  const related = project.sourceKind === 'crm' ? await loadRelated(session, scope, raw, staffNames) : null;
+  const related =
+    project.sourceKind === 'crm' ? await loadRelated(session, scope, raw, staffNames) : null;
   // Responsibles of linked elements the staff list doesn't know (fired people too).
   const names = { ...ctx.names, ...(related?.names ?? {}) };
 
-  const team = teamOverview([project], period, now).filter((r) => !filters.employeeId || r.userId === filters.employeeId);
+  const team = teamOverview([project], period, now).filter(
+    (r) => !filters.employeeId || r.userId === filters.employeeId,
+  );
   const people = Object.fromEntries(
     team.map((r) => {
       const p = world.people.get(r.userId);
-      return [r.userId, { name: names[r.userId] ?? p?.name ?? `Сотрудник ${r.userId}`, position: p?.position ?? null, photoUrl: p?.photoUrl ?? null }];
+      return [
+        r.userId,
+        {
+          name: names[r.userId] ?? p?.name ?? `Сотрудник ${r.userId}`,
+          position: p?.position ?? null,
+          photoUrl: p?.photoUrl ?? null,
+        },
+      ];
     }),
   );
 
   const peopleOptions = Object.entries(names)
-    .filter(([uid]) => project.tasks.some((t) => t.responsibleId === uid) || project.entries.some((e) => e.userId === uid) || project.meetings.some((x) => x.attendeeIds.includes(uid)))
+    .filter(
+      ([uid]) =>
+        project.tasks.some((t) => t.responsibleId === uid) ||
+        project.entries.some((e) => e.userId === uid) ||
+        project.meetings.some((x) => x.attendeeIds.includes(uid)),
+    )
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -114,19 +137,57 @@ export default async function ProjectAnalyticsPage({
       <LoadNotices problems={loadProblems(world)} fetchedAt={world.fetchedAt} tz={tz} />
 
       <StatGrid>
-        <Stat label="Создано задач" value={String(s.created)} />
-        <Stat label="Выполнено" value={String(s.done)} />
-        <Stat label="Открыто сейчас" value={String(s.openNow)} hint={s.overdue ? `просрочено ${s.overdue}` : undefined} tone={s.overdue ? 'negative' : undefined} />
-        <Stat label="Реакция" value={formatDuration(s.avgReactionSeconds)} hint={`медиана ${formatDuration(s.medianReactionSeconds)}`} />
-        <Stat label="Решение" value={formatDuration(s.avgResolutionSeconds)} />
-        <Stat label="Часы" value={formatHours(s.totalSeconds)} hint={`задачи ${formatHours(s.taskSeconds)} · встречи ${formatHours(s.meetingSeconds)}`} />
-        <Stat label="Встреч" value={String(s.meetings)} hint="состоялось за период" />
+        <Stat
+          label="Создано задач"
+          value={String(s.created)}
+          href={drill('/analytics/tasks', 'created')}
+        />
+        <Stat label="Выполнено" value={String(s.done)} href={drill('/analytics/tasks', 'done')} />
+        <Stat
+          label="Открыто сейчас"
+          value={String(s.openNow)}
+          hint={s.overdue ? `просрочено ${s.overdue}` : undefined}
+          tone={s.overdue ? 'negative' : undefined}
+          href={drill('/analytics/tasks', s.overdue ? 'overdue' : 'open')}
+        />
+        <Stat
+          label="Реакция"
+          value={formatDuration(s.avgReactionSeconds)}
+          hint={`медиана ${formatDuration(s.medianReactionSeconds)}`}
+          href={drill('/analytics/tasks', 'created')}
+        />
+        <Stat
+          label="Решение"
+          value={formatDuration(s.avgResolutionSeconds)}
+          href={drill('/analytics/tasks', 'done')}
+        />
+        <Stat
+          label="Часы"
+          value={formatHours(s.totalSeconds)}
+          hint={`задачи ${formatHours(s.taskSeconds)} · встречи ${formatHours(s.meetingSeconds)}`}
+          href={drill('/analytics/hours')}
+        />
+        <Stat
+          label="Встреч"
+          value={String(s.meetings)}
+          hint="состоялось за период"
+          href={drill('/analytics/meetings')}
+        />
       </StatGrid>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <SourcesCard slices={hoursBySource([project], period, now, filters)} />
-        <StatusesCard slices={statusSplit(project.tasks, period, filters)} />
-        <UpcomingMeetingsCard meetings={upcomingMeetings(project.meetings, now, 30, filters.employeeId)} tz={tz} />
+        <SourcesCard
+          slices={hoursBySource([project], period, now, filters)}
+          href={drill('/analytics/hours')}
+        />
+        <StatusesCard
+          slices={statusSplit(project.tasks, period, filters)}
+          hrefOf={(st) => drill('/analytics/tasks', 'touched', st)}
+        />
+        <UpcomingMeetingsCard
+          meetings={upcomingMeetings(project.meetings, now, 30, filters.employeeId)}
+          tz={tz}
+        />
       </div>
 
       <Section
@@ -136,19 +197,30 @@ export default async function ProjectAnalyticsPage({
         <div className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {usage.map((u) => (
-              <div key={u.month} className="flex flex-col gap-2.5 border border-border bg-surface p-4">
+              <div
+                key={u.month}
+                className="border-border bg-surface flex flex-col gap-2.5 border p-4"
+              >
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm text-fg-secondary">{u.label}</span>
+                  <span className="text-fg-secondary text-sm">{u.label}</span>
                   {u.overageSeconds > 0 ? (
-                    <span className="font-mono text-[11px] font-bold uppercase text-negative">сверх пакета {formatHours(u.overageSeconds)} ч</span>
+                    <span className="text-negative font-mono text-[11px] font-bold uppercase">
+                      сверх пакета {formatHours(u.overageSeconds)} ч
+                    </span>
                   ) : null}
                 </div>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-display text-[24px] font-bold leading-none nums">{formatHours(u.totalSeconds)}</span>
-                  <span className="text-sm text-fg-tertiary">{u.limitSeconds !== null ? `из ${formatHours(u.limitSeconds)} ч` : 'ч, лимит не задан'}</span>
+                  <span className="font-display nums text-[24px] leading-none font-bold">
+                    {formatHours(u.totalSeconds)}
+                  </span>
+                  <span className="text-fg-tertiary text-sm">
+                    {u.limitSeconds !== null
+                      ? `из ${formatHours(u.limitSeconds)} ч`
+                      : 'ч, лимит не задан'}
+                  </span>
                 </div>
                 <UsageBar used={u.totalSeconds} limit={u.limitSeconds} />
-                <div className="font-mono text-[11px] text-fg-tertiary">
+                <div className="text-fg-tertiary font-mono text-[11px]">
                   задачи {formatHours(u.taskSeconds)} ч · встречи {formatHours(u.meetingSeconds)} ч
                 </div>
               </div>
@@ -156,10 +228,10 @@ export default async function ProjectAnalyticsPage({
           </div>
 
           {cost.hasPricing ? (
-            <div className="overflow-x-auto border border-border bg-surface">
+            <div className="border-border bg-surface overflow-x-auto border">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left font-mono text-[11px] uppercase tracking-[0.06em] text-fg-tertiary">
+                  <tr className="border-border text-fg-tertiary border-b text-left font-mono text-[11px] tracking-[0.06em] uppercase">
                     <th className="px-3 py-2.5 font-medium">Месяц</th>
                     <th className="px-3 py-2.5 text-right font-medium">Абонентская плата</th>
                     <th className="px-3 py-2.5 text-right font-medium">Часы к оплате</th>
@@ -168,18 +240,29 @@ export default async function ProjectAnalyticsPage({
                 </thead>
                 <tbody>
                   {cost.months.map((mo) => (
-                    <tr key={mo.label} className="border-b border-border">
+                    <tr key={mo.label} className="border-border border-b">
                       <td className="px-3 py-2.5">{mo.label}</td>
-                      <td className="px-3 py-2.5 text-right nums">{formatRub(mo.fee)}</td>
-                      <td className="px-3 py-2.5 text-right nums">{formatHours(mo.billableSeconds)} ч</td>
-                      <td className={cn('px-3 py-2.5 text-right nums', mo.overageCost.gt(0) && 'text-negative')}>{formatRub(mo.overageCost)}</td>
+                      <td className="nums px-3 py-2.5 text-right">{formatRub(mo.fee)}</td>
+                      <td className="nums px-3 py-2.5 text-right">
+                        {formatHours(mo.billableSeconds)} ч
+                      </td>
+                      <td
+                        className={cn(
+                          'nums px-3 py-2.5 text-right',
+                          mo.overageCost.gt(0) && 'text-negative',
+                        )}
+                      >
+                        {formatRub(mo.overageCost)}
+                      </td>
                     </tr>
                   ))}
                   <tr>
                     <td className="px-3 py-2.5 font-medium" colSpan={3}>
                       Итого за период
                     </td>
-                    <td className="px-3 py-2.5 text-right font-bold nums text-accent">{formatRub(cost.total)}</td>
+                    <td className="nums text-accent px-3 py-2.5 text-right font-bold">
+                      {formatRub(cost.total)}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -217,7 +300,10 @@ export default async function ProjectAnalyticsPage({
       </Section>
 
       {related ? (
-        <Section title="Связанные элементы" hint="Элементы смарт-процессов и сделки, которые ссылаются на этот проект в Битрикс24">
+        <Section
+          title="Связанные элементы"
+          hint="Элементы смарт-процессов и сделки, которые ссылаются на этот проект в Битрикс24"
+        >
           <RelatedItems groups={related.groups} error={related.error} tz={tz} names={names} />
         </Section>
       ) : null}

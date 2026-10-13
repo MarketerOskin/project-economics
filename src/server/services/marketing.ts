@@ -2,7 +2,7 @@ import { db } from '@/lib/db/client';
 import { withPortal, type PortalScope } from '@/lib/db/with-portal';
 import { writeAudit } from '@/lib/audit';
 import { badRequest } from '@/lib/errors';
-import { m, type Decimal } from '@/domain/finance/money';
+import { m, sum, type Decimal } from '@/domain/finance/money';
 import {
   NO_SOURCE,
   NO_SOURCE_NAME,
@@ -20,6 +20,7 @@ import {
 } from '@/domain/finance/marketing';
 import { dayKey, zonedParts, type AnalyticsPeriod } from '@/domain/analytics';
 import {
+  crmElementUrl,
   fetchElements,
   fetchSources,
   fetchStages,
@@ -49,6 +50,10 @@ export interface MarketingData {
   won: CrmElement[];
   /** Stages of the traffic funnels, for «what counts as qualified». */
   leadStages: Record<string, StageInfo>;
+  /** Every stage seen, traffic and sales, for stage names in the lists. */
+  stages: Record<string, StageInfo>;
+  /** Section title by entityTypeId. */
+  sections: Record<number, string>;
   truncated: boolean;
   errors: string[];
   fetchedAt: Date;
@@ -87,6 +92,8 @@ export async function loadMarketingData(
       leadStages: Object.fromEntries(
         Object.entries(DEMO_STAGES).filter(([, s]) => s.funnel === 'STATUS'),
       ),
+      stages: DEMO_STAGES,
+      sections: { 1: 'Лиды', 2: 'Сделки' },
       truncated: false,
       errors: [],
       fetchedAt: now,
@@ -103,6 +110,8 @@ export async function loadMarketingData(
     created: [],
     won: [],
     leadStages: {},
+    stages: {},
+    sections: {},
     truncated: false,
     errors: [],
     fetchedAt: now,
@@ -117,6 +126,7 @@ export async function loadMarketingData(
   let sections: Awaited<ReturnType<typeof listCrmSections>> = [];
   try {
     sections = await listCrmSections(portal, scope);
+    data.sections = Object.fromEntries(sections.map((s) => [s.entityTypeId, s.title]));
   } catch (err) {
     data.errors.push(`Разделы CRM: ${message(err)}`);
   }
@@ -145,6 +155,7 @@ export async function loadMarketingData(
       ]);
       data.created.push(...c.items);
       data.won.push(...w.items.filter((i) => i.semantic === 'success'));
+      Object.assign(data.stages, c.stages, w.stages);
       data.truncated ||= c.truncated || w.truncated;
     } catch (err) {
       data.errors.push(`${s.title}: ${message(err)}`);
@@ -152,6 +163,7 @@ export async function loadMarketingData(
   }
   try {
     data.leadStages = await fetchStages(portal, [...funnels]);
+    Object.assign(data.stages, data.leadStages);
   } catch (err) {
     data.errors.push(`Стадии лидов: ${message(err)}`);
   }
@@ -584,4 +596,90 @@ export async function savePlan(session: ResolvedSession, input: SavePlanInput): 
 export async function saveQualifiedStages(scope: PortalScope, stages: string[]): Promise<void> {
   if (stages.length > 200) throw badRequest('Слишком много стадий');
   await scope.marketingConfig.save([...new Set(stages)]);
+}
+
+// ─── Drill-down (ADR-049) ────────────────────────────────────────────────────
+
+export type ItemKind = 'leads' | 'qualified' | 'sales' | 'deals' | 'inwork' | 'won' | 'lost';
+
+export const ITEM_KIND_LABELS: Record<ItemKind, string> = {
+  leads: 'Лиды',
+  qualified: 'Квал. лиды',
+  sales: 'Продажи за период',
+  deals: 'Сделки, созданные за период',
+  inwork: 'В работе',
+  won: 'Выиграны',
+  lost: 'Проиграны',
+};
+
+export interface ItemRowDto {
+  key: string;
+  title: string;
+  section: string;
+  source: string;
+  manager: string;
+  stage: string;
+  semantic: string;
+  amount: string;
+  createdAt: string;
+  closedAt: string | null;
+  url: string;
+}
+
+/** The CRM elements behind a marketing or sales figure, each linking to its Bitrix24 card. */
+export async function marketingItems(
+  session: ResolvedSession,
+  scope: PortalScope,
+  period: AnalyticsPeriod,
+  tz: string,
+  q: { kind: ItemKind; source?: string; manager?: string },
+): Promise<{ rows: ItemRowDto[]; amount: string; errors: string[] }> {
+  const [data, config, users] = await Promise.all([
+    loadMarketingData(session, scope, period, tz),
+    scope.marketingConfig.get(),
+    scope.user.findMany(),
+  ]);
+  const people = new Map(users.map((u) => [u.bitrixUserId, `${u.firstName} ${u.lastName}`.trim()]));
+  const picked = new Set(config?.qualifiedStages ?? []);
+  const first = firstStages(data.leadStages);
+
+  const base: CrmElement[] =
+    q.kind === 'leads'
+      ? data.leads
+      : q.kind === 'qualified'
+        ? data.leads.filter((l) => isQualified(l, picked, first))
+        : q.kind === 'sales'
+          ? data.won
+          : data.created.filter(
+              (d) =>
+                q.kind === 'deals' ||
+                (q.kind === 'inwork' && d.semantic === 'process') ||
+                (q.kind === 'won' && d.semantic === 'success') ||
+                (q.kind === 'lost' && d.semantic === 'fail'),
+            );
+  const source = q.source === 'none' ? NO_SOURCE : q.source;
+  const list = base
+    .filter((e) => source === undefined || (e.sourceId ?? NO_SOURCE) === source)
+    .filter(
+      (e) => !q.manager || (q.manager === 'none' ? !e.assignedById : e.assignedById === q.manager),
+    )
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  return {
+    rows: list.map((e) => ({
+      key: `${e.entityTypeId}:${e.id}`,
+      title: e.title || `${data.sections[e.entityTypeId] ?? 'Элемент'} №${e.id}`,
+      section: data.sections[e.entityTypeId] ?? '',
+      source: sourceName(data.sources, e.sourceId ?? NO_SOURCE),
+      manager: e.assignedById ? (people.get(e.assignedById) ?? `Сотрудник ${e.assignedById}`) : '—',
+      stage: e.stageId ? (data.stages[e.stageId]?.name ?? e.stageId) : '—',
+      semantic: e.semantic,
+      amount: m(e.opportunity || '0').toFixed(2),
+      createdAt: e.createdAt.toISOString(),
+      closedAt: e.closedAt?.toISOString() ?? null,
+      url: crmElementUrl(session.portal.domain, e.entityTypeId, e.id),
+    })),
+    amount: sum(list.map((e) => m(e.opportunity || '0'))).toFixed(2),
+    errors: data.errors,
+  };
 }

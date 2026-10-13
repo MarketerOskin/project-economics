@@ -26,6 +26,20 @@ const PROFILE: Record<string, { leads: number; qual: number; sale: number; check
   CALL: { leads: 0.8, qual: 0.45, sale: 0.3, check: 120_000 },
 };
 
+const CLIENTS = [
+  'ООО «Север»',
+  'ИП Смирнов',
+  'Автосалон «Восток»',
+  'Клиника «Здоровье»',
+  'Стройдвор',
+  'ООО «Логистик Плюс»',
+  'Кафе «Бриз»',
+  'Студия «Форма»',
+  'ТД «Пром»',
+  'ООО «Альфа»',
+  'Школа «Лидер»',
+];
+
 export const DEMO_STAGES: Record<string, StageInfo> = Object.fromEntries(
   (
     [
@@ -87,6 +101,7 @@ export function demoElements(
         leads.push({
           entityTypeId: 1,
           id: `L${id}`,
+          title: `${CLIENTS[(day + n) % CLIENTS.length]} — заявка`,
           sourceId,
           assignedById,
           stageId: leadStage,
@@ -103,6 +118,7 @@ export function demoElements(
         deals.push({
           entityTypeId: 2,
           id: `D${id}`,
+          title: `${CLIENTS[(day + n) % CLIENTS.length]} — внедрение`,
           sourceId,
           assignedById,
           stageId,

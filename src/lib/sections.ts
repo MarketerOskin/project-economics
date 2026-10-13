@@ -18,9 +18,9 @@ export const OPTIONAL_SECTIONS = [
   },
   {
     key: 'sales',
-    href: '/sales-funnels',
-    label: 'Продажи и обращения',
-    description: 'Воронки сделок, лиды и смарт-процессы продаж',
+    href: '/marketing',
+    label: 'Маркетинг и продажи',
+    description: 'Каналы, расходы на рекламу, продажи по источникам, воронки сделок и обращения',
   },
   { key: 'history', href: '/history', label: 'История', description: 'Журнал изменений' },
 ] as const;
@@ -63,3 +63,18 @@ export const CRM_ROLES = [
 ] as const;
 
 export type CrmRoleValue = (typeof CRM_ROLES)[number]['value'];
+
+/**
+ * Where «/» leads: analytics for those who see it, then marketing and sales, otherwise the
+ * finance overview, which every role has.
+ */
+export function homePath(
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE',
+  disabled: readonly string[],
+): string {
+  if (role !== 'EMPLOYEE') {
+    if (!disabled.includes('analytics')) return '/analytics';
+    if (!disabled.includes('sales')) return '/marketing';
+  }
+  return '/finance/overview';
+}
