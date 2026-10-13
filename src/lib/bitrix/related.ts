@@ -2,6 +2,7 @@ import type { PortalInstallation } from '@prisma/client';
 import { batchBitrix, callBitrix } from './client';
 import { listSmartProcessTypes } from './crm';
 import { ENTITY_TYPE_ID, type BitrixUser } from './types';
+import { NO_RULES, stageSemantic, type StageRules, type StageSemantic } from '@/domain/crm/stages';
 
 /**
  * Elements of other CRM types that point at a project's own Bitrix24 entity (ADR-039): a
@@ -55,7 +56,7 @@ export interface RelatedGroup {
   via: string[];
   items: RelatedItem[];
   /** Stage id -> { name, semantic } for the stages these items are in. */
-  stages: Record<string, { name: string; semantic: 'success' | 'fail' | 'process' }>;
+  stages: Record<string, { name: string; semantic: StageSemantic }>;
   truncated: boolean;
   /** Sum of the items' time, or null when the type has no time fields mapped. */
   seconds: number | null;
@@ -221,7 +222,13 @@ export async function fetchRelatedItems(
   portal: PortalInstallation,
   target: number,
   id: string,
-  opts: { timeFields?: Map<number, TimeFieldMap>; onlyTypes?: Set<number>; skipTypes?: Set<number> } = {},
+  opts: {
+    timeFields?: Map<number, TimeFieldMap>;
+    onlyTypes?: Set<number>;
+    skipTypes?: Set<number>;
+    /** The portal's own reading of stages (ADR-051). */
+    stageRules?: StageRules;
+  } = {},
 ): Promise<RelatedGroup[]> {
   const relations = (await findRelationFields(portal, target)).filter(
     (r) => (!opts.onlyTypes || opts.onlyTypes.has(r.entityTypeId)) && !opts.skipTypes?.has(r.entityTypeId),
@@ -284,18 +291,18 @@ export async function fetchRelatedItems(
   }
 
   const groups = [...byType.values()].filter((g) => g.items.length > 0);
-  await attachStageNames(portal, groups);
+  await attachStageNames(portal, groups, opts.stageRules ?? NO_RULES);
   for (const g of groups) g.items.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
   return groups;
 }
 
-async function attachStageNames(portal: PortalInstallation, groups: RelatedGroup[]): Promise<void> {
+async function attachStageNames(portal: PortalInstallation, groups: RelatedGroup[], rules: StageRules): Promise<void> {
   const entityIds = new Set<string>();
   for (const g of groups) for (const i of g.items) if (i.stageId) entityIds.add(stageEntityId(g.entityTypeId, i.categoryId));
   if (entityIds.size === 0) return;
 
   const list = [...entityIds];
-  const names: Record<string, { name: string; semantic: 'success' | 'fail' | 'process' }> = {};
+  const names: Record<string, { name: string; semantic: StageSemantic }> = {};
   for (let i = 0; i < list.length; i += PAGE) {
     const chunk = list.slice(i, i + PAGE);
     const res = await batchBitrix(
@@ -310,7 +317,9 @@ async function attachStageNames(portal: PortalInstallation, groups: RelatedGroup
   }
   for (const g of groups) {
     for (const i of g.items) {
-      if (i.stageId) g.stages[i.stageId] = names[i.stageId] ?? { name: i.stageId, semantic: semanticOf(null, i.stageId) };
+      if (!i.stageId) continue;
+      const base = names[i.stageId] ?? { name: i.stageId, semantic: semanticOf(null, i.stageId) };
+      g.stages[i.stageId] = { ...base, semantic: stageSemantic(rules, g.entityTypeId, i.stageId, base.semantic) };
     }
   }
 }
@@ -344,4 +353,37 @@ export async function fetchUserNames(portal: PortalInstallation, ids: string[]):
     }
   }
   return out;
+}
+
+export interface SectionFunnel {
+  /** Category id; null for leads, which have one list of statuses. */
+  id: number | null;
+  name: string;
+  stages: Array<{ id: string; name: string; semantic: 'success' | 'fail' | 'process' }>;
+}
+
+/** One CRM section's funnels with their stages in order, for stage settings (ADR-051). */
+export async function fetchSectionStages(portal: PortalInstallation, entityTypeId: number): Promise<SectionFunnel[]> {
+  let funnels: Array<{ id: number | null; name: string }> = [{ id: null, name: 'Статусы' }];
+  if (entityTypeId !== 1) {
+    const res = await callBitrix<{ categories?: Array<{ id: number | string; name: string }> }>(portal, 'crm.category.list', {
+      entityTypeId,
+    });
+    const list = (res?.categories ?? []).map((c) => ({ id: Number(c.id), name: c.name }));
+    funnels = list.length ? list : [{ id: 0, name: 'Общая' }];
+  }
+  const res = await batchBitrix(
+    portal,
+    Object.fromEntries(
+      funnels.map((f, n) => [`s${n}`, { method: 'crm.status.list', params: { filter: { ENTITY_ID: stageEntityId(entityTypeId, f.id) }, order: { SORT: 'ASC' } } }]),
+    ),
+  );
+  return funnels.map((f, n) => {
+    const raw = (res?.[`s${n}`] ?? []) as Array<{ STATUS_ID: string; NAME: string; SEMANTICS?: string | null; SORT?: string | number }>;
+    const stages = (Array.isArray(raw) ? raw : [])
+      .slice()
+      .sort((a, b) => Number(a.SORT ?? 0) - Number(b.SORT ?? 0))
+      .map((s) => ({ id: s.STATUS_ID, name: s.NAME, semantic: semanticOf(s.SEMANTICS, s.STATUS_ID) }));
+    return { ...f, stages };
+  });
 }

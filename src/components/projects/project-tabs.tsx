@@ -17,9 +17,9 @@ export function ProjectTabs({
   const base = `/projects/${projectId}`;
   const tabs = [
     { href: base, label: 'Обзор' },
+    ...(canViewAnalytics ? [{ href: `${base}/analytics`, label: 'Аналитика' }] : []),
     { href: `${base}/finance`, label: 'Финансы' },
     { href: `${base}/team`, label: 'Команда' },
-    ...(canViewAnalytics ? [{ href: `${base}/analytics`, label: 'Аналитика' }] : []),
     ...(canViewHistory ? [{ href: `${base}/history`, label: 'История' }] : []),
   ];
 

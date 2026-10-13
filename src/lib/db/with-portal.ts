@@ -1,4 +1,4 @@
-import { Prisma, type CrmRole, type PrismaClient } from '@prisma/client';
+import { Prisma, type CrmRole, type PrismaClient, type StageOutcome } from '@prisma/client';
 import { db } from './client';
 import { notFound } from '@/lib/errors';
 
@@ -25,6 +25,8 @@ export type ScopedClient = Pick<
   | 'crmImportSource'
   | 'crmTimeField'
   | 'crmSectionRole'
+  | 'crmStageRule'
+  | 'projectStream'
   | 'taskTimeDraft'
   | 'crmIncomeDraft'
   | 'supportPosting'
@@ -174,6 +176,47 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
           create: { ...data, entityTypeId, portalId },
           update: data,
         }),
+    },
+
+    stream: {
+      /** A project's directions, archived ones left out unless asked (ADR-052). */
+      findMany: (where?: Prisma.ProjectStreamWhereInput) =>
+        client.projectStream.findMany({
+          where: { archivedAt: null, ...where, portalId },
+          orderBy: [{ createdAt: 'asc' }],
+        }),
+
+      findByIdOrThrow: async (id: string) => {
+        const row = await client.projectStream.findFirst({ where: { id, portalId, archivedAt: null } });
+        if (!row) throw notFound('Направление не найдено');
+        return row;
+      },
+
+      create: (data: Omit<Prisma.ProjectStreamUncheckedCreateInput, 'portalId'>) =>
+        client.projectStream.create({ data: { ...data, portalId } }),
+
+      update: async (id: string, data: Prisma.ProjectStreamUncheckedUpdateInput) => {
+        const res = await client.projectStream.updateMany({ where: { id, portalId }, data });
+        if (res.count === 0) throw notFound('Направление не найдено');
+        return client.projectStream.findFirstOrThrow({ where: { id, portalId } });
+      },
+    },
+
+    crmStageRule: {
+      findMany: () => client.crmStageRule.findMany({ where: { portalId } }),
+
+      /** Replaces one CRM type's rules: stages left out go back to the portal's own semantics. */
+      replaceForType: async (
+        entityTypeId: number,
+        rules: Array<{ stageId: string; outcome: StageOutcome }>,
+      ) => {
+        await client.crmStageRule.deleteMany({ where: { portalId, entityTypeId } });
+        if (rules.length) {
+          await client.crmStageRule.createMany({
+            data: rules.map((r) => ({ ...r, entityTypeId, portalId })),
+          });
+        }
+      },
     },
 
     timeDraft: {

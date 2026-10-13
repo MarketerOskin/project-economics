@@ -205,6 +205,17 @@ export function SetupWizard() {
         </p>
       </Step>
 
+      <Step n={4} title="Что значат стадии">
+        <p className="text-fg-secondary text-sm">
+          Если в смарт-процессах стадия «в работе» на деле означает, что работа закончена, отметьте
+          в{' '}
+          <Link href="/settings/stages" className="text-accent underline underline-offset-2">
+            стадиях CRM
+          </Link>
+          , какие стадии считать в работе, закрытыми, успешными и отменёнными.
+        </p>
+      </Step>
+
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={save} disabled={saving}>
           {saving ? 'Сохраняю…' : data.completedAt ? 'Сохранить' : 'Готово'}

@@ -17,6 +17,8 @@ import {
 import { Field, Input } from '@/components/ui/field';
 import { parseProjectList } from '@/lib/project-list';
 import { MemberSelect } from './member-select';
+import type { StreamKind } from '@prisma/client';
+import { STREAM_KINDS, STREAM_KIND_LABELS } from '@/lib/streams';
 
 /** What one new project is made from. */
 type Draft =
@@ -55,6 +57,8 @@ interface Defaults {
   hoursLimit: string;
   monthlyFee: string;
   hourRate: string;
+  /** A direction to add to every project (ADR-052); '' — none. */
+  kind: StreamKind | '';
 }
 
 const EMPTY_DEFAULTS: Defaults = {
@@ -63,6 +67,7 @@ const EMPTY_DEFAULTS: Defaults = {
   startDate: '',
   endDate: '',
   memberIds: [],
+  kind: '',
   hoursLimit: '',
   monthlyFee: '',
   hourRate: '',
@@ -114,6 +119,17 @@ function DefaultsForm({ value, onChange }: { value: Defaults; onChange: (v: Defa
       </div>
       <Field label="Команда">
         <MemberSelect value={value.memberIds} onChange={(ids) => set('memberIds', ids)} />
+      </Field>
+      <Field label="Направление">
+        <Segmented
+          value={value.kind || 'NONE'}
+          onChange={(v) => set('kind', v === 'NONE' ? '' : (v as StreamKind))}
+          options={[
+            { value: 'NONE', label: 'Без направления' },
+            ...STREAM_KINDS.map((k) => ({ value: k, label: STREAM_KIND_LABELS[k] })),
+          ]}
+          className="flex-wrap"
+        />
       </Field>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Пакет, часов в месяц">
@@ -406,7 +422,28 @@ export function BulkImport() {
         body.clientName = defaults.clientName.trim();
       try {
         const { id } = await apiFetch<{ id: string }>('/api/projects', { method: 'POST', body });
-        if (hasPackage) {
+        if (defaults.kind) {
+          // The direction carries the team and the payment terms (ADR-052).
+          await apiFetch(`/api/projects/${id}/streams`, {
+            method: 'POST',
+            body: {
+              kind: defaults.kind,
+              status: defaults.status,
+              startDate: defaults.startDate || null,
+              endDate: defaults.endDate || null,
+              memberIds: defaults.memberIds,
+              hoursLimit: defaults.hoursLimit || null,
+              monthlyFee: defaults.monthlyFee || null,
+              hourRate: defaults.hourRate || null,
+            },
+          }).catch((e) => {
+            errors.push({
+              title: d.title,
+              error: `создан, но направление не добавлено: ${e instanceof ApiError ? e.message : 'ошибка'}`,
+            });
+          });
+        }
+        if (hasPackage && defaults.kind !== 'DEVELOPMENT' && defaults.kind !== 'IMPLEMENTATION') {
           await apiFetch(`/api/projects/${id}/support-package`, {
             method: 'PATCH',
             body: {

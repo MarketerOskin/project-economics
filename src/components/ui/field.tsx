@@ -66,3 +66,18 @@ export function Field({
     </div>
   );
 }
+
+/**
+ * A button that sits in a row of fields: an invisible label keeps it level with the inputs,
+ * whatever hints the fields show underneath.
+ */
+export function FieldAction({ children }: { children: React.ReactNode }) {
+  return (
+    <div>
+      <Label aria-hidden className="invisible hidden sm:block">
+        &nbsp;
+      </Label>
+      {children}
+    </div>
+  );
+}

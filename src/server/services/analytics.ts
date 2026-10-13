@@ -7,6 +7,8 @@ import { syncUsersIfStale } from '@/lib/bitrix/users';
 import { MAX_TASKS_PER_PROJECT, fetchGroupMeetings, fetchTasks, fetchTimeEntries, type TaskSource } from '@/lib/bitrix/analytics';
 import { fetchRelatedItems, type RelatedGroup, type TimeFieldMap } from '@/lib/bitrix/related';
 import { demoActivity } from '@/lib/demo/analytics-data';
+import { isFinished, type StageRules } from '@/domain/crm/stages';
+import { loadStageRules } from './stage-rules';
 import { addDays, dayKey, startOfDay } from '@/domain/analytics/time';
 import { TASK_STATUS, type Meeting, type ProjectActivity, type TaskStat, type TimeEntry } from '@/domain/analytics/types';
 
@@ -105,24 +107,27 @@ export async function timeFieldMaps(scope: PortalScope): Promise<Map<number, Tim
 }
 
 /**
- * Linked CRM elements as tasks and time records (ADR-040, ADR-046): each element is a "task"
- * (negative id from its type and id, so it never collides with a Bitrix24 task or another
- * project's element), titled with its section; time in mapped fields is one record — dated
- * when the element was finished, or created while it is still open.
+ * Linked CRM elements with time in mapped fields as tasks and time records (ADR-040, ADR-046):
+ * such an element is a "task" (negative id from its type and id, so it never collides with a
+ * Bitrix24 task or another project's element), titled with its section; its time is one
+ * record — dated when the element was finished, or created while it is still open. Elements
+ * without field time are not rows at all (ADR-051): the work on them is in their Bitrix24
+ * tasks, and an element with no tasks simply adds nothing.
  */
 export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { tasks: TaskStat[]; entries: TimeEntry[] } {
   const tasks: TaskStat[] = [];
   const entries: TimeEntry[] = [];
   for (const g of groups) {
     for (const i of g.items) {
+      if (!i.seconds || i.seconds <= 0) continue;
       const id = -(g.entityTypeId * 10_000_000 + Number(i.id));
       const semantic = i.stageId ? g.stages[i.stageId]?.semantic : 'process';
-      const finished = semantic === 'success' || semantic === 'fail';
+      const finished = isFinished(semantic);
       tasks.push({
         id,
         projectId,
         title: `${g.title}: ${i.title}`,
-        status: semantic === 'success' ? TASK_STATUS.COMPLETED : semantic === 'fail' ? TASK_STATUS.DECLINED : TASK_STATUS.IN_PROGRESS,
+        status: semantic === 'success' || semantic === 'closed' ? TASK_STATUS.COMPLETED : semantic === 'fail' ? TASK_STATUS.DECLINED : TASK_STATUS.IN_PROGRESS,
         created: i.createdAt,
         started: i.createdAt,
         closed: finished ? i.movedAt : null,
@@ -157,11 +162,13 @@ async function relatedActivity(
   timeFields: Map<number, TimeFieldMap>,
   skipTypes: Set<number>,
   knownTaskIds: Set<number>,
+  stageRules: StageRules,
 ): Promise<{ tasks: TaskStat[]; entries: TimeEntry[] }> {
   try {
     const groups = await fetchRelatedItems(session.portal, project.crmEntityTypeId!, project.crmEntityId!, {
       timeFields,
       skipTypes,
+      stageRules,
     });
     const out = relatedAsActivity(groups, project.id);
 
@@ -193,6 +200,7 @@ async function loadFromBitrix(
   now: Date,
   timeFields: Map<number, TimeFieldMap>,
   skipTypes: Set<number>,
+  stageRules: StageRules,
 ): Promise<CacheEntry> {
   const tasksWithSpent = await fetchTasks(session.portal, source, project.id);
   const withTime = tasksWithSpent.filter((t) => t.spentSeconds > 0).map((t) => t.id);
@@ -200,7 +208,7 @@ async function loadFromBitrix(
   const tasks: TaskStat[] = tasksWithSpent.map(({ spentSeconds, ...t }) => (void spentSeconds, t));
 
   if (source.kind === 'crm' && project.crmEntityTypeId && project.crmEntityId) {
-    const extra = await relatedActivity(session, project, timeFields, skipTypes, new Set(tasks.map((t) => t.id)));
+    const extra = await relatedActivity(session, project, timeFields, skipTypes, new Set(tasks.map((t) => t.id)), stageRules);
     tasks.push(...extra.tasks);
     entries.push(...extra.entries);
   }
@@ -298,6 +306,7 @@ export async function loadAnalytics(
     const timeFields = await timeFieldMaps(scope);
     // Sections set to «Не использовать» in the portal setup (ADR-041) bring nothing in.
     const skipTypes = new Set((await scope.crmSectionRole.findMany()).filter((r) => r.role === 'IGNORE').map((r) => r.entityTypeId));
+    const stageRules = await loadStageRules(scope);
     result = await pool(eligible, CONCURRENCY, async ({ p, source }) => {
       const key = `${session.portal.id}:${p.id}`;
       const cached = cache.get(key);
@@ -305,7 +314,7 @@ export async function loadAnalytics(
         return toProject(p, source, cached, null, false);
       }
       try {
-        const fresh = await loadFromBitrix(session, p, source, tz, now, timeFields, skipTypes);
+        const fresh = await loadFromBitrix(session, p, source, tz, now, timeFields, skipTypes, stageRules);
         cache.set(key, fresh);
         return toProject(p, source, fresh, null, false);
       } catch (err) {

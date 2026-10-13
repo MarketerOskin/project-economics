@@ -24,6 +24,8 @@ interface NavItem {
   roles?: AppRole[];
   /** Match the pathname exactly rather than by prefix (avoids /settings lighting up on /settings/categories). */
   exact?: boolean;
+  /** Lights up for every path under this prefix (Финансы opens on Обзор, but covers /finance). */
+  section?: string;
 }
 
 const ITEMS: NavItem[] = [
@@ -35,7 +37,7 @@ const ITEMS: NavItem[] = [
     roles: ['ADMIN', 'MANAGER'],
   },
   { href: '/projects', label: 'Проекты', icon: FolderKanban },
-  { href: '/finance', label: 'Финансы', icon: Receipt },
+  { href: '/finance/overview', section: '/finance', label: 'Финансы', icon: Receipt },
   { href: '/settings', label: 'Настройки', icon: Settings, roles: ['ADMIN', 'MANAGER'] },
   { href: '/how-it-works', label: 'Как это работает', icon: HelpCircle },
   { href: '/implementation', label: 'Заявка на внедрение', icon: LifeBuoy },
@@ -91,8 +93,10 @@ function NavList({
     (i) => (!i.roles || i.roles.includes(role)) && !disabled.includes(sectionOfPath(i.href) ?? ''),
   );
   // The most specific item wins.
-  const matches = (i: NavItem) =>
-    i.exact ? pathname === i.href : pathname === i.href || pathname.startsWith(`${i.href}/`);
+  const matches = (i: NavItem) => {
+    const base = i.section ?? i.href;
+    return i.exact ? pathname === i.href : pathname === base || pathname.startsWith(`${base}/`);
+  };
   const activeHref = items.filter(matches).sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (

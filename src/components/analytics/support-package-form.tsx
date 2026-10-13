@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/field';
+import { Field, FieldAction, Input } from '@/components/ui/field';
 import { apiFetch, ApiError } from '@/lib/client/api';
 import { useToast } from '@/lib/client/toast';
 import { RUB_SIGN } from '@/lib/format';
@@ -41,7 +41,7 @@ export function SupportPackageForm({ projectId, initial }: { projectId: string; 
   };
 
   return (
-    <form onSubmit={submit} className="grid gap-4 border border-border bg-surface p-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto] sm:items-end">
+    <form onSubmit={submit} className="grid gap-4 border border-border bg-surface p-4 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto] sm:items-start">
       <Field label="Часов в месяц" htmlFor="sp-hours" error={errors.hoursLimit} hint="Пусто — без пакета">
         <Input id="sp-hours" inputMode="decimal" value={values.hoursLimit} onChange={set('hoursLimit')} placeholder="4" />
       </Field>
@@ -56,9 +56,11 @@ export function SupportPackageForm({ projectId, initial }: { projectId: string; 
       >
         <Input id="sp-rate" inputMode="decimal" value={values.hourRate} onChange={set('hourRate')} placeholder="0" />
       </Field>
-      <Button type="submit" disabled={saving}>
-        {saving ? 'Сохраняю…' : 'Сохранить'}
-      </Button>
+      <FieldAction>
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Сохраняю…' : 'Сохранить'}
+        </Button>
+      </FieldAction>
     </form>
   );
 }

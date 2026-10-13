@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type StreamKind } from '@prisma/client';
 import type { PortalScope } from '@/lib/db/with-portal';
 import type { Actor } from '@/lib/permissions';
 import { can, requirePermission } from '@/lib/permissions';
@@ -16,10 +16,13 @@ export interface ProjectListRow {
   members: { id: string; fullName: string; photoUrl: string | null; position: string | null }[];
   crm: { type: string | null; id: string; title: string | null; url: string | null } | null;
   economics: EconomicsJson;
+  /** Kinds of the project's active directions (ADR-052). */
+  kinds: StreamKind[];
 }
 
 const include = {
   members: { include: { user: true } },
+  streams: { where: { archivedAt: null }, select: { kind: true } },
 } satisfies Prisma.ProjectInclude;
 
 function memberDto(m: { user: { id: string; firstName: string; lastName: string; photoUrl: string | null; position: string | null } }) {
@@ -59,6 +62,7 @@ export async function queryProjects(
   if (query.status !== 'ALL') where.status = query.status;
   if (query.q) where.name = { contains: query.q, mode: 'insensitive' };
   if (query.memberId) where.members = { some: { userId: query.memberId } };
+  if (query.kind) where.streams = { some: { kind: query.kind, archivedAt: null } };
   if (!can.viewAllProjects(actor)) where.members = { some: { userId: actor.appUserId } };
 
   const projects = await scope.project.findMany({ where, include });
@@ -77,6 +81,7 @@ export async function queryProjects(
     members: p.members.map(memberDto),
     crm: crmDto(p),
     economics: economicsToJson(economics.get(p.id)!),
+    kinds: [...new Set(p.streams.map((s) => s.kind))],
   }));
 
   const dir = query.dir === 'asc' ? 1 : -1;
@@ -98,6 +103,8 @@ export interface ProjectDetail extends Omit<ProjectListRow, never> {
   description: string | null;
   internalComment: string | null;
   createdBy: string | null;
+  updatedBy: string | null;
+  support: { hoursLimit: string | null; monthlyFee: string | null; hourRate: string | null };
   createdAt: Date;
   updatedAt: Date;
   canEdit: boolean;
@@ -113,7 +120,12 @@ export async function getProjectDetail(
   id: string,
 ): Promise<ProjectDetail> {
   const project = await scope.project.findByIdOrThrow(id, {
-    include: { members: { include: { user: true } }, createdBy: true },
+    include: {
+      members: { include: { user: true } },
+      createdBy: true,
+      updatedBy: true,
+      streams: { where: { archivedAt: null }, select: { kind: true } },
+    },
   });
   const memberUserIds = project.members.map((m) => m.userId);
   requirePermission(can.viewProject(actor, { memberUserIds }));
@@ -133,6 +145,13 @@ export async function getProjectDetail(
     description: project.description,
     internalComment: can.viewAllProjects(actor) ? project.internalComment : null,
     createdBy: project.createdBy ? `${project.createdBy.firstName} ${project.createdBy.lastName}`.trim() : null,
+    updatedBy: project.updatedBy ? `${project.updatedBy.firstName} ${project.updatedBy.lastName}`.trim() : null,
+    support: {
+      hoursLimit: project.supportHoursLimit?.toString() ?? null,
+      monthlyFee: project.supportMonthlyFee?.toString() ?? null,
+      hourRate: project.supportHourRate?.toString() ?? null,
+    },
+    kinds: [...new Set(project.streams.map((s) => s.kind))],
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
     canEdit: can.mutateProject(actor),

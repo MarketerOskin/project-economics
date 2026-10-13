@@ -9,8 +9,6 @@ import { parseSortValue } from '@/lib/sort-value';
  * read «Итого» or carry `data-pin` stay at the bottom. A table opts out with `data-no-sort`.
  */
 
-const READY = 'sortReady';
-
 function cellText(row: HTMLTableRowElement, index: number): string {
   let col = 0;
   for (const cell of Array.from(row.cells)) {
@@ -57,35 +55,26 @@ function sortTable(table: HTMLTableElement, th: HTMLTableCellElement) {
   for (const row of pinned) body.appendChild(row);
 }
 
-function enhance(root: ParentNode) {
-  for (const table of Array.from(root.querySelectorAll('table'))) {
-    if (table.dataset[READY] || table.dataset.noSort !== undefined) continue;
-    const head = table.tHead?.rows[table.tHead.rows.length - 1];
-    if (!head || !table.tBodies[0]) continue;
-    table.dataset[READY] = '1';
-    for (const th of Array.from(head.cells)) {
-      if (!th.textContent?.trim()) continue;
-      th.classList.add('cursor-pointer', 'select-none', 'sortable-th');
-      th.title = 'Сортировать';
-      th.tabIndex = 0;
-      const run = () => sortTable(table, th);
-      th.addEventListener('click', run);
-      th.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          run();
-        }
-      });
-    }
-  }
+/**
+ * One click listener on the document, nothing written into the markup up front: touching
+ * headers before React hydrates a streamed table breaks hydration (and with it the page's
+ * buttons), so headers are styled from CSS and sorted only when clicked.
+ */
+function onClick(e: MouseEvent) {
+  if (e.button !== 0 || e.defaultPrevented) return;
+  const target = e.target as Element | null;
+  if (!target || target.closest('a, button, input, select, label')) return;
+  const th = target.closest('th');
+  const table = th?.closest('table');
+  if (!th || !table || !th.closest('thead') || table.dataset.noSort !== undefined) return;
+  if (!th.textContent?.trim()) return;
+  sortTable(table, th as HTMLTableCellElement);
 }
 
 export function TableSort() {
   React.useEffect(() => {
-    enhance(document);
-    const observer = new MutationObserver(() => enhance(document));
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
   }, []);
   return null;
 }

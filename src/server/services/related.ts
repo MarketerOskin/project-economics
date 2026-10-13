@@ -3,6 +3,7 @@ import type { ResolvedSession } from '@/lib/auth/resolve';
 import type { PortalScope } from '@/lib/db/with-portal';
 import { fetchRelatedItems, fetchUserNames, type RelatedGroup } from '@/lib/bitrix/related';
 import { timeFieldMaps } from './analytics';
+import { loadStageRules } from './stage-rules';
 
 /**
  * Elements of other CRM types linked to a project's Bitrix24 entity (ADR-039), for the
@@ -59,7 +60,7 @@ export async function loadRelated(
       session.portal,
       project.crmEntityTypeId,
       project.crmEntityId,
-      { timeFields, skipTypes },
+      { timeFields, skipTypes, stageRules: await loadStageRules(scope) },
     );
     const unknown = new Set<string>();
     for (const g of groups) {

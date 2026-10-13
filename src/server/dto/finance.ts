@@ -43,6 +43,8 @@ const baseEntry = z.object({
   hours: decimalString.optional(),
   hourlyRate: decimalString.optional(),
   employeeId: z.string().optional(),
+  /** Направление проекта (ADR-052); '' or absent — the project as a whole. */
+  streamId: z.string().max(100).optional(),
   contractorName: optional(200),
   counterpartyName: optional(200),
   invoiceNumber: optional(120),

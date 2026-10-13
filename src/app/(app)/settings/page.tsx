@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, Calculator, Clock, Database, SlidersHorizontal, Tags } from 'lucide-react';
+import { ArrowRight, Calculator, Clock, Database, ListChecks, SlidersHorizontal, Tags } from 'lucide-react';
 import { PageHeader } from '@/components/layout/app-shell';
 import { TeamRates } from '@/components/settings/team-rates';
 import { requirePageSession } from '@/server/page-session';
@@ -73,6 +73,12 @@ export default async function SettingsPage() {
             title: 'Импорт проектов из CRM',
             text: 'Из каких разделов Битрикс24 можно создавать проекты',
             icon: Database,
+          },
+          {
+            href: '/settings/stages',
+            title: 'Стадии CRM',
+            text: 'Какие стадии смарт-процессов и сделок считать в работе, закрытыми, успешными и отменёнными',
+            icon: ListChecks,
           },
           {
             href: '/settings/time-fields',

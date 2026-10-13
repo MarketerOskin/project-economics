@@ -1,3 +1,4 @@
+import * as React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -49,8 +50,16 @@ export function Stat({
   return <div className={cls}>{body}</div>;
 }
 
+const XL_COLS = { 4: 'xl:grid-cols-4', 5: 'xl:grid-cols-5', 6: 'xl:grid-cols-6' } as const;
+
+/** Columns follow the card count, so the last row is as full as it can be (no lone card). */
 export function StatGrid({ children }: { children: React.ReactNode }) {
+  const n = React.Children.toArray(children).length;
+  const gap = (c: number) => (c - (n % c)) % c;
+  const cols = ([6, 5, 4] as const).reduce((best, c) => (gap(c) < gap(best) ? c : best));
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">{children}</div>
+    <div className={cn('grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3', XL_COLS[cols])}>
+      {children}
+    </div>
   );
 }

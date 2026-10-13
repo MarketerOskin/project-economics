@@ -48,6 +48,18 @@ export async function assertProjectAndCategory(
   }
 }
 
+/** A direction must belong to the entry's project (ADR-052); '' clears it. */
+async function assertStream(
+  scope: PortalScope,
+  projectId: string,
+  streamId: string | undefined,
+): Promise<string | null> {
+  if (!streamId) return null;
+  const stream = await scope.stream.findByIdOrThrow(streamId);
+  if (stream.projectId !== projectId) throw badRequest('Направление относится к другому проекту');
+  return stream.id;
+}
+
 export async function createEntry(
   scope: PortalScope,
   session: ResolvedSession,
@@ -55,6 +67,7 @@ export async function createEntry(
 ): Promise<{ id: string }> {
   await assertProjectAndCategory(scope, input.projectId, input.categoryId, input.direction);
   if (input.employeeId) await scope.user.findByIdOrThrow(input.employeeId);
+  const streamId = await assertStream(scope, input.projectId, input.streamId);
 
   const { amount, hours, hourlyRate } = resolveAmount(input);
   const { portal, user } = session;
@@ -72,6 +85,7 @@ export async function createEntry(
       hours,
       hourlyRate,
       employeeId: input.employeeId ?? null,
+      streamId,
       contractorName: input.contractorName ?? null,
       counterpartyName: input.counterpartyName ?? null,
       invoiceNumber: input.invoiceNumber ?? null,
@@ -154,6 +168,12 @@ export async function updateEntry(
   if (input.budgetType) data.budgetType = input.budgetType;
   if (input.operationDate) data.operationDate = input.operationDate;
   if (input.employeeId !== undefined) data.employeeId = input.employeeId ?? null;
+  if (input.streamId !== undefined) {
+    data.streamId = await assertStream(scope, input.projectId ?? existing.projectId, input.streamId);
+  } else if (input.projectId && input.projectId !== existing.projectId) {
+    // Moving to another project drops a direction that belongs to the old one.
+    data.streamId = null;
+  }
   for (const k of ['contractorName', 'counterpartyName', 'invoiceNumber', 'description', 'comment', 'documentUrl'] as const) {
     if (input[k] !== undefined) data[k] = input[k] ?? null;
   }
