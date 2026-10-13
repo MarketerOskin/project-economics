@@ -27,6 +27,7 @@ export const can = {
 
   mutateProject: (a: Actor): boolean => isManagerOrAdmin(a),
   archiveProject: (a: Actor): boolean => isManagerOrAdmin(a),
+  deleteProject: (a: Actor): boolean => isManagerOrAdmin(a),
   mutateFinance: (a: Actor): boolean => isManagerOrAdmin(a),
   manageMembers: (a: Actor): boolean => isManagerOrAdmin(a),
   manageCategories: (a: Actor): boolean => isManagerOrAdmin(a),

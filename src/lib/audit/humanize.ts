@@ -88,6 +88,12 @@ export function humanizeAudit(row: RawAudit, projectName?: string): HumanAuditEn
     case 'PROJECT_RESTORED':
       sentence = `вернул проект ${p} из архива`;
       break;
+    case 'PROJECT_DELETED': {
+      // The project row is gone, so its name comes from the snapshot.
+      const name = projectName ? p : val(row.before, 'name');
+      sentence = `удалил проект ${name ? (projectName ? name : `«${name}»`) : ''}`.trim();
+      break;
+    }
     case 'FINANCE_CREATED': {
       const dir = val(row.after, 'direction') === 'INCOME' ? 'доход' : 'расход';
       sentence = `добавил ${dir} по проекту ${p}`;

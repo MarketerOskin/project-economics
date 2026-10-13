@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db/client';
 import { withPortal } from '@/lib/db/with-portal';
 import { writeAudit } from '@/lib/audit';
-import { badRequest } from '@/lib/errors';
+import { badRequest, conflict } from '@/lib/errors';
 import { can, requirePermission } from '@/lib/permissions';
 import { FREE_LIMITS, requirePro } from '@/lib/billing/plan';
 import { createProjectSchema, listProjectsQuerySchema, setMembersSchema, updateProjectSchema } from '@/server/dto/project';
@@ -211,6 +211,42 @@ export async function archiveProject({ req, params, session, scope }: HandlerCon
       before: { status: existing.status },
       after: { status: archived ? 'ARCHIVED' : 'ACTIVE' },
     });
+  });
+
+  return { ok: true };
+}
+
+// ─── DELETE /api/projects/:id ───────────────────────────────────────────────
+
+/**
+ * Deletes a project for good (ADR-042). Only a project with no live financial operations
+ * can go: money history is never erased silently, so one with operations is archived
+ * instead, or its operations are deleted first (each of those lands in the audit log).
+ */
+export async function deleteProject({ params, session, scope }: HandlerContext<{ id: string }>) {
+  requirePermission(can.deleteProject(session.actor));
+  const existing = await scope.project.findByIdOrThrow(params.id);
+  const live = await scope.entry.count({ projectId: existing.id, deletedAt: null });
+  if (live > 0) {
+    throw conflict(
+      `В проекте ${live} ${live === 1 ? 'операция' : live < 5 ? 'операции' : 'операций'}. Отправьте проект в архив или сначала удалите операции.`,
+    );
+  }
+  const { portal, user } = session;
+
+  await db.$transaction(async (tx) => {
+    const p = withPortal(portal.id, tx);
+    await writeAudit(tx, {
+      portalId: portal.id,
+      actor: { appUserId: user.id, name: actorName(user) },
+      action: 'PROJECT_DELETED',
+      entityType: 'PROJECT',
+      entityId: existing.id,
+      projectId: existing.id,
+      before: { name: existing.name, status: existing.status, clientName: existing.clientName },
+      after: null,
+    });
+    await p.project.remove(existing.id);
   });
 
   return { ok: true };

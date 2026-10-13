@@ -102,6 +102,8 @@ export interface ProjectDetail extends Omit<ProjectListRow, never> {
   updatedAt: Date;
   canEdit: boolean;
   canManageMembers: boolean;
+  canArchive: boolean;
+  canDelete: boolean;
 }
 
 /** One project with a permission check: non-member EMPLOYEE -> 403 (ТЗ §66). */
@@ -135,5 +137,7 @@ export async function getProjectDetail(
     updatedAt: project.updatedAt,
     canEdit: can.mutateProject(actor),
     canManageMembers: can.manageMembers(actor),
+    canArchive: can.archiveProject(actor),
+    canDelete: can.deleteProject(actor),
   };
 }

@@ -70,6 +70,9 @@ export function withPortal(portalId: string, client: ScopedClient = db) {
 
       count: (where?: Prisma.ProjectWhereInput) =>
         client.project.count({ where: { ...where, portalId } }),
+
+      /** Scoped hard delete; members, drafts and entries go with it (FK cascade). */
+      remove: (id: string) => client.project.deleteMany({ where: { id, portalId } }),
     },
 
     entry: {
