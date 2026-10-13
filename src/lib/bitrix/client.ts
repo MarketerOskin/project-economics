@@ -246,3 +246,34 @@ export async function batchBitrix(
   const result = await callBitrix<{ result: Record<string, unknown> }>(portal, 'batch', { cmd });
   return result.result;
 }
+
+/**
+ * Downloads a file a REST method pointed at (e.g. a company's LOGO `downloadUrl`). Only URLs on
+ * the portal's own host are fetched, so a crafted value cannot make the server call elsewhere;
+ * the access token is added here and never leaves the server.
+ */
+export async function fetchBitrixFile(
+  portal: PortalInstallation,
+  url: string,
+  maxBytes: number,
+): Promise<{ bytes: Uint8Array; type: string } | null> {
+  if (!portal.authTokenEnc) return null;
+  let target: URL;
+  try {
+    target = new URL(url, `https://${portal.domain}`);
+  } catch {
+    return null;
+  }
+  const hosts = new Set([portal.domain, portal.restEndpoint ? new URL(portal.restEndpoint).host : portal.domain]);
+  if (target.protocol !== 'https:' || !hosts.has(target.host)) return null;
+  if (!target.searchParams.has('auth')) target.searchParams.set('auth', decryptToken(portal.authTokenEnc));
+  try {
+    const res = await fetch(target, { redirect: 'error', signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength === 0 || buf.byteLength > maxBytes) return null;
+    return { bytes: buf, type: res.headers.get('content-type') ?? '' };
+  } catch {
+    return null;
+  }
+}

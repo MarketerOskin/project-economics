@@ -172,6 +172,7 @@ model PortalInstallation {
   crmTimeFields    CrmTimeField[]
   crmSectionRoles  CrmSectionRole[]
   crmStageRules    CrmStageRule[]
+  brand            PortalBrand?
   projectStreams   ProjectStream[]
   taskTimeDrafts   TaskTimeDraft[]
   crmIncomeDrafts  CrmIncomeDraft[]
@@ -814,4 +815,25 @@ model ProjectStream {
   @@index([portalId])
   @@index([portalId, projectId])
   @@index([portalId, kind])
+}
+
+/// How client-facing reports look for this portal (ADR-054): the installing company's logo,
+/// colour and requisites. One row per portal; filled by hand or from «Моя компания» in CRM.
+model PortalBrand {
+  portalId      String             @id
+  portal        PortalInstallation @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  companyName   String?
+  /// Legal name, INN/KPP, address, bank: printed in the report footer as given.
+  requisites    String?
+  /// Phone, e-mail, site: printed under the name in the report header.
+  contacts      String?
+  /// #rrggbb; the report's accent (header bar, headings, totals).
+  accentColor   String?
+  logo          Bytes?
+  logoMime      String?
+  signerName    String?
+  signerTitle   String?
+  footerNote    String?
+  updatedById   String?
+  updatedAt     DateTime           @updatedAt
 }

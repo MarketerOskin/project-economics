@@ -20,6 +20,7 @@ type Tx = Pick<
   | 'marketingSpend'
   | 'marketingPlan'
   | 'projectStream'
+  | 'portalBrand'
 >;
 
 const CATEGORIES = {
@@ -227,6 +228,21 @@ export async function seedDemoPortal(tx: Tx): Promise<{ created: boolean; portal
     },
   });
   const portalId = portal.id;
+
+  // Report branding (ADR-054), so the demo report shows a company's own letterhead.
+  await tx.portalBrand.create({
+    data: {
+      portalId,
+      companyName: 'ООО «Токсичная компания»',
+      contacts: '+7 495 000-00-00 · hello@toxic.example · toxic.example',
+      requisites:
+        'ООО «Токсичная компания», ИНН 7700000000, КПП 770001001, ОГРН 1207700000000\n125009, Москва, ул. Тверская, 1\nр/с 40702810000000000000 в АО «Банк», БИК 044525000',
+      accentColor: '#3f6212',
+      signerName: 'Анна Ковалёва',
+      signerTitle: 'Генеральный директор',
+      footerNote: 'Если в течение 5 рабочих дней замечаний нет, работы считаются принятыми.',
+    },
+  });
 
   const admin = await tx.appUser.create({
     data: {
