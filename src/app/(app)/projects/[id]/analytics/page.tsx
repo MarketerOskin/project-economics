@@ -11,6 +11,8 @@ import { UsageBar } from '@/components/analytics/usage';
 import { MeetingsTable, TasksTable } from '@/components/analytics/tables';
 import { SupportPackageForm } from '@/components/analytics/support-package-form';
 import { BitrixLinkForm } from '@/components/analytics/bitrix-link-form';
+import { RelatedItems } from '@/components/analytics/related';
+import { loadRelated } from '@/server/services/related';
 import { AnalyticsUpsell, Section, Toolbar } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
 import { Button } from '@/components/ui/button';
@@ -65,6 +67,7 @@ export default async function ProjectAnalyticsPage({
   const meetings = meetingRows(project.meetings, period, now, filters.employeeId);
   const canEdit = can.mutateProject(session.actor);
   const raw = await scope.project.findByIdOrThrow(id);
+  const related = project.sourceKind === 'crm' ? await loadRelated(session, raw) : null;
 
   const peopleOptions = Object.entries(names)
     .filter(([uid]) => project.tasks.some((t) => t.responsibleId === uid) || project.entries.some((e) => e.userId === uid) || project.meetings.some((x) => x.attendeeIds.includes(uid)))
@@ -179,6 +182,12 @@ export default async function ProjectAnalyticsPage({
       <Section title="Задачи">
         <TasksTable rows={rows} tz={tz} names={names} />
       </Section>
+
+      {related ? (
+        <Section title="Связанные элементы" hint="Элементы смарт-процессов и сделки, которые ссылаются на этот проект в Битрикс24">
+          <RelatedItems groups={related.groups} error={related.error} tz={tz} names={names} />
+        </Section>
+      ) : null}
 
       {project.sourceKind !== 'crm' ? (
         <Section title="Встречи" hint="Из календаря проекта в Битрикс24">
