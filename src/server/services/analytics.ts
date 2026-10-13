@@ -10,6 +10,7 @@ import { demoActivity } from '@/lib/demo/analytics-data';
 import { isFinished, type StageRules } from '@/domain/crm/stages';
 import { loadStageRules } from './stage-rules';
 import { addDays, dayKey, startOfDay } from '@/domain/analytics/time';
+import { hoursOnClose } from '@/domain/analytics/close-date';
 import { TASK_STATUS, type Meeting, type ProjectActivity, type TaskStat, type TimeEntry } from '@/domain/analytics/types';
 
 /**
@@ -301,7 +302,7 @@ export async function loadAnalytics(
     const allIds = (await scope.project.findMany({ select: { id: true }, orderBy: { createdAt: 'asc' } })).map((p) => p.id);
     result = projects.map((p) => {
       const a = demoActivity({ id: p.id, index: Math.max(0, allIds.indexOf(p.id)) }, staff, tz, now);
-      return { ...base(p), ...a, sourceKind: 'demo' as const, error: null, meetingsError: null, stale: false, fetchedAt: now };
+      return { ...base(p), ...a, entries: hoursOnClose(a.tasks, a.entries), sourceKind: 'demo' as const, error: null, meetingsError: null, stale: false, fetchedAt: now };
     });
   } else {
     const eligible = projects.map((p) => ({ p, source: sourceOf(p) })).filter((x): x is { p: Project; source: TaskSource } => x.source !== null);
@@ -330,7 +331,7 @@ export async function loadAnalytics(
     return {
       ...base(p),
       tasks: data.tasks,
-      entries: data.entries,
+      entries: hoursOnClose(data.tasks, data.entries),
       meetings: data.meetings,
       sourceKind: source.kind,
       error,

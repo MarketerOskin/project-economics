@@ -70,9 +70,10 @@ function mockBitrix(opts: { zayavkiIgnored?: boolean } = {}) {
             {
               id: 501,
               title: 'Собрать выгрузку',
-              status: '3',
+              status: '5',
               responsibleId: 2,
               createdDate: '2026-10-02T09:00:00+03:00',
+              closedDate: '2026-10-07T18:00:00+03:00',
               timeSpentInLogs: 5400,
             },
           ]
@@ -138,7 +139,8 @@ describe('linked elements in project tasks and hours (ADR-046)', () => {
         taskId: 501,
         userId: '2',
         seconds: 5400,
-        at: new Date('2026-10-05T07:00:00Z'),
+        // Hours sit on the task's closing date (ADR-056), not when they were logged.
+        at: new Date('2026-10-07T15:00:00Z'),
         comment: '',
       },
     ]);

@@ -3,3 +3,4 @@ export * from './types';
 export * from './time';
 export * from './period';
 export * from './metrics';
+export * from './close-date';
