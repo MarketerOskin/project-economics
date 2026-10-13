@@ -5,9 +5,10 @@ import { isDemoMode } from '@/lib/auth/demo';
 import { crmTaskBindings } from '@/lib/bitrix/tasks';
 import { syncUsersIfStale } from '@/lib/bitrix/users';
 import { fetchGroupMeetings, fetchTasks, fetchTimeEntries, type TaskSource } from '@/lib/bitrix/analytics';
+import { fetchRelatedItems, type RelatedGroup, type TimeFieldMap } from '@/lib/bitrix/related';
 import { demoActivity } from '@/lib/demo/analytics-data';
 import { addDays, dayKey, startOfDay } from '@/domain/analytics/time';
-import type { Meeting, ProjectActivity, TaskStat, TimeEntry } from '@/domain/analytics/types';
+import { TASK_STATUS, type Meeting, type ProjectActivity, type TaskStat, type TimeEntry } from '@/domain/analytics/types';
 
 /**
  * Loads support analytics for a portal (ADR-034). Bitrix24 stays the source of truth: tasks,
@@ -93,11 +94,75 @@ function errorText(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-async function loadFromBitrix(session: ResolvedSession, project: Project, source: TaskSource, tz: string, now: Date): Promise<CacheEntry> {
+/** Where CRM types keep time spent on an item (ADR-040), by entityTypeId. */
+export async function timeFieldMaps(scope: PortalScope): Promise<Map<number, TimeFieldMap>> {
+  const rows = await scope.crmTimeField.findMany();
+  return new Map(
+    rows
+      .filter((r) => r.hoursField || r.minutesField)
+      .map((r) => [r.entityTypeId, { hoursField: r.hoursField, minutesField: r.minutesField, userField: r.userField }]),
+  );
+}
+
+/**
+ * Linked CRM elements with time in mapped fields, as tasks and time records (ADR-040): each
+ * element is a "task" (negative id from its type and id, so it never collides with a Bitrix24
+ * task or another project's element) and its time
+ * is one record — dated when the element was finished, or created while it is still open.
+ */
+export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { tasks: TaskStat[]; entries: TimeEntry[] } {
+  const tasks: TaskStat[] = [];
+  const entries: TimeEntry[] = [];
+  for (const g of groups) {
+    for (const i of g.items) {
+      const id = -(g.entityTypeId * 10_000_000 + Number(i.id));
+      const semantic = i.stageId ? g.stages[i.stageId]?.semantic : 'process';
+      const finished = semantic === 'success' || semantic === 'fail';
+      tasks.push({
+        id,
+        projectId,
+        title: i.title,
+        status: semantic === 'success' ? TASK_STATUS.COMPLETED : semantic === 'fail' ? TASK_STATUS.DECLINED : TASK_STATUS.IN_PROGRESS,
+        created: i.createdAt,
+        started: i.createdAt,
+        closed: finished ? i.movedAt : null,
+        deadline: null,
+        responsibleId: i.assignedById,
+        responsibleName: '',
+        url: i.url,
+      });
+      const at = (finished ? i.movedAt : null) ?? i.createdAt;
+      const userId = i.workerId ?? i.assignedById;
+      if (i.seconds && i.seconds > 0 && at && userId) {
+        entries.push({ taskId: id, userId, seconds: i.seconds, at, comment: g.title });
+      }
+    }
+  }
+  return { tasks, entries };
+}
+
+async function loadFromBitrix(
+  session: ResolvedSession,
+  project: Project,
+  source: TaskSource,
+  tz: string,
+  now: Date,
+  timeFields: Map<number, TimeFieldMap>,
+): Promise<CacheEntry> {
   const tasksWithSpent = await fetchTasks(session.portal, source, project.id);
   const withTime = tasksWithSpent.filter((t) => t.spentSeconds > 0).map((t) => t.id);
   const entries = withTime.length ? await fetchTimeEntries(session.portal, withTime) : [];
   const tasks: TaskStat[] = tasksWithSpent.map(({ spentSeconds, ...t }) => (void spentSeconds, t));
+
+  if (source.kind === 'crm' && timeFields.size > 0 && project.crmEntityTypeId && project.crmEntityId) {
+    const groups = await fetchRelatedItems(session.portal, project.crmEntityTypeId, project.crmEntityId, {
+      timeFields,
+      onlyTypes: new Set(timeFields.keys()),
+    });
+    const related = relatedAsActivity(groups, project.id);
+    tasks.push(...related.tasks);
+    entries.push(...related.entries);
+  }
 
   let meetings: Meeting[] = [];
   let meetingsError: string | null = null;
@@ -189,6 +254,7 @@ export async function loadAnalytics(
     });
   } else {
     const eligible = projects.map((p) => ({ p, source: sourceOf(p) })).filter((x): x is { p: Project; source: TaskSource } => x.source !== null);
+    const timeFields = await timeFieldMaps(scope);
     result = await pool(eligible, CONCURRENCY, async ({ p, source }) => {
       const key = `${session.portal.id}:${p.id}`;
       const cached = cache.get(key);
@@ -196,7 +262,7 @@ export async function loadAnalytics(
         return toProject(p, source, cached, null, false);
       }
       try {
-        const fresh = await loadFromBitrix(session, p, source, tz, now);
+        const fresh = await loadFromBitrix(session, p, source, tz, now, timeFields);
         cache.set(key, fresh);
         return toProject(p, source, fresh, null, false);
       } catch (err) {
