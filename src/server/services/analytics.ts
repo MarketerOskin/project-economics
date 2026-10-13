@@ -4,7 +4,7 @@ import type { PortalScope } from '@/lib/db/with-portal';
 import { isDemoMode } from '@/lib/auth/demo';
 import { crmTaskBindings } from '@/lib/bitrix/tasks';
 import { syncUsersIfStale } from '@/lib/bitrix/users';
-import { fetchGroupMeetings, fetchTasks, fetchTimeEntries, type TaskSource } from '@/lib/bitrix/analytics';
+import { MAX_TASKS_PER_PROJECT, fetchGroupMeetings, fetchTasks, fetchTimeEntries, type TaskSource } from '@/lib/bitrix/analytics';
 import { fetchRelatedItems, type RelatedGroup, type TimeFieldMap } from '@/lib/bitrix/related';
 import { demoActivity } from '@/lib/demo/analytics-data';
 import { addDays, dayKey, startOfDay } from '@/domain/analytics/time';
@@ -105,10 +105,10 @@ export async function timeFieldMaps(scope: PortalScope): Promise<Map<number, Tim
 }
 
 /**
- * Linked CRM elements with time in mapped fields, as tasks and time records (ADR-040): each
- * element is a "task" (negative id from its type and id, so it never collides with a Bitrix24
- * task or another project's element) and its time
- * is one record — dated when the element was finished, or created while it is still open.
+ * Linked CRM elements as tasks and time records (ADR-040, ADR-046): each element is a "task"
+ * (negative id from its type and id, so it never collides with a Bitrix24 task or another
+ * project's element), titled with its section; time in mapped fields is one record — dated
+ * when the element was finished, or created while it is still open.
  */
 export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { tasks: TaskStat[]; entries: TimeEntry[] } {
   const tasks: TaskStat[] = [];
@@ -121,7 +121,7 @@ export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { 
       tasks.push({
         id,
         projectId,
-        title: i.title,
+        title: `${g.title}: ${i.title}`,
         status: semantic === 'success' ? TASK_STATUS.COMPLETED : semantic === 'fail' ? TASK_STATUS.DECLINED : TASK_STATUS.IN_PROGRESS,
         created: i.createdAt,
         started: i.createdAt,
@@ -141,6 +141,50 @@ export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { 
   return { tasks, entries };
 }
 
+/** Bitrix24 bindings (UF_CRM_TASK) asked for in one tasks.task.list call. */
+const BINDINGS_PER_CALL = 40;
+
+/**
+ * Everything linked CRM elements bring into a CRM project's tasks and hours (ADR-046): the
+ * elements themselves as rows (with time from mapped fields), plus the Bitrix24 tasks bound
+ * to elements that carry no field time, with those tasks' time records. Elements with field
+ * time don't contribute their tasks' time too, so nothing is counted twice. A failure here
+ * leaves the project's own tasks intact.
+ */
+async function relatedActivity(
+  session: ResolvedSession,
+  project: Project,
+  timeFields: Map<number, TimeFieldMap>,
+  skipTypes: Set<number>,
+  knownTaskIds: Set<number>,
+): Promise<{ tasks: TaskStat[]; entries: TimeEntry[] }> {
+  try {
+    const groups = await fetchRelatedItems(session.portal, project.crmEntityTypeId!, project.crmEntityId!, {
+      timeFields,
+      skipTypes,
+    });
+    const out = relatedAsActivity(groups, project.id);
+
+    const bindings = groups.flatMap((g) => g.items.filter((i) => !i.seconds).flatMap((i) => crmTaskBindings(g.entityTypeId, i.id)));
+    const bound: TaskStat[] = [];
+    const withTime: number[] = [];
+    for (let i = 0; i < bindings.length && bound.length < MAX_TASKS_PER_PROJECT; i += BINDINGS_PER_CALL) {
+      const page = await fetchTasks(session.portal, { kind: 'crm', bindings: bindings.slice(i, i + BINDINGS_PER_CALL) }, project.id);
+      for (const { spentSeconds, ...t } of page) {
+        if (knownTaskIds.has(t.id)) continue;
+        knownTaskIds.add(t.id);
+        bound.push(t);
+        if (spentSeconds > 0) withTime.push(t.id);
+      }
+    }
+    out.tasks.push(...bound);
+    if (withTime.length) out.entries.push(...(await fetchTimeEntries(session.portal, withTime)));
+    return out;
+  } catch {
+    return { tasks: [], entries: [] };
+  }
+}
+
 async function loadFromBitrix(
   session: ResolvedSession,
   project: Project,
@@ -148,20 +192,17 @@ async function loadFromBitrix(
   tz: string,
   now: Date,
   timeFields: Map<number, TimeFieldMap>,
+  skipTypes: Set<number>,
 ): Promise<CacheEntry> {
   const tasksWithSpent = await fetchTasks(session.portal, source, project.id);
   const withTime = tasksWithSpent.filter((t) => t.spentSeconds > 0).map((t) => t.id);
   const entries = withTime.length ? await fetchTimeEntries(session.portal, withTime) : [];
   const tasks: TaskStat[] = tasksWithSpent.map(({ spentSeconds, ...t }) => (void spentSeconds, t));
 
-  if (source.kind === 'crm' && timeFields.size > 0 && project.crmEntityTypeId && project.crmEntityId) {
-    const groups = await fetchRelatedItems(session.portal, project.crmEntityTypeId, project.crmEntityId, {
-      timeFields,
-      onlyTypes: new Set(timeFields.keys()),
-    });
-    const related = relatedAsActivity(groups, project.id);
-    tasks.push(...related.tasks);
-    entries.push(...related.entries);
+  if (source.kind === 'crm' && project.crmEntityTypeId && project.crmEntityId) {
+    const extra = await relatedActivity(session, project, timeFields, skipTypes, new Set(tasks.map((t) => t.id)));
+    tasks.push(...extra.tasks);
+    entries.push(...extra.entries);
   }
 
   let meetings: Meeting[] = [];
@@ -255,6 +296,8 @@ export async function loadAnalytics(
   } else {
     const eligible = projects.map((p) => ({ p, source: sourceOf(p) })).filter((x): x is { p: Project; source: TaskSource } => x.source !== null);
     const timeFields = await timeFieldMaps(scope);
+    // Sections set to «Не использовать» in the portal setup (ADR-041) bring nothing in.
+    const skipTypes = new Set((await scope.crmSectionRole.findMany()).filter((r) => r.role === 'IGNORE').map((r) => r.entityTypeId));
     result = await pool(eligible, CONCURRENCY, async ({ p, source }) => {
       const key = `${session.portal.id}:${p.id}`;
       const cached = cache.get(key);
@@ -262,7 +305,7 @@ export async function loadAnalytics(
         return toProject(p, source, cached, null, false);
       }
       try {
-        const fresh = await loadFromBitrix(session, p, source, tz, now, timeFields);
+        const fresh = await loadFromBitrix(session, p, source, tz, now, timeFields, skipTypes);
         cache.set(key, fresh);
         return toProject(p, source, fresh, null, false);
       } catch (err) {
