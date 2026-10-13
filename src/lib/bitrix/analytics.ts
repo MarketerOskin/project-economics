@@ -11,6 +11,8 @@ import type { Meeting, TaskStat, TimeEntry } from '@/domain/analytics/types';
 const PAGE = 50;
 /** Hard cap per project so one huge group can't stall the page. */
 export const MAX_TASKS_PER_PROJECT = 2000;
+/** Task-list pages asked for in one batch request after the first page. */
+const PAGES_PER_BATCH = 10;
 /** Meetings longer than this are calendar noise (a "busy all week" block), not work. */
 const MAX_MEETING_SECONDS = 12 * 3600;
 
@@ -195,17 +197,28 @@ export async function fetchTasks(
   projectId: string,
 ): Promise<Array<TaskStat & { spentSeconds: number }>> {
   const filter = source.kind === 'group' ? { GROUP_ID: source.groupId } : { UF_CRM_TASK: source.bindings };
-  const raw: RawTask[] = [];
-  for (let start = 0; raw.length < MAX_TASKS_PER_PROJECT; start += PAGE) {
-    const res = await callBitrix<{ tasks?: RawTask[] }>(portal, 'tasks.task.list', {
-      filter,
-      select: TASK_SELECT,
-      order: { ID: 'desc' },
-      start,
-    });
-    const page = res?.tasks ?? [];
-    raw.push(...page);
-    if (page.length < PAGE) break;
+  const params = (start: number) => ({ filter, select: TASK_SELECT, order: { ID: 'desc' }, start });
+  const first = await callBitrix<{ tasks?: RawTask[] }>(portal, 'tasks.task.list', params(0));
+  const raw: RawTask[] = [...(first?.tasks ?? [])];
+  // A big project: fetch the following pages PAGES_PER_BATCH at a time in one batch request
+  // instead of one round trip per 50 tasks (ADR-057).
+  let start = PAGE;
+  let more = raw.length === PAGE;
+  while (more && raw.length < MAX_TASKS_PER_PROJECT) {
+    const starts = Array.from({ length: PAGES_PER_BATCH }, (_, i) => start + i * PAGE).filter((s) => s < MAX_TASKS_PER_PROJECT);
+    const res = await batchBitrix(
+      portal,
+      Object.fromEntries(starts.map((s) => [`p${s}`, { method: 'tasks.task.list', params: params(s) }])),
+    );
+    for (const s of starts) {
+      const page = (res?.[`p${s}`] as { tasks?: RawTask[] } | undefined)?.tasks ?? [];
+      raw.push(...page);
+      if (page.length < PAGE) {
+        more = false;
+        break;
+      }
+    }
+    start += starts.length * PAGE;
   }
   const tasks = raw.slice(0, MAX_TASKS_PER_PROJECT).map((r) => parseTask(r, projectId, (t) => taskUrl(portal, source, t)));
   if (source.kind === 'group' && tasks.length) {

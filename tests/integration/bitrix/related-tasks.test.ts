@@ -147,6 +147,32 @@ describe('linked elements in project tasks and hours (ADR-046)', () => {
     expect(taskFilters.some((f) => f.includes('T414_3097'))).toBe(true);
   });
 
+  it('shows cached data at once when it is a few minutes old and refreshes it behind the scenes (ADR-057)', async () => {
+    const { project, session, scope } = await setup();
+    mockBitrix();
+    await loadAnalytics(session, scope, { projectId: project.id, refresh: true });
+
+    const cache = (globalThis as unknown as { __analyticsCache: Map<string, { at: number }> })
+      .__analyticsCache;
+    const key = `${session.portal.id}:${project.id}`;
+    cache.get(key)!.at -= 10 * 60_000;
+
+    vi.restoreAllMocks();
+    let release: () => void = () => undefined;
+    const slow = new Promise<void>((r) => (release = r));
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async () => {
+      await slow;
+      throw new Error('Bitrix24 is slow today');
+    });
+
+    const world = await loadAnalytics(session, scope, { projectId: project.id });
+    const p = world.projects[0]!;
+    expect(p.error).toBeNull();
+    expect(p.tasks.map((t) => t.title)).toEqual(['Собрать выгрузку']);
+    expect(fetchSpy).toHaveBeenCalled();
+    release();
+  });
+
   it('sections set to «Не использовать» bring nothing in', async () => {
     const { s, project, session, scope } = await setup();
     await testDb.crmSectionRole.create({
