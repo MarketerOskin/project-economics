@@ -101,6 +101,8 @@ enum Plan {
 enum LeadKind {
   PRO
   IMPLEMENTATION
+  /// «Интеграция с 1С» from the finance section (ADR-050).
+  INTEGRATION_1C
 }
 
 enum ProLeadStatus {

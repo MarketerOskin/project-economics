@@ -8,7 +8,14 @@ import { cn } from '@/lib/cn';
  * Sub-navigation of a section. The period (not one-shot params) carries between tabs; the
  * most specific tab whose href starts the path is the active one.
  */
-export function SectionTabs({ tabs }: { tabs: Array<{ href: string; label: string }> }) {
+export function SectionTabs({
+  tabs,
+  aside,
+}: {
+  tabs: Array<{ href: string; label: string }>;
+  /** Shown on the right of the tab row. */
+  aside?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const params = useSearchParams();
   const keep = new URLSearchParams();
@@ -22,7 +29,7 @@ export function SectionTabs({ tabs }: { tabs: Array<{ href: string; label: strin
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <div className="border-border overflow-x-auto border-b px-4 sm:px-8">
+    <div className="border-border flex items-center justify-between gap-4 overflow-x-auto border-b px-4 sm:px-8">
       <nav className="flex gap-5 sm:gap-6">
         {tabs.map((t) => (
           <Link
@@ -39,6 +46,7 @@ export function SectionTabs({ tabs }: { tabs: Array<{ href: string; label: strin
           </Link>
         ))}
       </nav>
+      {aside}
     </div>
   );
 }

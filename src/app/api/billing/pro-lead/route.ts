@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 
 /** Whether this portal already has an open ("we'll get back to you") request of `?kind=`. */
 export const GET = route(async ({ req, scope }) => {
-  const kind = new URL(req.url).searchParams.get('kind') === 'IMPLEMENTATION' ? 'IMPLEMENTATION' : 'PRO';
+  const asked = new URL(req.url).searchParams.get('kind');
+  const kind = asked === 'IMPLEMENTATION' || asked === 'INTEGRATION_1C' ? asked : 'PRO';
   const lead = await getOpenProLead(scope, kind);
   return { pending: Boolean(lead), lead };
 });

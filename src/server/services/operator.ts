@@ -107,7 +107,7 @@ export interface LeadRow {
   requestedByName: string;
   contact: string;
   comment: string | null;
-  kind: 'PRO' | 'IMPLEMENTATION';
+  kind: 'PRO' | 'IMPLEMENTATION' | 'INTEGRATION_1C';
   status: ProLeadStatus;
   createdAt: Date;
   handledAt: Date | null;

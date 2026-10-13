@@ -5,7 +5,7 @@ import { LoadNotices } from '@/components/analytics/notices';
 import { AnalyticsUpsell, Toolbar } from '@/components/analytics/page-parts';
 import { TasksTable } from '@/components/analytics/tables';
 import {
-  TASK_STATUS_LABELS,
+  statusKeyLabel,
   TASK_VIEW_LABELS,
   drillTasks,
   type TaskView,
@@ -38,7 +38,7 @@ export default async function AnalyticsTasksPage({ searchParams }: { searchParam
   const scopeLabel = [
     projectFilter ? projectNames[projectFilter] : null,
     filters.employeeId ? (names[filters.employeeId] ?? `Сотрудник ${filters.employeeId}`) : null,
-    status ? `статус «${TASK_STATUS_LABELS[status] ?? status}»` : null,
+    status ? `статус «${statusKeyLabel(status)}»` : null,
   ].filter(Boolean);
 
   return (

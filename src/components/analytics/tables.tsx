@@ -9,7 +9,7 @@ import {
   formatTimeIn,
 } from '@/lib/format';
 import {
-  TASK_STATUS_LABELS,
+  taskStatusLabel,
   type TaskRow,
   type MeetingRow,
   type EmployeeRow,
@@ -142,7 +142,7 @@ export function TasksTable({
               </td>
             ) : null}
             <td className={cn(TD, 'whitespace-nowrap', STATUS_TONE[r.task.status])}>
-              {TASK_STATUS_LABELS[r.task.status] ?? r.task.status}
+              {taskStatusLabel(r.task)}
             </td>
             <td className={cn(TD, 'text-fg-secondary whitespace-nowrap')}>
               {formatDateIn(r.task.created, tz)}

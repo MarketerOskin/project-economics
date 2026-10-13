@@ -53,6 +53,7 @@ export interface DemoActivity {
 }
 
 const DAYS_BACK = 120;
+const DEMO_STAGES = ['В работе', 'Тестирование', 'На согласовании у клиента'];
 const HOUR = 3600_000;
 
 export function demoActivity(
@@ -105,6 +106,15 @@ export function demoActivity(
         responsibleId: owner.bitrixUserId,
         responsibleName: owner.name,
         url: null,
+        // Odd projects keep their own task board, as most real groups do (ADR-050).
+        stage:
+          project.index % 2 === 1
+            ? null
+            : status === '5'
+              ? 'Готово'
+              : status === '2'
+                ? 'Новые'
+                : DEMO_STAGES[id % DEMO_STAGES.length]!,
       });
 
       if (startedReal) {

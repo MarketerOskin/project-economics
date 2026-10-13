@@ -122,3 +122,37 @@ describe('drillTasks (ADR-049)', () => {
     ).toEqual([2]);
   });
 });
+
+describe('board stages (ADR-050)', () => {
+  it('groups and filters by the board stage when a task has one, by status otherwise', async () => {
+    const { statusSplit, drillTasks, taskStatusLabel } = await import('@/domain/analytics');
+    const w = { start: new Date('2026-10-01T00:00:00Z'), end: new Date('2026-11-01T00:00:00Z') };
+    const t = (id: number, status: string, stage: string | null) => ({
+      id,
+      projectId: 'p',
+      title: `T${id}`,
+      status,
+      stage,
+      created: new Date('2026-10-02T00:00:00Z'),
+      started: null,
+      closed: null,
+      deadline: null,
+      responsibleId: '1',
+      responsibleName: '',
+      url: null,
+    });
+    const tasks = [t(1, '3', 'Тестирование'), t(2, '3', 'Тестирование'), t(3, '3', null)];
+    expect(taskStatusLabel(tasks[0]!)).toBe('Тестирование');
+    expect(taskStatusLabel(tasks[2]!)).toBe('В работе');
+    expect(statusSplit(tasks, w).map((s) => [s.label, s.count])).toEqual([
+      ['В работе', 1],
+      ['Тестирование', 2],
+    ]);
+    const now = new Date('2026-10-20T00:00:00Z');
+    expect(
+      drillTasks(tasks, [], w, now, 'touched', { status: 'stage:Тестирование' }).map(
+        (r) => r.task.id,
+      ),
+    ).toEqual([2, 1]);
+  });
+});

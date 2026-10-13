@@ -89,6 +89,9 @@ export default async function AnalyticsOverviewPage({
         overageSeconds: usage.reduce((a, u) => a + u.overageSeconds, 0),
         done: ps.done,
         openNow: ps.openNow,
+        created: ps.created,
+        meetings: ps.meetings,
+        month: usage.at(-1) ?? null,
       };
     })
     .sort((a, b) => b.overageSeconds - a.overageSeconds || b.totalSeconds - a.totalSeconds);

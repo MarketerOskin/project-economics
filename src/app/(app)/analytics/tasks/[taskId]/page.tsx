@@ -6,7 +6,7 @@ import { AnalyticsUpsell, Section } from '@/components/analytics/page-parts';
 import { Stat, StatGrid } from '@/components/analytics/stat';
 import { JournalTable } from '@/components/analytics/tables';
 import { Button } from '@/components/ui/button';
-import { TASK_STATUS_LABELS, reactionSeconds, resolutionSeconds } from '@/domain/analytics';
+import { taskStatusLabel, reactionSeconds, resolutionSeconds } from '@/domain/analytics';
 import { formatDateIn, formatDuration } from '@/lib/format';
 import { drillHref } from '@/lib/drill';
 
@@ -53,7 +53,7 @@ export default async function AnalyticsTaskPage({
               {projectNames[project.projectId] ?? project.name}
             </Link>
             {' · '}
-            {TASK_STATUS_LABELS[task.status] ?? task.status}
+            {taskStatusLabel(task)}
             {task.responsibleId ? (
               <>
                 {' · '}

@@ -3,6 +3,8 @@ import { MONTHS, monthPeriod, monthsTouched } from './period';
 import {
   TASK_STATUS,
   meetingSeconds,
+  taskStatusKey,
+  taskStatusLabel,
   type Meeting,
   type ProjectActivity,
   type TaskStat,
@@ -39,7 +41,8 @@ const held = (m: Meeting, now: Date) => m.start <= now;
 
 function taskMatches(t: TaskStat, f: Filters): boolean {
   return (
-    (!f.employeeId || t.responsibleId === f.employeeId) && (!f.status || t.status === f.status)
+    (!f.employeeId || t.responsibleId === f.employeeId) &&
+    (!f.status || taskStatusKey(t) === f.status)
   );
 }
 
@@ -302,21 +305,31 @@ export function dailySeries(
 }
 
 export interface StatusSlice {
+  /** taskStatusKey: a board stage or a status code. */
   status: string;
+  label: string;
+  /** Bitrix status behind the slice (the most common one for a stage), for its colour. */
+  baseStatus: string;
   count: number;
 }
 
 /** Tasks touched in the window, by current status. */
 export function statusSplit(tasks: TaskStat[], w: Window, f: Filters = {}): StatusSlice[] {
-  const counts = new Map<string, number>();
+  const slices = new Map<string, StatusSlice>();
   for (const t of tasks) {
     if (taskMatches(t, f) && (inWindow(t.created, w) || inWindow(t.closed, w))) {
-      counts.set(t.status, (counts.get(t.status) ?? 0) + 1);
+      const key = taskStatusKey(t);
+      const s = slices.get(key) ?? {
+        status: key,
+        label: taskStatusLabel(t),
+        baseStatus: t.status,
+        count: 0,
+      };
+      s.count += 1;
+      slices.set(key, s);
     }
   }
-  return [...counts.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([status, count]) => ({ status, count }));
+  return [...slices.values()].sort((a, b) => a.status.localeCompare(b.status));
 }
 
 // ─── Meetings ───────────────────────────────────────────────────────────────
@@ -564,7 +577,7 @@ export function drillTasks(
     open: (t) => taskMatches(t, f) && isOpen(t),
     overdue: (t) => taskMatches(t, f) && isOpen(t) && t.deadline !== null && t.deadline < now,
     // Hours count everyone's records on a task, so the employee filter applies to the records.
-    worked: (t) => (!f.status || t.status === f.status) && byTask.has(t.id),
+    worked: (t) => (!f.status || taskStatusKey(t) === f.status) && byTask.has(t.id),
   };
   return tasks
     .filter(keep[view])
