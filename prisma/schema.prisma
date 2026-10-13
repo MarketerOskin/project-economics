@@ -95,6 +95,11 @@ enum Plan {
   PRO
 }
 
+enum LeadKind {
+  PRO
+  IMPLEMENTATION
+}
+
 enum ProLeadStatus {
   /// Just submitted, nobody has followed up yet.
   NEW
@@ -172,6 +177,8 @@ model ProLead {
   /// Free-text contact the requester left (email / phone / Telegram) — not Bitrix24 identity.
   contact String
   comment String?
+  /// PRO = "I want Pro" from /pricing; IMPLEMENTATION = "set the app up for how we work" (ADR-038).
+  kind    LeadKind @default(PRO)
 
   status          ProLeadStatus @default(NEW)
   createdAt       DateTime      @default(now())

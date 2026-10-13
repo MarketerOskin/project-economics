@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import {
   bindMenuPlacement,
   bindUninstallEvent,
+  shouldKeepPortalToken,
   syncCurrentUser,
   upsertPortalFromInstall,
   type BitrixAuthPayload,
@@ -40,7 +41,8 @@ async function readPayload(req: NextRequest): Promise<BitrixAuthPayload> {
  * time someone opens a Local Application from Bitrix's own menu/shortcut — unlike a
  * Marketplace placement, a Local Application has no separate "open" URL, Bitrix just
  * re-POSTs the same install payload again on every open. So on every call we upsert
- * the portal (a no-op after the first time), then go straight into a session — a
+ * the portal (keeping the stored token unless the opener is an admin, ADR-037), then go
+ * straight into a session — a
  * static "installed, now open it from the menu" page is a dead end the user can never
  * get past, since that same menu item is what re-triggers this very endpoint.
  */
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(body, { status });
     }
 
-    const portal = await upsertPortalFromInstall(payload);
+    const portal = await upsertPortalFromInstall(payload, { keepTokens: await shouldKeepPortalToken(payload) });
     await bindMenuPlacement(portal);
     await bindUninstallEvent(portal);
 
