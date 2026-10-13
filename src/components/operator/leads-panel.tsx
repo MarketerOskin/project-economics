@@ -19,6 +19,7 @@ interface LeadRow {
   requestedByName: string;
   contact: string;
   comment: string | null;
+  kind: 'PRO' | 'IMPLEMENTATION';
   status: LeadStatus;
   createdAt: string;
   handledAt: string | null;
@@ -78,6 +79,7 @@ function LeadCard({ lead, onChanged }: { lead: LeadRow; onChanged: () => void | 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium">{lead.portalIsDemo ? 'Демо-портал' : lead.portalDomain}</span>
+            <span className="text-xs text-fg-tertiary">{lead.kind === 'IMPLEMENTATION' ? 'Внедрение' : 'Pro'}</span>
             <span className={cn('inline-flex items-center px-2 py-0.5 text-xs font-medium', STATUS_STYLE[lead.status])}>
               {STATUS_LABEL[lead.status]}
             </span>
@@ -101,9 +103,15 @@ function LeadCard({ lead, onChanged }: { lead: LeadRow; onChanged: () => void | 
                 {busy === 'CONTACTED' ? '…' : 'Связался'}
               </Button>
             ) : null}
-            <Button size="sm" disabled={busy !== null} onClick={grantAndConvert}>
-              {busy === 'grant' ? 'Выдаю…' : 'Выдать Pro'}
-            </Button>
+            {lead.kind === 'PRO' ? (
+              <Button size="sm" disabled={busy !== null} onClick={grantAndConvert}>
+                {busy === 'grant' ? 'Выдаю…' : 'Выдать Pro'}
+              </Button>
+            ) : (
+              <Button size="sm" disabled={busy !== null} onClick={() => setStatus('CONVERTED')}>
+                {busy === 'CONVERTED' ? '…' : 'Договорились'}
+              </Button>
+            )}
             <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => setStatus('DECLINED')}>
               {busy === 'DECLINED' ? '…' : 'Отказ'}
             </Button>

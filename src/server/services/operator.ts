@@ -107,6 +107,7 @@ export interface LeadRow {
   requestedByName: string;
   contact: string;
   comment: string | null;
+  kind: 'PRO' | 'IMPLEMENTATION';
   status: ProLeadStatus;
   createdAt: Date;
   handledAt: Date | null;
@@ -128,6 +129,7 @@ export async function listProLeadsForOperator(q?: { status?: ProLeadStatus }): P
     requestedByName: r.requestedByName,
     contact: r.contact,
     comment: r.comment,
+    kind: r.kind,
     status: r.status,
     createdAt: r.createdAt,
     handledAt: r.handledAt,

@@ -169,4 +169,29 @@ describe('billing: PRO leads (pricing -> operator sales funnel)', () => {
     const res = await operatorLeadsRoute(new NextRequest('http://localhost/api/operator/leads'));
     expect(res.status).toBe(401);
   });
+
+  it('an implementation request is separate from a Pro request and reaches the operator (ADR-038)', async () => {
+    const s = await seedPortal();
+    const cookie = await portalCookie(s.portalId, s.employeeId);
+
+    await createLeadRoute(req('/api/billing/pro-lead', cookie, { method: 'POST', body: { contact: 'pro@client.ru' } }));
+    const impl = await createLeadRoute(
+      req('/api/billing/pro-lead', cookie, {
+        method: 'POST',
+        body: { contact: 'impl@client.ru', comment: 'Проекты в смарт-процессе', kind: 'IMPLEMENTATION' },
+      }),
+    );
+    expect(impl.status).toBe(201);
+
+    const dupe = await createLeadRoute(
+      req('/api/billing/pro-lead', cookie, { method: 'POST', body: { contact: 'x@client.ru', kind: 'IMPLEMENTATION' } }),
+    );
+    expect(dupe.status).toBe(409);
+
+    const status = await (await getLeadRoute(req('/api/billing/pro-lead?kind=IMPLEMENTATION', cookie))).json();
+    expect(status.lead.contact).toBe('impl@client.ru');
+
+    const stored = await testDb.proLead.findMany({ where: { portalId: s.portalId }, orderBy: { createdAt: 'asc' } });
+    expect(stored.map((l) => l.kind)).toEqual(['PRO', 'IMPLEMENTATION']);
+  });
 });

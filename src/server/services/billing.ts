@@ -15,10 +15,13 @@ function actorName(u: { firstName: string; lastName: string }): string {
   return `${u.firstName} ${u.lastName}`.trim();
 }
 
-/** The portal's most recent still-open ("we'll get back to you") lead, if any. */
-export async function getOpenProLead(scope: PortalScope): Promise<ProLeadSummary | null> {
+/** The portal's most recent still-open ("we'll get back to you") lead of this kind, if any. */
+export async function getOpenProLead(
+  scope: PortalScope,
+  kind: 'PRO' | 'IMPLEMENTATION' = 'PRO',
+): Promise<ProLeadSummary | null> {
   const [lead] = await scope.proLead.findMany({
-    where: { status: { in: ['NEW', 'CONTACTED'] } },
+    where: { status: { in: ['NEW', 'CONTACTED'] }, kind },
     orderBy: { createdAt: 'desc' },
     take: 1,
   });
@@ -26,7 +29,8 @@ export async function getOpenProLead(scope: PortalScope): Promise<ProLeadSummary
 }
 
 /**
- * "I want PRO" request from /pricing. One open lead per portal at a time — resubmitting
+ * "I want PRO" request from /pricing, or an implementation request from /implementation
+ * (ADR-038). One open lead of each kind per portal at a time — resubmitting
  * while one is pending is a conflict, not silently ignored, so the user gets clear feedback.
  */
 export async function createProLead(
@@ -34,7 +38,7 @@ export async function createProLead(
   session: ResolvedSession,
   input: CreateProLeadInput,
 ): Promise<{ id: string }> {
-  const existing = await getOpenProLead(scope);
+  const existing = await getOpenProLead(scope, input.kind);
   if (existing) {
     throw conflict('Заявка уже отправлена — мы скоро свяжемся. Дождитесь ответа или напишите нам напрямую.');
   }
@@ -44,6 +48,7 @@ export async function createProLead(
     requestedByName: actorName(session.user),
     contact: input.contact,
     comment: input.comment ?? null,
+    kind: input.kind,
   });
   return { id: created.id };
 }

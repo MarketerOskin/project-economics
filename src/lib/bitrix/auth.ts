@@ -28,8 +28,16 @@ const DEFAULT_CATEGORIES = [
   { kind: 'EXPENSE' as const, name: 'Дивиденды', accentColor: 'burgundy' },
 ];
 
-/** Provision (or update) a portal from an install POST, and seed its default categories. */
-export async function upsertPortalFromInstall(payload: BitrixAuthPayload): Promise<PortalInstallation> {
+/**
+ * Provision (or update) a portal from an install POST, and seed its default categories.
+ * `keepTokens` leaves the stored portal token alone: the install URL is POSTed again every
+ * time anyone opens the app, and a regular employee's token must not replace the admin's —
+ * it sees only what that employee may see in CRM (no Smart Processes, fewer items; ADR-037).
+ */
+export async function upsertPortalFromInstall(
+  payload: BitrixAuthPayload,
+  opts: { keepTokens?: boolean } = {},
+): Promise<PortalInstallation> {
   const memberId = payload.member_id;
   const domain = payload.DOMAIN;
   if (!memberId || !domain) throw new Error('Install payload missing member_id / DOMAIN');
@@ -56,9 +64,13 @@ export async function upsertPortalFromInstall(payload: BitrixAuthPayload): Promi
     update: {
       domain,
       applicationToken: payload.application_token ?? undefined,
-      authTokenEnc: encryptToken(payload.AUTH_ID),
-      refreshTokenEnc: payload.REFRESH_ID ? encryptToken(payload.REFRESH_ID) : undefined,
-      tokenExpiresAt: expiresAt,
+      ...(opts.keepTokens
+        ? {}
+        : {
+            authTokenEnc: encryptToken(payload.AUTH_ID),
+            refreshTokenEnc: payload.REFRESH_ID ? encryptToken(payload.REFRESH_ID) : undefined,
+            tokenExpiresAt: expiresAt,
+          }),
       isActive: true,
     },
   });
@@ -71,6 +83,19 @@ export async function upsertPortalFromInstall(payload: BitrixAuthPayload): Promi
   }
 
   return portal;
+}
+
+/**
+ * True when this install POST must not replace the stored portal token: the portal already
+ * has a working token and whoever is opening the app is not a Bitrix24 admin. An admin's
+ * token (or the very first one) is always taken, so reinstalling still picks up new rights.
+ */
+export async function shouldKeepPortalToken(payload: BitrixAuthPayload): Promise<boolean> {
+  if (!payload.member_id || !payload.AUTH_ID) return false;
+  const existing = await db.portalInstallation.findUnique({ where: { memberId: payload.member_id } });
+  if (!existing?.authTokenEnc || !existing.isActive) return false;
+  const isAdmin = await callBitrixWithToken<boolean>(existing, payload.AUTH_ID, 'user.admin').catch(() => false);
+  return isAdmin !== true;
 }
 
 /** Bind the left-menu placement so the app shows in the Bitrix24 sidebar (ТЗ §2). */

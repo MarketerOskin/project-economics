@@ -4,9 +4,10 @@ import { createProLead, getOpenProLead } from '@/server/services/billing';
 
 export const dynamic = 'force-dynamic';
 
-/** Whether this portal already has an open ("we'll get back to you") PRO request. */
-export const GET = route(async ({ scope }) => {
-  const lead = await getOpenProLead(scope);
+/** Whether this portal already has an open ("we'll get back to you") request of `?kind=`. */
+export const GET = route(async ({ req, scope }) => {
+  const kind = new URL(req.url).searchParams.get('kind') === 'IMPLEMENTATION' ? 'IMPLEMENTATION' : 'PRO';
+  const lead = await getOpenProLead(scope, kind);
   return { pending: Boolean(lead), lead };
 });
 

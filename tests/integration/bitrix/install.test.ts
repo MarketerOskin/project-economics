@@ -5,6 +5,7 @@ import { testDb, resetDb } from '../../helpers/db';
 import { POST as installRoute } from '@/app/api/bitrix/install/route';
 import { POST as handlerRoute } from '@/app/api/bitrix/handler/route';
 import { POST as eventsRoute } from '@/app/api/bitrix/events/route';
+import { decryptToken } from '@/lib/bitrix/crypto';
 
 process.env.APP_ENCRYPTION_KEY = randomBytes(32).toString('base64');
 process.env.SESSION_SECRET = 'bitrix-install-test-secret-32-bytes-xxxxx';
@@ -279,5 +280,30 @@ describe('Bitrix install + handler (ТЗ §42, §44)', () => {
 
     const user = await testDb.appUser.findFirst({ where: { bitrixUserId: '9' } });
     expect(user?.role).toBe('EMPLOYEE');
+  });
+
+  describe('who the portal token belongs to (ADR-037)', () => {
+    const installAs = (token: string) =>
+      installRoute(form({ AUTH_ID: token, REFRESH_ID: `R_${token}`, member_id: 'acme', DOMAIN: 'acme.bitrix24.ru' }));
+    const storedToken = async () =>
+      decryptToken((await testDb.portalInstallation.findUniqueOrThrow({ where: { memberId: 'acme' } })).authTokenEnc!);
+
+    it('an employee opening the app keeps the admin token', async () => {
+      mockBitrixFetch({ ID: '1' }, true);
+      await installAs('ADMIN_TOKEN');
+      vi.restoreAllMocks();
+
+      mockBitrixFetch({ ID: '7', NAME: 'Сотрудник' }, false);
+      const res = await installAs('EMPLOYEE_TOKEN');
+      expect(res.status).toBe(307);
+      expect(await storedToken()).toBe('ADMIN_TOKEN');
+    });
+
+    it('an admin opening or reinstalling the app replaces the token', async () => {
+      mockBitrixFetch({ ID: '1' }, true);
+      await installAs('OLD_TOKEN');
+      await installAs('NEW_TOKEN');
+      expect(await storedToken()).toBe('NEW_TOKEN');
+    });
   });
 });
