@@ -9,7 +9,18 @@ import { UsageCards, type UsageCardData } from '@/components/analytics/usage';
 import { TasksTable } from '@/components/analytics/tables';
 import { AnalyticsUpsell, NoBitrixProjects, Section, Toolbar, UnlinkedProjects } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
-import { dailySeries, monthUsage, summarizeAll, summarizeProject, taskRows } from '@/domain/analytics';
+import { PeopleCards, SectionHead, SourcesCard, StatusesCard, UpcomingMeetingsCard } from '@/components/analytics/overview-parts';
+import {
+  dailySeries,
+  hoursBySource,
+  monthUsage,
+  statusSplit,
+  summarizeAll,
+  summarizeProject,
+  taskRows,
+  teamOverview,
+  upcomingMeetings,
+} from '@/domain/analytics';
 import { formatDuration, formatHours } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -62,6 +73,17 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
     })
     .sort((a, b) => b.overageSeconds - a.overageSeconds || b.totalSeconds - a.totalSeconds);
   const rows = taskRows(projects.flatMap((p) => p.tasks), projects.flatMap((p) => p.entries), period, filters);
+  const overLimit = cards.filter((c) => c.overageSeconds > 0).length;
+  const staff = new Set(world.staffIds);
+  const team = teamOverview(projects, period, now, world.staffIds).filter(
+    (r) => (!filters.employeeId || r.userId === filters.employeeId) && (staff.has(r.userId) || r.totalSeconds > 0),
+  );
+  const people = Object.fromEntries(
+    team.map((r) => {
+      const p = world.people.get(r.userId);
+      return [r.userId, { name: names[r.userId] ?? p?.name ?? `Сотрудник ${r.userId}`, position: p?.position ?? null, photoUrl: p?.photoUrl ?? null }];
+    }),
+  );
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 sm:px-8">
@@ -79,6 +101,8 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
           value={formatHours(s.totalSeconds)}
           hint={`задачи ${formatHours(s.taskSeconds)} · встречи ${formatHours(s.meetingSeconds)}`}
         />
+        <Stat label="Встреч" value={String(s.meetings)} hint="состоялось за период" />
+        <Stat label="Проектов выше лимита" value={String(overLimit)} tone={overLimit ? 'negative' : undefined} />
       </StatGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -90,12 +114,28 @@ export default async function AnalyticsOverviewPage({ searchParams }: { searchPa
         </ChartCard>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SourcesCard slices={hoursBySource(projects, period, now, filters)} />
+        <StatusesCard slices={statusSplit(projects.flatMap((p) => p.tasks), period, filters)} />
+        <UpcomingMeetingsCard
+          meetings={upcomingMeetings(projects.flatMap((p) => p.meetings), now, 30, filters.employeeId)}
+          tz={tz}
+          projectNames={projectNames}
+          allHref={`/analytics/meetings${periodQuery}`}
+        />
+      </div>
+
       <Section title="Часы по проектам" hint="Пакет часов задаётся на вкладке «Аналитика» проекта. Красным — сверх пакета.">
         <div className="flex flex-col gap-3">
           <UsageCards items={cards} query={periodQuery} />
           {ctx.projectFilter ? null : <UnlinkedProjects items={world.unlinked} compact />}
         </div>
       </Section>
+
+ <section>
+        <SectionHead title="Сотрудники" href={`/analytics/team${periodQuery}`} linkLabel="Вся команда" />
+        <PeopleCards rows={team} people={people} query={periodQuery} limit={8} />
+      </section>
 
       <Section title="Задачи за период" hint="Созданные, закрытые или с записями времени в периоде">
         <TasksTable rows={rows} tz={tz} names={names} projectNames={projectNames} />

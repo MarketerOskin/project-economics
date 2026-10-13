@@ -16,7 +16,18 @@ import { loadRelated } from '@/server/services/related';
 import { AnalyticsUpsell, Section, Toolbar } from '@/components/analytics/page-parts';
 import { ChartCard } from '@/components/charts/chart-card';
 import { Button } from '@/components/ui/button';
-import { dailySeries, meetingRows, monthUsage, summarizeProject, taskRows } from '@/domain/analytics';
+import { PeopleCards, SourcesCard, StatusesCard, UpcomingMeetingsCard } from '@/components/analytics/overview-parts';
+import {
+  dailySeries,
+  hoursBySource,
+  meetingRows,
+  monthUsage,
+  statusSplit,
+  summarizeProject,
+  taskRows,
+  teamOverview,
+  upcomingMeetings,
+} from '@/domain/analytics';
 import { m } from '@/domain/finance/money';
 import { supportCost } from '@/domain/finance/support-package';
 import { can } from '@/lib/permissions';
@@ -72,6 +83,14 @@ export default async function ProjectAnalyticsPage({
   // Responsibles of linked elements the staff list doesn't know (fired people too).
   const names = { ...ctx.names, ...(related?.names ?? {}) };
 
+  const team = teamOverview([project], period, now).filter((r) => !filters.employeeId || r.userId === filters.employeeId);
+  const people = Object.fromEntries(
+    team.map((r) => {
+      const p = world.people.get(r.userId);
+      return [r.userId, { name: names[r.userId] ?? p?.name ?? `Сотрудник ${r.userId}`, position: p?.position ?? null, photoUrl: p?.photoUrl ?? null }];
+    }),
+  );
+
   const peopleOptions = Object.entries(names)
     .filter(([uid]) => project.tasks.some((t) => t.responsibleId === uid) || project.entries.some((e) => e.userId === uid) || project.meetings.some((x) => x.attendeeIds.includes(uid)))
     .map(([value, label]) => ({ value, label }))
@@ -101,7 +120,14 @@ export default async function ProjectAnalyticsPage({
         <Stat label="Реакция" value={formatDuration(s.avgReactionSeconds)} hint={`медиана ${formatDuration(s.medianReactionSeconds)}`} />
         <Stat label="Решение" value={formatDuration(s.avgResolutionSeconds)} />
         <Stat label="Часы" value={formatHours(s.totalSeconds)} hint={`задачи ${formatHours(s.taskSeconds)} · встречи ${formatHours(s.meetingSeconds)}`} />
+        <Stat label="Встреч" value={String(s.meetings)} hint="состоялось за период" />
       </StatGrid>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SourcesCard slices={hoursBySource([project], period, now, filters)} />
+        <StatusesCard slices={statusSplit(project.tasks, period, filters)} />
+        <UpcomingMeetingsCard meetings={upcomingMeetings(project.meetings, now, 30, filters.employeeId)} tz={tz} />
+      </div>
 
       <Section
         title="Пакет часов"
@@ -181,6 +207,10 @@ export default async function ProjectAnalyticsPage({
           <TaskFlowChart data={series} />
         </ChartCard>
       </div>
+
+      <Section title="Сотрудники проекта" hint="Часы, закрытые задачи и встречи каждого за период">
+        <PeopleCards rows={team} people={people} query={periodQuery} />
+      </Section>
 
       <Section title="Задачи">
         <TasksTable rows={rows} tz={tz} names={names} />

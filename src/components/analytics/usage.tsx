@@ -45,7 +45,11 @@ export function UsageCards({ items, query }: { items: UsageCardData[]; query: st
             </div>
             {c.overageSeconds > 0 ? (
               <span className="shrink-0 bg-negative px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-bg">
-                +{formatHours(c.overageSeconds)} ч
+                сверх пакета +{formatHours(c.overageSeconds)} ч
+              </span>
+            ) : c.limitSeconds !== null ? (
+              <span className="shrink-0 bg-accent-soft px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-accent">
+                в пределах пакета
               </span>
             ) : null}
           </div>
@@ -57,8 +61,14 @@ export function UsageCards({ items, query }: { items: UsageCardData[]; query: st
           </div>
           <UsageBar used={c.totalSeconds} limit={c.limitSeconds} />
           <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-fg-tertiary">
-            <span>задачи {formatHours(c.taskSeconds)} ч</span>
-            <span>встречи {formatHours(c.meetingSeconds)} ч</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 bg-accent" aria-hidden />
+              задачи {formatHours(c.taskSeconds)} ч
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 bg-[var(--cat-blue)]" aria-hidden />
+              встречи {formatHours(c.meetingSeconds)} ч
+            </span>
             <span>выполнено {c.done}</span>
             <span>открыто {c.openNow}</span>
           </div>
