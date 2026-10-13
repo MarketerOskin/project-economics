@@ -4,7 +4,8 @@
  * Design system — «Экономика проектов» в стиле сайта toxick.ru (Токсичная компания).
  * Direction: brutal / editorial. Почти чёрный фон, острые углы, один кислотно-лаймовый
  * акцент, моноширинные технические подписи, крупные цифры. Тени не используем — слои
- * разделяют тонкие границы. Тёмная тема — единственная (как на сайте), см. ADR-032.
+ * разделяют тонкие границы. Тёмная тема — основная (как на сайте, ADR-032), светлая
+ * включается переключателем в меню и живёт в `[data-theme='light']` ниже (ADR-044).
  */
 
 :root {
@@ -31,6 +32,9 @@
   --warning-soft: #2a2008;
   --negative: #ff5c5c;
   --negative-soft: #2c1010;
+
+  --chart-grid: #1f1f1e;
+  --chart-axis: #383835;
 
   --radius-sm: 0px;
   --radius: 0px;
@@ -59,6 +63,37 @@
   --cat-burgundy: #d55181;
   --cat-green: #008300;
   --cat-violet: #9085e9;
+}
+
+/* Light theme (ADR-044): the same editorial system on warm paper. The lime can't carry
+ * text on white, so the accent darkens to olive and the primary button gets white ink. */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f6f6f1;
+  --surface: #ffffff;
+  --surface-muted: #ecece5;
+
+  --fg: #0d0d0b;
+  --fg-secondary: #3d3d38;
+  --fg-tertiary: #6b6b63;
+
+  --border: #dcdcd3;
+  --border-strong: #b9b9ae;
+
+  --accent: #4f6d00;
+  --accent-fg: #ffffff;
+  --accent-soft: #eef6cf;
+
+  --positive: #1d7a1d;
+  --positive-soft: #e3f3e1;
+  --warning: #a86a00;
+  --warning-soft: #fbf0d6;
+  --negative: #c62828;
+  --negative-soft: #fbe5e3;
+
+  --chart-grid: #e6e6de;
+  --chart-axis: #c9c9bf;
 }
 
 @theme inline {

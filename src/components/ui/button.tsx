@@ -11,7 +11,7 @@ const buttonVariants = cva(
         primary: 'bg-accent text-accent-fg hover:brightness-110',
         secondary: 'border border-border bg-transparent text-fg hover:border-accent hover:text-accent',
         ghost: 'text-fg-secondary hover:bg-surface-muted hover:text-accent',
-        destructive: 'bg-negative text-black hover:brightness-110',
+        destructive: 'bg-negative text-bg hover:brightness-110',
       },
       size: {
         sm: 'h-8 px-3',

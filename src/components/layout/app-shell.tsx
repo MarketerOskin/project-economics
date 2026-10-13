@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { Nav } from './nav';
 import { UserBadge } from './user-badge';
 import { DemoRoleSwitch } from './demo-role-switch';
+import { ThemeToggle } from './theme-toggle';
 import { BugReportButton } from '@/components/support/bug-report-button';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="mt-auto flex flex-col gap-3">
             <DemoRoleSwitch />
+            <ThemeToggle />
             <div className="px-1">
               <UserBadge />
             </div>
