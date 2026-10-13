@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { bottomOf, useViewportBand } from '@/lib/client/viewport-band';
 
 type ToastKind = 'success' | 'error';
 interface Toast {
@@ -34,10 +35,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [dismiss],
   );
 
+  const band = useViewportBand();
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-80 flex-col gap-2">
+      <div
+        className="pointer-events-none fixed right-4 bottom-4 z-[100] flex w-80 flex-col gap-2"
+        style={bottomOf(band)}
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
