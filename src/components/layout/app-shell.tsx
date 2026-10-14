@@ -11,10 +11,14 @@ import { DemoRoleSwitch } from './demo-role-switch';
 import { ThemeToggle } from './theme-toggle';
 import { TableSort } from './table-sort';
 import { BugReportButton } from '@/components/support/bug-report-button';
+import { useViewportBand } from '@/lib/client/viewport-band';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSession();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  // Inside Bitrix24 the iframe is as tall as the page, so `h-screen`/sticky pin the menu to
+  // the whole page; keep the menu in the slice the user actually sees instead (ADR-059).
+  const band = useViewportBand();
 
   // Nav links and the logo call this on click, so the drawer closes on navigation.
   const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
@@ -45,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:transition-none',
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
+        style={band ? { height: 'auto' } : undefined}
       >
         <button
           type="button"
@@ -55,7 +60,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <X className="size-4" />
         </button>
 
-        <div className="flex h-full flex-col gap-4 px-3 py-4">
+        <div
+          className="flex h-full flex-col gap-4 overflow-y-auto px-3 py-4"
+          style={
+            band
+              ? { position: 'absolute', left: 0, right: 0, top: band.top, height: band.height }
+              : undefined
+          }
+        >
           <Link href="/" className="flex items-center gap-3 px-2 py-1" onClick={closeDrawer}>
             <BrandMark className="size-10" />
             <div className="min-w-0">

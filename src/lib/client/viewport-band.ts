@@ -20,9 +20,17 @@ export interface Band {
 
 let band: Band | null = null;
 const listeners = new Set<() => void>();
-let observer: IntersectionObserver | null = null;
+let started = false;
 
-const THRESHOLDS = Array.from({ length: 201 }, (_, i) => i / 200);
+/**
+ * Observing the whole document is not enough: in a tall iframe the visible share of the page
+ * stays the same while the portal scrolls through its middle, so the observer never fires.
+ * Instead a column of thin sentinels covers the iframe, each STEP px tall, and the band is the
+ * span of the sentinels that are on screen. A fixed column covers exactly the iframe's own
+ * viewport (the whole stretched page) without adding to the page height.
+ */
+const STEP = 40;
+const THRESHOLDS = [0, 0.25, 0.5, 0.75, 1];
 
 function embedded(): boolean {
   try {
@@ -33,22 +41,55 @@ function embedded(): boolean {
 }
 
 function start() {
-  if (observer || typeof IntersectionObserver === 'undefined' || !embedded()) return;
-  observer = new IntersectionObserver(
-    ([entry]) => {
-      if (!entry) return;
-      const r = entry.intersectionRect;
-      const next =
-        entry.isIntersecting && r.height > 0
-          ? { top: Math.round(r.top), height: Math.round(r.height) }
-          : null;
+  if (started || typeof IntersectionObserver === 'undefined' || !embedded()) return;
+  started = true;
+
+  const column = document.createElement('div');
+  column.setAttribute('aria-hidden', 'true');
+  column.style.cssText =
+    'position:fixed;top:0;bottom:0;left:0;width:1px;pointer-events:none;opacity:0;z-index:-1;overflow:hidden';
+  document.body.appendChild(column);
+
+  const visible = new Map<Element, { top: number; bottom: number }>();
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const r = e.intersectionRect;
+        if (e.isIntersecting && r.height > 0)
+          visible.set(e.target, { top: r.top, bottom: r.bottom });
+        else visible.delete(e.target);
+      }
+      let top = Infinity;
+      let bottom = -Infinity;
+      for (const v of visible.values()) {
+        top = Math.min(top, v.top);
+        bottom = Math.max(bottom, v.bottom);
+      }
+      const next = bottom > top ? { top: Math.round(top), height: Math.round(bottom - top) } : null;
       if (next?.top === band?.top && next?.height === band?.height) return;
       band = next;
       for (const l of listeners) l();
     },
     { threshold: THRESHOLDS },
   );
-  observer.observe(document.documentElement);
+
+  const layout = () => {
+    const want = Math.ceil(window.innerHeight / STEP);
+    while (column.childElementCount < want) {
+      const s = document.createElement('div');
+      s.style.cssText = `position:absolute;left:0;width:1px;height:${STEP}px;top:${column.childElementCount * STEP}px`;
+      column.appendChild(s);
+      observer.observe(s);
+    }
+    while (column.childElementCount > want) {
+      const last = column.lastElementChild!;
+      observer.unobserve(last);
+      visible.delete(last);
+      last.remove();
+    }
+  };
+  layout();
+  window.addEventListener('resize', layout);
 }
 
 function subscribe(cb: () => void) {
