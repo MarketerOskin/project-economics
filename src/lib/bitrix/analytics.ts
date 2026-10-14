@@ -18,7 +18,7 @@ const MAX_MEETING_SECONDS = 12 * 3600;
 
 const TASK_SELECT = [
   'ID', 'TITLE', 'STATUS', 'GROUP_ID', 'CREATED_DATE', 'DATE_START', 'CLOSED_DATE',
-  'RESPONSIBLE_ID', 'TIME_SPENT_IN_LOGS', 'DEADLINE', 'STAGE_ID',
+  'RESPONSIBLE_ID', 'TIME_SPENT_IN_LOGS', 'DEADLINE', 'STAGE_ID', 'UF_CRM_TASK',
 ];
 
 function toInt(v: unknown): number {
@@ -44,9 +44,12 @@ export interface RawTask {
   responsible?: { name?: string };
   timeSpentInLogs?: string | number;
   stageId?: string | number;
+  ufCrmTask?: string[] | null;
 }
 
-export function parseTask(raw: RawTask, projectId: string, urlFor: (task: { id: number; responsibleId: string | null }) => string): TaskStat & { spentSeconds: number } {
+export type FetchedTask = TaskStat & { spentSeconds: number; crmBindings: string[] };
+
+export function parseTask(raw: RawTask, projectId: string, urlFor: (task: { id: number; responsibleId: string | null }) => string): FetchedTask {
   const id = toInt(raw.id);
   const responsibleId = toInt(raw.responsibleId) ? String(toInt(raw.responsibleId)) : null;
   return {
@@ -62,6 +65,7 @@ export function parseTask(raw: RawTask, projectId: string, urlFor: (task: { id: 
     responsibleName: raw.responsible?.name ?? '',
     url: urlFor({ id, responsibleId }),
     spentSeconds: toInt(raw.timeSpentInLogs),
+    crmBindings: Array.isArray(raw.ufCrmTask) ? raw.ufCrmTask.map(String) : [],
   };
 }
 
@@ -195,7 +199,7 @@ export async function fetchTasks(
   portal: PortalInstallation,
   source: TaskSource,
   projectId: string,
-): Promise<Array<TaskStat & { spentSeconds: number }>> {
+): Promise<FetchedTask[]> {
   const filter = source.kind === 'group' ? { GROUP_ID: source.groupId } : { UF_CRM_TASK: source.bindings };
   const params = (start: number) => ({ filter, select: TASK_SELECT, order: { ID: 'desc' }, start });
   const first = await callBitrix<{ tasks?: RawTask[] }>(portal, 'tasks.task.list', params(0));

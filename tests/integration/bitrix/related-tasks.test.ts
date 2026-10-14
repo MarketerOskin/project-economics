@@ -14,7 +14,7 @@ const ZAYAVKI_FIELDS = {
   ufCrm33_project: { type: 'crm', title: 'Проект', settings: { DYNAMIC_1048: 'Y' } },
 };
 
-function mockBitrix(opts: { zayavkiIgnored?: boolean } = {}) {
+function mockBitrix(opts: { zayavkiIgnored?: boolean; noTasks?: boolean } = {}) {
   const taskFilters: string[][] = [];
   vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
     const method = String(url).split('/').pop()!.replace('.json', '');
@@ -65,19 +65,21 @@ function mockBitrix(opts: { zayavkiIgnored?: boolean } = {}) {
         .map(([, v]) => v);
       taskFilters.push(bindings);
       // The project's own binding has no tasks; the linked request has one with 1.5 h.
-      const tasks = bindings.includes('T414_3097')
-        ? [
-            {
-              id: 501,
-              title: 'Собрать выгрузку',
-              status: '5',
-              responsibleId: 2,
-              createdDate: '2026-10-02T09:00:00+03:00',
-              closedDate: '2026-10-07T18:00:00+03:00',
-              timeSpentInLogs: 5400,
-            },
-          ]
-        : [];
+      const tasks =
+        bindings.includes('T414_3097') && !opts.noTasks
+          ? [
+              {
+                id: 501,
+                title: 'Собрать выгрузку',
+                ufCrmTask: ['T414_3097'],
+                status: '5',
+                responsibleId: 2,
+                createdDate: '2026-10-02T09:00:00+03:00',
+                closedDate: '2026-10-07T18:00:00+03:00',
+                timeSpentInLogs: 5400,
+              },
+            ]
+          : [];
       return ok({ tasks });
     }
     return ok(null);
@@ -145,6 +147,24 @@ describe('linked elements in project tasks and hours (ADR-046)', () => {
       },
     ]);
     expect(taskFilters.some((f) => f.includes('T414_3097'))).toBe(true);
+  });
+
+  it('a linked element with no time and no task of its own is still an open work item (ADR-058)', async () => {
+    const { project, session, scope } = await setup();
+    mockBitrix({ noTasks: true });
+
+    const world = await loadAnalytics(session, scope, { projectId: project.id, refresh: true });
+    const p = world.projects[0]!;
+    expect(p.tasks).toEqual([
+      expect.objectContaining({
+        id: -(1044 * 10_000_000 + 3097),
+        title: 'Заявки BK: Доработки по дашборду',
+        status: '3',
+        stage: 'Новая',
+        closed: null,
+      }),
+    ]);
+    expect(p.entries).toEqual([]);
   });
 
   it('shows cached data at once when it is a few minutes old and refreshes it behind the scenes (ADR-057)', async () => {
