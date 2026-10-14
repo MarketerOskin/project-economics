@@ -20,6 +20,8 @@ export const createSpendSchema = z.object({
     .refine((s) => !Number.isNaN(new Date(`${s}T00:00:00Z`).getTime()), 'Некорректная дата'),
   kind: z.enum(['SPENT', 'PAID']).default('SPENT'),
   amount,
+  /** A correction: takes `amount` off the channel's spend instead of adding it (ADR-060). */
+  subtract: z.boolean().default(false),
   note: z.string().trim().max(500).optional(),
 });
 export type CreateSpendInput = z.infer<typeof createSpendSchema>;

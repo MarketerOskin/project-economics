@@ -322,3 +322,12 @@ export function averageCycleDays(won: CrmElement[]): number | null {
     ? Math.round((spans.reduce((a, b) => a + b, 0) / spans.length) * 10) / 10
     : null;
 }
+
+/**
+ * A channel's spend after a correction typed over the number (ADR-060): the amount is added,
+ * or taken off. `null` when taking it off would leave the spend below zero.
+ */
+export function adjustSpend(current: Decimal, amount: Decimal, subtract: boolean): Decimal | null {
+  const next = subtract ? current.minus(amount) : current.plus(amount);
+  return next.isNegative() ? null : next;
+}

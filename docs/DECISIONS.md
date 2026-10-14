@@ -980,3 +980,18 @@ iframe даже между разными доменами; диалоги це�
 фиксированной колонке на всю высоту iframe: видимая полоса — это промежуток датчиков, которые
 сейчас на экране. По этой полосе держится и левое меню: оно стоит в видимой части, а если не
 помещается, прокручивается внутри себя.
+
+## ADR-060 — Spend and plan are set by clicking the number
+
+**Context.** Entering a channel's spend or the month's plan meant opening a form, picking the
+channel and date, and typing; people wanted to click the number in the table instead.
+
+**Decision.** In «Каналы» a channel's spend opens a small editor when clicked. At zero it takes
+the amount; otherwise it adds to it or takes off. Each change is its own audited spend row
+(SPENT) dated today, or the period's last day when today is outside it. Taking off is stored as
+a negative correction row (`subtract: true` on POST /api/marketing/spend) and is refused when the
+channel's total of that kind would go below zero (`adjustSpend` in `domain/finance/marketing`).
+The plan moved out of the editor into its own «План» section under the channels: each of the
+four numbers is clicked to set it, and «Рассчитать от продаж» saves the reverse plan. The
+editor keeps the spend history (with delete and «Оплачено») and qualified stages.
+The bug-report button is small and translucent until hovered, and section tabs are larger.

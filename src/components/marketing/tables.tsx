@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
+import { SpendCell } from './inline-edit';
 import { formatNumber, formatPercentStr, formatRubStr } from '@/lib/format';
 import { m } from '@/domain/finance/money';
 import type {
@@ -53,15 +54,18 @@ function ChannelCells({
   c,
   href,
   rowKey,
+  spend,
 }: {
   c: ChannelMetricsDto;
   href?: ItemHref;
   rowKey: string | null;
+  /** The spend cell's content when it can be edited in place (ADR-060). */
+  spend?: React.ReactNode;
 }) {
   const romiNegative = c.romi !== null && c.romi.startsWith('-');
   return (
     <>
-      <td className={TD}>{formatRubStr(c.spent)}</td>
+      <td className={TD}>{spend ?? formatRubStr(c.spent)}</td>
       <td className={TD}>
         <Num v={c.leads} href={href?.('leads', rowKey)} />
       </td>
@@ -93,10 +97,13 @@ export function ChannelsTable({
   rows,
   total,
   href,
+  spendDate,
 }: {
   rows: ChannelRowDto[];
   total: ChannelMetricsDto;
   href?: ItemHref;
+  /** Set when the viewer may edit: a click on a channel's spend adds or takes off (ADR-060). */
+  spendDate?: string;
 }) {
   return (
     <Frame>
@@ -132,7 +139,21 @@ export function ChannelsTable({
                 </span>
               ) : null}
             </td>
-            <ChannelCells c={r} href={href} rowKey={r.sourceId} />
+            <ChannelCells
+              c={r}
+              href={href}
+              rowKey={r.sourceId}
+              spend={
+                spendDate && r.sourceId ? (
+                  <SpendCell
+                    sourceId={r.sourceId}
+                    channel={r.name}
+                    spent={r.spent}
+                    date={spendDate}
+                  />
+                ) : undefined
+              }
+            />
           </tr>
         ))}
         <tr className="bg-surface-muted font-medium">

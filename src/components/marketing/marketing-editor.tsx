@@ -6,8 +6,6 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { apiFetch } from '@/lib/client/api';
 import { useToast } from '@/lib/client/toast';
 import { formatRubStr } from '@/lib/format';
-import { m } from '@/domain/finance/money';
-import { reversePlan } from '@/domain/finance/marketing';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
@@ -22,12 +20,9 @@ import {
 } from '@/components/ui/select';
 import type { MarketingReport } from '@/server/services/marketing';
 
-type Tab = 'spend' | 'plan' | 'qualified';
+type Tab = 'spend' | 'qualified';
 
 const errorText = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
-const intOrNull = (s: string) =>
-  s.trim() === '' ? null : Math.max(0, Math.round(Number(s.replace(/\s/g, ''))));
-
 function SpendForm({
   report,
   today,
@@ -181,105 +176,6 @@ function SpendForm({
   );
 }
 
-function PlanForm({
-  report,
-  month,
-  monthLabel,
-  onSaved,
-}: {
-  report: MarketingReport;
-  month: string;
-  monthLabel: string;
-  onSaved: () => void;
-}) {
-  const { toast } = useToast();
-  const saved = report.plans.find((p) => p.sourceId === '');
-  const [budget, setBudget] = React.useState(saved?.budget?.replace(/\.00$/, '') ?? '');
-  const [leads, setLeads] = React.useState(saved?.leads?.toString() ?? '');
-  const [qualified, setQualified] = React.useState(saved?.qualifiedLeads?.toString() ?? '');
-  const [sales, setSales] = React.useState(saved?.sales?.toString() ?? '');
-  const [busy, setBusy] = React.useState(false);
-
-  const t = report.total;
-  const rates = {
-    qualifiedToSale: t.qualifiedToSale === null ? null : m(t.qualifiedToSale),
-    leadToQualified: t.leadToQualified === null ? null : m(t.leadToQualified),
-    cpl: t.cpl === null ? null : m(t.cpl),
-  };
-  const canReverse =
-    intOrNull(sales) !== null && rates.qualifiedToSale !== null && rates.leadToQualified !== null;
-
-  const reverse = () => {
-    const r = reversePlan(intOrNull(sales) ?? 0, rates);
-    if (r.qualified !== null) setQualified(String(r.qualified));
-    if (r.leads !== null) setLeads(String(r.leads));
-    if (r.budget !== null) setBudget(r.budget.toFixed(0));
-  };
-
-  const save = async () => {
-    setBusy(true);
-    try {
-      await apiFetch('/api/marketing/plan', {
-        method: 'PUT',
-        body: {
-          month,
-          sourceId: '',
-          budget: budget.trim() === '' ? null : budget,
-          leads: intOrNull(leads),
-          qualifiedLeads: intOrNull(qualified),
-          sales: intOrNull(sales),
-        },
-      });
-      toast('План сохранён');
-      onSaved();
-    } catch (e) {
-      toast(errorText(e, 'Не удалось сохранить'), 'error');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-fg-secondary text-sm">
-        План на {monthLabel.toLowerCase()} по всем каналам.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Бюджет">
-          <Input inputMode="decimal" value={budget} onChange={(e) => setBudget(e.target.value)} />
-        </Field>
-        <Field label="Лиды">
-          <Input inputMode="numeric" value={leads} onChange={(e) => setLeads(e.target.value)} />
-        </Field>
-        <Field label="Квал. лиды">
-          <Input
-            inputMode="numeric"
-            value={qualified}
-            onChange={(e) => setQualified(e.target.value)}
-          />
-        </Field>
-        <Field label="Продажи">
-          <Input inputMode="numeric" value={sales} onChange={(e) => setSales(e.target.value)} />
-        </Field>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <Button variant="secondary" onClick={reverse} disabled={!canReverse}>
-            Обратный план от продаж
-          </Button>
-          <span className="text-fg-tertiary text-xs">
-            Сколько нужно квал. лидов, лидов и бюджета на эти продажи при конверсиях и CPL за
-            выбранный период.
-          </span>
-        </div>
-        <Button onClick={() => void save()} disabled={busy}>
-          Сохранить план
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function QualifiedForm({ report, onSaved }: { report: MarketingReport; onSaved: () => void }) {
   const { toast } = useToast();
   const [picked, setPicked] = React.useState(() => new Set(report.qualifiedStages));
@@ -361,21 +257,10 @@ function QualifiedForm({ report, onSaved }: { report: MarketingReport; onSaved: 
 }
 
 /**
- * «+ Расходы, план, обратный план» (ADR-048): spend per channel, the month's plan with the
- * reverse plan from sales, and which lead stages are qualified.
+ * «+ Расходы и квал. лиды» (ADR-048): spend per channel with its history, and which lead stages
+ * are qualified. The plan and a channel's spend are also set by clicking the number (ADR-060).
  */
-export function MarketingEditor({
-  report,
-  month,
-  monthLabel,
-  today,
-}: {
-  report: MarketingReport;
-  /** The month a plan is edited for: the selected month, or the current one. */
-  month: string;
-  monthLabel: string;
-  today: string;
-}) {
+export function MarketingEditor({ report, today }: { report: MarketingReport; today: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [tab, setTab] = React.useState<Tab>('spend');
@@ -385,7 +270,7 @@ export function MarketingEditor({
     return (
       <Button variant="secondary" onClick={() => setOpen(true)}>
         <Plus />
-        Расходы, план, обратный план
+        Расходы и квал. лиды
       </Button>
     );
   }
@@ -398,7 +283,6 @@ export function MarketingEditor({
           onChange={setTab}
           options={[
             { value: 'spend', label: 'Расходы' },
-            { value: 'plan', label: 'План' },
             { value: 'qualified', label: 'Квал. лиды' },
           ]}
         />
@@ -413,14 +297,6 @@ export function MarketingEditor({
       </div>
       {tab === 'spend' ? (
         <SpendForm report={report} today={today} onSaved={refresh} />
-      ) : tab === 'plan' ? (
-        <PlanForm
-          key={month}
-          report={report}
-          month={month}
-          monthLabel={monthLabel}
-          onSaved={refresh}
-        />
       ) : (
         <QualifiedForm report={report} onSaved={refresh} />
       )}

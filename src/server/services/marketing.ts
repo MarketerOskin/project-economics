@@ -6,6 +6,7 @@ import { m, sum, type Decimal } from '@/domain/finance/money';
 import {
   NO_SOURCE,
   NO_SOURCE_NAME,
+  adjustSpend,
   averageCycleDays,
   channelReport,
   isQualified,
@@ -142,7 +143,9 @@ export async function loadMarketingData(
   const rules = await loadStageRules(scope);
   const ruled = (items: CrmElement[]) =>
     items.map((i) =>
-      i.stageId ? { ...i, semantic: stageSemantic(rules, i.entityTypeId, i.stageId, i.semantic) } : i,
+      i.stageId
+        ? { ...i, semantic: stageSemantic(rules, i.entityTypeId, i.stageId, i.semantic) }
+        : i,
     );
 
   const funnels = new Set<string>(['STATUS']);
@@ -283,6 +286,8 @@ export interface MarketingReport {
     budget: string | null;
   } | null;
   spends: SpendDto[];
+  /** The day a spend typed over a channel's number lands on: today, or the period's last day. */
+  spendDate: string;
   sourceOptions: Array<{ id: string; name: string }>;
   stageOptions: Array<{ id: string; name: string; semantic: string; qualifiedByDefault: boolean }>;
   qualifiedStages: string[];
@@ -307,6 +312,8 @@ function monthProgress(month: string, now: Date, tz: string): { elapsed: number;
   return { elapsed: t.day, total };
 }
 
+const DAY = 86_400_000;
+
 function toDay(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -323,6 +330,10 @@ export async function marketingReport(
   const planMonth = period.month ?? `${nowParts.year}-${String(nowParts.month).padStart(2, '0')}`;
   const from = new Date(`${dayKey(period.start, tz)}T00:00:00Z`);
   const to = new Date(`${dayKey(period.end, tz)}T00:00:00Z`);
+  const today = new Date(`${dayKey(new Date(), tz)}T00:00:00Z`);
+  const spendDate = toDay(
+    today >= from && today < to ? today : new Date(Math.max(from.getTime(), to.getTime() - DAY)),
+  );
   const [spends, config, plans] = await Promise.all([
     scope.marketingSpend.findMany({ date: { gte: from, lt: to } }),
     scope.marketingConfig.get(),
@@ -403,6 +414,7 @@ export async function marketingReport(
       amount: s.amount.toFixed(2),
       note: s.note,
     })),
+    spendDate,
     sourceOptions: [...sourceIds]
       .map((id) => ({ id, name: sourceName(data.sources, id) }))
       .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
@@ -509,11 +521,19 @@ export async function createSpend(
   const { portal, user } = session;
   return db.$transaction(async (tx) => {
     const p = withPortal(portal.id, tx);
+    const amount = m(input.amount);
+    if (input.subtract) {
+      // A correction row is negative; the channel's spend of that kind never goes below zero.
+      const rows = await p.marketingSpend.findMany({ sourceId: input.sourceId, kind: input.kind });
+      const current = sum(rows.map((r) => m(r.amount.toString())));
+      if (adjustSpend(current, amount, true) === null)
+        throw badRequest('Нельзя убавить больше, чем внесено по каналу');
+    }
     const row = await p.marketingSpend.create({
       sourceId: input.sourceId,
       date: new Date(`${input.date}T00:00:00Z`),
       kind: input.kind,
-      amount: m(input.amount),
+      amount: input.subtract ? amount.negated() : amount,
       note: input.note || null,
       createdById: user.id,
     });
