@@ -134,27 +134,34 @@ export async function timeFieldMaps(scope: PortalScope): Promise<Map<number, Tim
 }
 
 /**
- * Linked CRM elements with time in mapped fields as tasks and time records (ADR-040, ADR-046):
- * such an element is a "task" (negative id from its type and id, so it never collides with a
- * Bitrix24 task or another project's element), titled with its section; its time is one
- * record, dated when the element was finished, and none while it is still open. Elements
- * without field time are not rows at all (ADR-051): the work on them is in their Bitrix24
- * tasks, and an element with no tasks simply adds nothing.
+ * Linked CRM elements as tasks and time records (ADR-040, ADR-046, ADR-058): an element is a
+ * "task" (negative id from its type and id, so it never collides with a Bitrix24 task or
+ * another project's element), titled with its section and showing its stage while open. Its
+ * field time is one record, dated when the element was finished, and none while it is still
+ * open. An element without field time is a row only when no Bitrix24 task is bound to it
+ * (`untracked`): otherwise its work is in those tasks and it would be counted twice (ADR-051).
  */
-export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { tasks: TaskStat[]; entries: TimeEntry[] } {
+export function relatedAsActivity(
+  groups: RelatedGroup[],
+  projectId: string,
+  untracked: Set<string> = new Set(),
+): { tasks: TaskStat[]; entries: TimeEntry[] } {
   const tasks: TaskStat[] = [];
   const entries: TimeEntry[] = [];
   for (const g of groups) {
     for (const i of g.items) {
-      if (!i.seconds || i.seconds <= 0) continue;
+      const hasTime = Boolean(i.seconds && i.seconds > 0);
+      if (!hasTime && !untracked.has(elementKey(g.entityTypeId, i.id))) continue;
       const id = -(g.entityTypeId * 10_000_000 + Number(i.id));
-      const semantic = i.stageId ? g.stages[i.stageId]?.semantic : 'process';
+      const stage = i.stageId ? g.stages[i.stageId] : undefined;
+      const semantic = stage?.semantic ?? 'process';
       const finished = isFinished(semantic);
       tasks.push({
         id,
         projectId,
         title: `${g.title}: ${i.title}`,
         status: semantic === 'success' || semantic === 'closed' ? TASK_STATUS.COMPLETED : semantic === 'fail' ? TASK_STATUS.DECLINED : TASK_STATUS.IN_PROGRESS,
+        stage: finished ? null : (stage?.name ?? null),
         created: i.createdAt,
         started: i.createdAt,
         closed: finished ? i.movedAt : null,
@@ -167,12 +174,16 @@ export function relatedAsActivity(groups: RelatedGroup[], projectId: string): { 
       // time is not in any period yet.
       const at = finished ? (i.movedAt ?? i.createdAt) : null;
       const userId = i.workerId ?? i.assignedById;
-      if (i.seconds && i.seconds > 0 && at && userId) {
-        entries.push({ taskId: id, userId, seconds: i.seconds, at, comment: g.title });
+      if (hasTime && at && userId) {
+        entries.push({ taskId: id, userId, seconds: i.seconds!, at, comment: g.title });
       }
     }
   }
   return { tasks, entries };
+}
+
+function elementKey(entityTypeId: number, id: string | number): string {
+  return `${entityTypeId}:${id}`;
 }
 
 /** Bitrix24 bindings (UF_CRM_TASK) asked for in one tasks.task.list call. */
@@ -199,20 +210,28 @@ async function relatedActivity(
       skipTypes,
       stageRules,
     });
-    const out = relatedAsActivity(groups, project.id);
-
-    const bindings = groups.flatMap((g) => g.items.filter((i) => !i.seconds).flatMap((i) => crmTaskBindings(g.entityTypeId, i.id)));
+    const noTime = groups.flatMap((g) => g.items.filter((i) => !i.seconds).map((i) => ({ g, i })));
+    const bindings = noTime.flatMap(({ g, i }) => crmTaskBindings(g.entityTypeId, i.id));
     const bound: TaskStat[] = [];
     const withTime: number[] = [];
+    const boundTo = new Set<string>();
     for (let i = 0; i < bindings.length && bound.length < MAX_TASKS_PER_PROJECT; i += BINDINGS_PER_CALL) {
       const page = await fetchTasks(session.portal, { kind: 'crm', bindings: bindings.slice(i, i + BINDINGS_PER_CALL) }, project.id);
-      for (const { spentSeconds, ...t } of page) {
+      for (const { spentSeconds, crmBindings, ...t } of page) {
+        for (const b of crmBindings) boundTo.add(b);
         if (knownTaskIds.has(t.id)) continue;
         knownTaskIds.add(t.id);
         bound.push(t);
         if (spentSeconds > 0) withTime.push(t.id);
       }
     }
+    // Elements with no field time and no task of their own are still work items (ADR-058).
+    const untracked = new Set(
+      noTime
+        .filter(({ g, i }) => !crmTaskBindings(g.entityTypeId, i.id).some((b) => boundTo.has(b)))
+        .map(({ g, i }) => elementKey(g.entityTypeId, i.id)),
+    );
+    const out = relatedAsActivity(groups, project.id, untracked);
     out.tasks.push(...bound);
     if (withTime.length) out.entries.push(...(await fetchTimeEntries(session.portal, withTime)));
     return out;
@@ -234,7 +253,7 @@ async function loadFromBitrix(
   const tasksWithSpent = await fetchTasks(session.portal, source, project.id);
   const withTime = tasksWithSpent.filter((t) => t.spentSeconds > 0).map((t) => t.id);
   const entries = withTime.length ? await fetchTimeEntries(session.portal, withTime) : [];
-  const tasks: TaskStat[] = tasksWithSpent.map(({ spentSeconds, ...t }) => (void spentSeconds, t));
+  const tasks: TaskStat[] = tasksWithSpent.map(({ spentSeconds, crmBindings, ...t }) => (void spentSeconds, void crmBindings, t));
 
   if (source.kind === 'crm' && project.crmEntityTypeId && project.crmEntityId) {
     const extra = await relatedActivity(session, project, timeFields, skipTypes, new Set(tasks.map((t) => t.id)), stageRules);
