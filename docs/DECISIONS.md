@@ -995,3 +995,14 @@ The plan moved out of the editor into its own «План» section under the cha
 four numbers is clicked to set it, and «Рассчитать от продаж» saves the reverse plan. The
 editor keeps the spend history (with delete and «Оплачено») and qualified stages.
 The bug-report button is small and translucent until hovered, and section tabs are larger.
+
+## ADR-061 — Production deploys from GitHub Actions
+
+**Context.** The deploy was an SSH command the owner ran by hand after each merge; the
+development environment cannot reach the server.
+
+**Decision.** `.github/workflows/deploy.yml` runs the same command on every push to main (and on
+demand): fast-forward /opt/project-economics to origin/main, rebuild and restart the `app`
+service, then check the container is running. It logs in with the repository secret
+`DEPLOY_SSH_KEY`; `DEPLOY_KNOWN_HOSTS` optionally pins the host key. Without the key the run
+only warns and deploys nothing. Deploys never overlap (one concurrency group).

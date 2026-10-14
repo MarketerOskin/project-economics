@@ -1,0 +1,68 @@
+# Deploys main to the production server after every merge (ADR-061).
+# Needs the repository secret DEPLOY_SSH_KEY: a private key allowed to log in as root on the
+# server. DEPLOY_KNOWN_HOSTS (output of `ssh-keyscan 159.194.205.246`) is optional and pins the
+# host key; without it the key is fetched on each run.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HOST: 159.194.205.246
+      APP_DIR: /opt/project-economics
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
+    steps:
+      - name: Check the deploy key
+        id: key
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::warning::DEPLOY_SSH_KEY is not set, nothing deployed"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up SSH
+        if: steps.key.outputs.ok == 'true'
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$KNOWN" ]; then
+            printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 15 "$HOST" > ~/.ssh/known_hosts
+          fi
+
+      - name: Deploy
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o ConnectTimeout=20 "root@$HOST" \
+            "set -e; cd $APP_DIR && git fetch -q origin && git merge --ff-only origin/main && git log -1 --oneline && $COMPOSE up -d --build app && $COMPOSE ps"
+
+      - name: Check the app answers
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          for i in $(seq 1 30); do
+            if ssh -i ~/.ssh/id_deploy -o BatchMode=yes "root@$HOST" \
+              "cd $APP_DIR && $COMPOSE ps app --format '{{.State}}' | grep -q running"; then
+              echo "app is running"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::app container is not running after deploy"; exit 1
