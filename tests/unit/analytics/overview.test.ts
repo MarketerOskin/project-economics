@@ -144,6 +144,8 @@ describe('board stages (ADR-050)', () => {
     const tasks = [t(1, '3', 'Тестирование'), t(2, '3', 'Тестирование'), t(3, '3', null)];
     expect(taskStatusLabel(tasks[0]!)).toBe('Тестирование');
     expect(taskStatusLabel(tasks[2]!)).toBe('В работе');
+    // A completed task left in the «В работе» column reads as completed, not as open.
+    expect(taskStatusLabel(t(4, '5', 'В работе'))).toBe(taskStatusLabel(t(5, '5', null)));
     expect(statusSplit(tasks, w).map((s) => [s.label, s.count])).toEqual([
       ['В работе', 1],
       ['Тестирование', 2],

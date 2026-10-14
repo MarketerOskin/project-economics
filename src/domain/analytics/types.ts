@@ -46,14 +46,24 @@ export interface TaskStat {
   stage?: string | null;
 }
 
-/** What a task's status reads as: its board stage when there is one, else the Bitrix status. */
+/**
+ * The board stage counts only while the task is open: Bitrix24 leaves a completed or declined
+ * task in whatever kanban column it was in («В работе»), so for those the status wins.
+ */
+function boardStage(t: Pick<TaskStat, 'status' | 'stage'>): string | null {
+  const finished = t.status === TASK_STATUS.COMPLETED || t.status === TASK_STATUS.DECLINED;
+  return finished ? null : (t.stage ?? null);
+}
+
+/** What a task's status reads as: its board stage when it is open and has one, else the Bitrix status. */
 export function taskStatusLabel(t: Pick<TaskStat, 'status' | 'stage'>): string {
-  return t.stage || TASK_STATUS_LABELS[t.status] || t.status;
+  return boardStage(t) || TASK_STATUS_LABELS[t.status] || t.status;
 }
 
 /** Key for grouping and filtering by status: the stage name, or the status code. */
 export function taskStatusKey(t: Pick<TaskStat, 'status' | 'stage'>): string {
-  return t.stage ? `stage:${t.stage}` : t.status;
+  const stage = boardStage(t);
+  return stage ? `stage:${stage}` : t.status;
 }
 
 /** A status key back to its label (see taskStatusKey). */
