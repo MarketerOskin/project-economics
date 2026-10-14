@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { m } from '@/domain/finance/money';
 import {
+  adjustSpend,
   averageCycleDays,
   channelReport,
   isQualified,
@@ -204,5 +205,14 @@ describe('CSV export', () => {
       ],
     });
     expect(csv).toBe('﻿Канал;Сумма\r\n"Сайт; лендинг";1500,5\r\nБез суммы;\r\n');
+  });
+});
+
+describe('adjustSpend (ADR-060)', () => {
+  it('adds, takes off, and refuses to go below zero', () => {
+    expect(adjustSpend(m('0'), m('500'), false)?.toFixed(2)).toBe('500.00');
+    expect(adjustSpend(m('1000'), m('300.5'), true)?.toFixed(2)).toBe('699.50');
+    expect(adjustSpend(m('1000'), m('1000'), true)?.toFixed(2)).toBe('0.00');
+    expect(adjustSpend(m('1000'), m('1000.01'), true)).toBeNull();
   });
 });

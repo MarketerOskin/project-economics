@@ -8,6 +8,7 @@ import { Section, Toolbar } from '@/components/analytics/page-parts';
 import { UpsellNotice } from '@/components/ui/upsell-notice';
 import { ChannelsTable, PlanFactTable } from '@/components/marketing/tables';
 import { MarketingEditor } from '@/components/marketing/marketing-editor';
+import { PlanBoard } from '@/components/marketing/inline-edit';
 import { MONTHS, dayKey } from '@/domain/analytics';
 import { m } from '@/domain/finance/money';
 import { formatNumber, formatPercentStr, formatRubStr } from '@/lib/format';
@@ -110,12 +111,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Se
 
       {ctx.canEdit ? (
         <div>
-          <MarketingEditor
-            report={r}
-            month={r.planMonth}
-            monthLabel={monthLabel(r.planMonth)}
-            today={dayKey(new Date(), tz)}
-          />
+          <MarketingEditor report={r} today={dayKey(new Date(), tz)} />
         </div>
       ) : null}
 
@@ -124,13 +120,35 @@ export default async function MarketingPage({ searchParams }: { searchParams: Se
         hint="Канал — источник лида или сделки в Битрикс24. CPL, CPL-2 и CAC считаются от реализованного бюджета, а не от пополнений кабинета."
       >
         {r.channels.length ? (
-          <ChannelsTable rows={r.channels} total={t} href={items} />
+          <ChannelsTable
+            rows={r.channels}
+            total={t}
+            href={items}
+            spendDate={ctx.canEdit ? r.spendDate : undefined}
+          />
         ) : (
           <p className="text-fg-tertiary text-sm">
             За период нет ни лидов, ни продаж, ни расходов.
           </p>
         )}
       </Section>
+
+      {ctx.canEdit ? (
+        <Section
+          title={`План · ${monthLabel(r.planMonth)}`}
+          hint="Нажмите на цифру, чтобы задать план на месяц по всем каналам."
+        >
+          <PlanBoard
+            month={r.planMonth}
+            plan={r.plans.find((p) => p.sourceId === '') ?? null}
+            rates={{
+              qualifiedToSale: t.qualifiedToSale,
+              leadToQualified: t.leadToQualified,
+              cpl: t.cpl,
+            }}
+          />
+        </Section>
+      ) : null}
 
       <Section
         title={`План / факт · ${monthLabel(r.planMonth)}`}

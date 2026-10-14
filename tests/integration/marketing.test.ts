@@ -120,6 +120,30 @@ describe('Marketing by channel (ADR-048)', () => {
     expect(audit.map((a) => a.action)).toEqual(['FINANCE_CREATED', 'FINANCE_DELETED']);
   });
 
+  it('a click on the spend adds to it or takes off, never below zero (ADR-060)', async () => {
+    const s = await setup();
+    const c = await cookie(s.portalId, s.managerId, 'MANAGER');
+    const body = { sourceId: 'UC_Y', date: '2026-09-05', kind: 'SPENT', amount: '1000' };
+    expect((await postSpend(req('/api/marketing/spend', c, 'POST', body))).status).toBe(200);
+    const off = await postSpend(
+      req('/api/marketing/spend', c, 'POST', { ...body, amount: '300', subtract: true }),
+    );
+    expect(off.status).toBe(200);
+    const rows = await testDb.marketingSpend.findMany({
+      where: { portalId: s.portalId },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(rows.map((r) => r.amount.toString())).toEqual(['1000', '-300']);
+    const tooMuch = await postSpend(
+      req('/api/marketing/spend', c, 'POST', { ...body, amount: '701', subtract: true }),
+    );
+    expect(tooMuch.status).toBe(400);
+    const other = await postSpend(
+      req('/api/marketing/spend', c, 'POST', { ...body, sourceId: 'WEB', subtract: true }),
+    );
+    expect(other.status).toBe(400);
+  });
+
   it('a spend from another portal cannot be deleted', async () => {
     const s = await setup();
     const other = await seedPortal();

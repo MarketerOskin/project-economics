@@ -43,10 +43,10 @@ export function BugReportButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Сообщить о проблеме"
-        className="fixed bottom-4 right-4 z-30 flex size-11 items-center justify-center border border-border bg-surface text-fg-secondary transition-colors hover:text-fg"
+        className="border-border/60 bg-surface/40 text-fg-secondary fixed right-4 bottom-4 z-30 flex size-9 items-center justify-center rounded-full border opacity-40 backdrop-blur-[2px] transition-opacity hover:opacity-100 focus-visible:opacity-100"
         style={bottomOf(band)}
       >
-        <Bug className="size-5" />
+        <Bug className="size-4" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
