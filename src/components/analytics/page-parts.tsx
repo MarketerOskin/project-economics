@@ -35,13 +35,20 @@ export function NoBitrixProjects({ unlinked }: { unlinked: Array<{ id: string; n
 }
 
 /** Projects made by hand: listed so they can be linked to Bitrix24 from their «Аналитика» tab. */
-export function UnlinkedProjects({ items, compact = false }: { items: Array<{ id: string; name: string }>; compact?: boolean }) {
+export function UnlinkedProjects({
+  items,
+  compact = false,
+}: {
+  items: Array<{ id: string; name: string }>;
+  compact?: boolean;
+}) {
   if (items.length === 0) return null;
   return (
-    <div className="border border-dashed border-border px-4 py-3 text-sm">
+    <div className="border-border border border-dashed px-4 py-3 text-sm">
       {compact ? (
-        <p className="mb-2 text-fg-secondary">
-          Не связаны с Битрикс24 и в аналитику не попадают ({items.length}). Свяжите их на вкладке «Аналитика» проекта:
+        <p className="text-fg-secondary mb-2">
+          Не связаны с Битрикс24 и в аналитику не попадают ({items.length}). Свяжите их на вкладке
+          «Аналитика» проекта:
         </p>
       ) : null}
       <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
@@ -62,12 +69,20 @@ export function Toolbar({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-wrap items-center justify-between gap-3">{children}</div>;
 }
 
-export function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+export function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section>
       <div className="mb-3">
-        <h2 className="tx-mark text-accent">{title}</h2>
-        {hint ? <p className="mt-1 text-xs text-fg-tertiary">{hint}</p> : null}
+        <h2 className="tx-mark text-fg text-[15px]">{title}</h2>
+        {hint ? <p className="text-fg-tertiary mt-1 text-xs">{hint}</p> : null}
       </div>
       {children}
     </section>

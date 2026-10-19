@@ -8,9 +8,10 @@ vi.mock('next/navigation', () => ({ usePathname: () => '/analytics' }));
 describe('Nav (ТЗ §7, ADR-049)', () => {
   it('ADMIN: analytics first, then marketing and sales, projects, finance', () => {
     const { container } = render(<Nav role="ADMIN" />);
-    const labels = within(container)
-      .getAllByRole('link')
-      .map((a) => a.textContent);
+    // Section cards only; the open section (Аналитика) also lists its screens.
+    const labels = Array.from(container.querySelectorAll('a[data-nav-section]')).map(
+      (a) => a.textContent,
+    );
     expect(labels).toEqual([
       'Аналитика',
       'Маркетинг и продажи',
@@ -43,9 +44,15 @@ describe('Nav (ТЗ §7, ADR-049)', () => {
     expect(within(container).queryAllByRole('link')).toHaveLength(0);
   });
 
-  it('marks the current section', () => {
+  it('marks the current section and lists its screens', () => {
     render(<Nav role="ADMIN" />);
     expect(screen.getByRole('link', { name: 'Аналитика' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Обзор' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Сотрудники' })).toHaveAttribute(
+      'href',
+      '/analytics/team',
+    );
+    expect(screen.queryByRole('link', { name: 'Операции' })).not.toBeInTheDocument();
   });
 
   it('hides the sections the portal switched off (ADR-041)', () => {

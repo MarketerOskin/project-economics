@@ -86,7 +86,7 @@ export default async function SalesFunnelsPage() {
         {!session.demo ? (
           <section className="flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="tx-mark text-accent">Этот месяц по разделам CRM</h2>
+              <h2 className="tx-mark text-fg text-[15px]">Этот месяц по разделам CRM</h2>
               {can.manageSettings(session.actor) ? (
                 <Link href="/setup" className="text-accent text-sm underline underline-offset-2">
                   Что считать трафиком и продажами
@@ -109,7 +109,7 @@ export default async function SalesFunnelsPage() {
           </section>
         ) : null}
 
-        <h2 className="tx-mark text-accent">Воронки сделок</h2>
+        <h2 className="tx-mark text-fg text-[15px]">Воронки сделок</h2>
         {funnels.length === 0 ? (
           <p className="text-fg-tertiary text-sm">
             Данных пока нет — ночная синхронизация ещё не прошла, либо в CRM нет сделок.

@@ -16,15 +16,15 @@ export function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-9 w-full items-center justify-between border border-border bg-surface px-3 text-sm outline-none',
-        'focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30 data-[placeholder]:text-fg-tertiary',
+        'border-border bg-surface flex h-10 w-full items-center justify-between rounded-[12px] border px-3.5 text-sm outline-none',
+        'focus-visible:border-accent focus-visible:ring-accent/30 data-[placeholder]:text-fg-tertiary focus-visible:ring-2',
         className,
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon>
-        <ChevronDown className="size-3.5 text-fg-tertiary" />
+        <ChevronDown className="text-fg-tertiary size-3.5" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -41,7 +41,7 @@ export function SelectContent({
         position="popper"
         sideOffset={6}
         className={cn(
-          'z-50 max-h-72 min-w-[--radix-select-trigger-width] overflow-hidden border border-border bg-surface p-1',
+          'border-border bg-surface z-50 max-h-72 min-w-[--radix-select-trigger-width] overflow-hidden rounded-[14px] border p-1',
           className,
         )}
         {...props}
@@ -60,14 +60,14 @@ export function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex cursor-pointer select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none data-[highlighted]:bg-surface-muted',
+        'data-[highlighted]:bg-surface-muted relative flex cursor-pointer items-center rounded-[10px] py-1.5 pr-2 pl-8 text-sm outline-none select-none',
         className,
       )}
       {...props}
     >
       <span className="absolute left-2 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="size-3.5 text-accent" />
+          <Check className="text-accent size-3.5" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

@@ -278,7 +278,7 @@ export function StreamsPanel({
   return (
     <section>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="tx-mark text-accent">Направления</h2>
+        <h2 className="tx-mark text-fg text-[15px]">Направления</h2>
         {canEdit ? (
           <Button size="sm" variant="secondary" onClick={() => openFor(null)}>
             <Plus className="size-3.5" />
@@ -300,7 +300,7 @@ export function StreamsPanel({
               <div key={s.id} className="border-border bg-surface flex flex-col gap-3 border p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="bg-accent-soft text-accent px-2 py-0.5 text-xs font-semibold">
+                    <span className="bg-accent-soft text-accent rounded-full px-2 py-0.5 text-xs font-semibold">
                       {STREAM_KIND_LABELS[s.kind]}
                     </span>
                     {s.name ? (

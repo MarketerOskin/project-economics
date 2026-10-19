@@ -33,7 +33,7 @@ export default async function AutoFinancePage() {
       />
       <div className="flex flex-col gap-8 px-4 py-6 sm:px-8">
         <section>
-          <h2 className="tx-mark text-accent mb-1">Поддержка по часам</h2>
+          <h2 className="tx-mark text-fg mb-1 text-[15px]">Поддержка по часам</h2>
           <p className="text-fg-secondary mb-3 max-w-3xl text-sm">
             Доход: абонентская плата и часы сверх пакета по цене часа, или все часы по цене часа,
             если пакета нет. Расход: часы каждого специалиста по его ставке. Цена часа задаётся в
@@ -50,12 +50,12 @@ export default async function AutoFinancePage() {
         </section>
 
         <section>
-          <h2 className="tx-mark text-accent mb-3">Часы по задачам к подтверждению</h2>
+          <h2 className="tx-mark text-fg mb-3 text-[15px]">Часы по задачам к подтверждению</h2>
           <TimeDraftsManager initial={timeDrafts} expenseCategories={expense} />
         </section>
 
         <section>
-          <h2 className="tx-mark text-accent mb-3">Доход по сделкам</h2>
+          <h2 className="tx-mark text-fg mb-3 text-[15px]">Доход по сделкам</h2>
           <IncomeDraftsManager initial={incomeDrafts} incomeCategories={income} />
         </section>
       </div>

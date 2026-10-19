@@ -11,7 +11,7 @@ export function Avatar({
   return (
     <AvatarPrimitive.Root
       className={cn(
-        'relative flex size-8 shrink-0 overflow-hidden rounded-full bg-surface-muted',
+        'bg-surface-muted relative flex size-8 shrink-0 overflow-hidden rounded-full',
         className,
       )}
       {...props}
@@ -19,9 +19,7 @@ export function Avatar({
   );
 }
 
-export function AvatarImage(
-  props: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>,
-) {
+export function AvatarImage(props: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>) {
   return <AvatarPrimitive.Image className="size-full object-cover" {...props} />;
 }
 
@@ -32,11 +30,10 @@ export function AvatarFallback({
   return (
     <AvatarPrimitive.Fallback
       className={cn(
-        'flex size-full items-center justify-center text-xs font-medium text-fg-secondary',
+        'bg-accent-soft text-fg flex size-full items-center justify-center text-xs font-bold',
         className,
       )}
       {...props}
     />
   );
 }
-

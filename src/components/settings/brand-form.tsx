@@ -94,7 +94,7 @@ export function BrandForm({ initial }: { initial: BrandDto }) {
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="border-border bg-surface flex flex-col gap-4 border p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="tx-mark text-accent">Данные компании</h2>
+          <h2 className="tx-mark text-fg text-[15px]">Данные компании</h2>
           <Button
             type="button"
             variant="secondary"

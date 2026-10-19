@@ -15,7 +15,10 @@ export function Segmented<T extends string>({
 }) {
   return (
     <div
-      className={cn('inline-flex border border-border bg-surface-muted p-0.5', className)}
+      className={cn(
+        'border-border bg-surface-muted inline-flex rounded-full border p-0.5',
+        className,
+      )}
       role="tablist"
     >
       {options.map((o) => (
@@ -26,8 +29,10 @@ export function Segmented<T extends string>({
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'px-3 py-1.5 text-sm transition-colors',
-            value === o.value ? 'bg-accent font-medium text-accent-fg' : 'text-fg-secondary hover:text-accent',
+            'rounded-full px-3.5 py-1.5 text-sm transition-colors',
+            value === o.value
+              ? 'bg-button-primary text-button-primary-fg font-semibold'
+              : 'text-fg-secondary hover:text-fg',
           )}
         >
           {o.label}

@@ -23,7 +23,7 @@ export function Stat({
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <div className="tx-mark text-accent">{label}</div>
+        <div className="tx-mark text-fg-tertiary">{label}</div>
         {href ? (
           <ChevronRight className="text-fg-tertiary group-hover:text-accent size-4 shrink-0 transition-colors" />
         ) : null}
