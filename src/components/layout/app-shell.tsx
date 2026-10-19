@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { BarChart3, Menu, X } from 'lucide-react';
 import { useSession } from '@/lib/client/session';
 import { cn } from '@/lib/cn';
-import { Nav, NavFooter, sectionLabel } from './nav';
+import { Nav, NavFooter, sectionLabel, sectionTabs } from './nav';
 import { UserBadge } from './user-badge';
 import { DemoRoleSwitch } from './demo-role-switch';
 import { ThemeToggle } from './theme-toggle';
@@ -20,6 +20,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Inside Bitrix24 the iframe is as tall as the page, so `h-screen`/sticky pin the menu to
   // the whole page; keep the menu in the slice the user actually sees instead (ADR-059).
   const band = useViewportBand();
+  // On desktop outside Bitrix24 the shell is exactly one screen tall: the menu and the top bar
+  // stay put and only the page area scrolls.
+  const pinned = !band;
 
   // Nav links and the logo call this on click, so the drawer closes on navigation.
   const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
@@ -33,7 +36,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [drawerOpen]);
 
   return (
-    <div className="bg-bg flex min-h-screen print:block print:min-h-0 print:bg-white">
+    <div
+      className={cn(
+        'bg-bg flex min-h-screen print:block print:h-auto print:min-h-0 print:overflow-visible print:bg-white',
+        pinned && 'lg:h-screen lg:overflow-hidden',
+      )}
+    >
       {/* Backdrop — mobile only, only when the drawer is open. */}
       {drawerOpen ? (
         <div
@@ -121,7 +129,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible',
+          pinned && 'lg:h-screen',
+        )}
+      >
         {/* Mobile top bar (< lg) */}
         <header className="border-border bg-bg/90 sticky top-0 z-30 flex items-center gap-3 border-b px-4 py-3 backdrop-blur lg:hidden print:hidden">
           <button
@@ -140,7 +153,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Desktop top bar: the current section and the user, as in LifeRM. */}
         {session ? <TopBar /> : null}
 
-        <main className="min-w-0 flex-1 lg:pr-4">
+        <main
+          className={cn(
+            'min-w-0 flex-1 lg:pr-4 print:overflow-visible',
+            pinned && 'lg:min-h-0 lg:overflow-y-auto',
+          )}
+        >
           {children}
           <TableSort />
         </main>
@@ -159,15 +177,52 @@ function TopBar() {
   const pathname = usePathname();
   const label = sectionLabel(pathname);
   return (
-    <div className="hidden px-8 pt-4 pb-2 lg:block lg:pr-12 print:hidden">
+    <div className="hidden shrink-0 px-8 pt-4 pb-2 lg:block lg:pr-12 print:hidden">
       <div className="border-border bg-surface flex h-[66px] items-center gap-4 rounded-[18px] border pr-2.5 pl-5">
         <span aria-hidden className="bg-button-primary size-2 rounded-full" />
-        <span className="flex-1 truncate text-base font-bold">{label ?? 'Экономика проектов'}</span>
+        <span className="shrink-0 truncate text-base font-bold">
+          {label ?? 'Экономика проектов'}
+        </span>
+        <React.Suspense fallback={<span className="flex-1" />}>
+          <TopBarTabs pathname={pathname} />
+        </React.Suspense>
         <div className="border-border bg-surface-muted rounded-[12px] border py-2 pr-3 pl-2">
           <UserBadge />
         </div>
       </div>
     </div>
+  );
+}
+
+/** The section's screens as tabs in the top bar; the active one is lit. Carries the period. */
+function TopBarTabs({ pathname }: { pathname: string }) {
+  const params = useSearchParams();
+  const { tabs, active } = sectionTabs(pathname);
+  const keep = new URLSearchParams();
+  for (const k of ['p', 'm', 'from', 'to', 'preset']) {
+    const v = params.get(k);
+    if (v) keep.set(k, v);
+  }
+  const qs = keep.toString();
+  if (tabs.length === 0) return <span className="flex-1" />;
+  return (
+    <nav className="border-border flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l pl-4">
+      {tabs.map((t) => (
+        <Link
+          key={t.href}
+          href={qs ? `${t.href}?${qs}` : t.href}
+          aria-current={t.href === active ? 'page' : undefined}
+          className={cn(
+            'rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
+            t.href === active
+              ? 'bg-button-primary text-button-primary-fg'
+              : 'text-fg-tertiary hover:text-fg hover:bg-surface-muted',
+          )}
+        >
+          {t.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
