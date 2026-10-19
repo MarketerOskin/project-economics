@@ -58,9 +58,9 @@ function PlanCard({
     >
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold uppercase tracking-tight">{title}</h2>
+          <h2 className="text-lg font-bold tracking-tight">{title}</h2>
           {isCurrent ? (
-            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-fg-secondary">
+            <span className="bg-surface-muted text-fg-secondary rounded-full px-2 py-0.5 text-xs font-medium">
               ваш тариф
             </span>
           ) : null}
@@ -71,9 +71,9 @@ function PlanCard({
         {features.map((f) => (
           <li key={f.label} className="flex items-start gap-2">
             {f.included ? (
-              <Check className="mt-0.5 size-4 shrink-0 text-positive" />
+              <Check className="text-positive mt-0.5 size-4 shrink-0" />
             ) : (
-              <X className="mt-0.5 size-4 shrink-0 text-fg-tertiary" />
+              <X className="text-fg-tertiary mt-0.5 size-4 shrink-0" />
             )}
             <span className={f.included ? 'text-fg' : 'text-fg-tertiary'}>{f.label}</span>
           </li>
@@ -84,7 +84,15 @@ function PlanCard({
   );
 }
 
-function RequestProDialog({ open, onOpenChange, onSubmitted }: { open: boolean; onOpenChange: (v: boolean) => void; onSubmitted: (lead: PendingLead) => void }) {
+function RequestProDialog({
+  open,
+  onOpenChange,
+  onSubmitted,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSubmitted: (lead: PendingLead) => void;
+}) {
   const { toast } = useToast();
   const [contact, setContact] = React.useState('');
   const [comment, setComment] = React.useState('');
@@ -96,9 +104,18 @@ function RequestProDialog({ open, onOpenChange, onSubmitted }: { open: boolean; 
     setError(undefined);
     setSubmitting(true);
     try {
-      await apiFetch<{ id: string }>('/api/billing/pro-lead', { method: 'POST', body: { contact, comment: comment || undefined } });
+      await apiFetch<{ id: string }>('/api/billing/pro-lead', {
+        method: 'POST',
+        body: { contact, comment: comment || undefined },
+      });
       toast('Заявка отправлена — мы свяжемся с вами');
-      onSubmitted({ id: 'pending', contact, comment: comment || null, status: 'NEW', createdAt: new Date().toISOString() });
+      onSubmitted({
+        id: 'pending',
+        contact,
+        comment: comment || null,
+        status: 'NEW',
+        createdAt: new Date().toISOString(),
+      });
       onOpenChange(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось отправить заявку');
@@ -110,13 +127,32 @@ function RequestProDialog({ open, onOpenChange, onSubmitted }: { open: boolean; 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader title="Заявка на Pro" description="Оставьте контакт — мы свяжемся и подключим тариф" />
+        <DialogHeader
+          title="Заявка на Pro"
+          description="Оставьте контакт — мы свяжемся и подключим тариф"
+        />
         <form onSubmit={submit} className="space-y-4">
-          <Field label="Как связаться" htmlFor="contact" error={error} hint="Email, телефон или Telegram">
-            <Input id="contact" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="you@company.ru" required autoFocus />
+          <Field
+            label="Как связаться"
+            htmlFor="contact"
+            error={error}
+            hint="Email, телефон или Telegram"
+          >
+            <Input
+              id="contact"
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
+              placeholder="you@company.ru"
+              required
+              autoFocus
+            />
           </Field>
           <Field label="Комментарий (необязательно)">
-            <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Например: сколько сотрудников, что важно" />
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Например: сколько сотрудников, что важно"
+            />
           </Field>
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={submitting}>
@@ -144,12 +180,13 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
 
   const proFooter =
     currentPlan === 'PRO' ? (
-      <p className="text-sm text-fg-secondary">Спасибо, что пользуетесь Pro.</p>
+      <p className="text-fg-secondary text-sm">Спасибо, что пользуетесь Pro.</p>
     ) : pending ? (
-      <div className="flex items-start gap-2 border border-dashed border-border bg-surface-muted px-3 py-2.5 text-sm text-fg-secondary">
-        <Clock3 className="mt-0.5 size-4 shrink-0 text-fg-tertiary" />
+      <div className="border-border bg-surface-muted text-fg-secondary flex items-start gap-2 border border-dashed px-3 py-2.5 text-sm">
+        <Clock3 className="text-fg-tertiary mt-0.5 size-4 shrink-0" />
         <span>
-          Заявка отправлена {formatDate(new Date(pending.createdAt))} ({pending.contact}) — мы свяжемся.
+          Заявка отправлена {formatDate(new Date(pending.createdAt))} ({pending.contact}) — мы
+          свяжемся.
         </span>
       </div>
     ) : (
@@ -161,14 +198,20 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
   return (
     <div className="max-w-3xl">
       {isDemo ? (
-        <p className="mb-6 border border-dashed border-border bg-surface-muted px-4 py-3 text-sm text-fg-secondary">
-          Это демо-портал — здесь всегда открыт весь функционал. Тарифы ниже относятся к
-          реальной установке приложения на портал Битрикс24.
+        <p className="border-border bg-surface-muted text-fg-secondary mb-6 border border-dashed px-4 py-3 text-sm">
+          Это демо-портал — здесь всегда открыт весь функционал. Тарифы ниже относятся к реальной
+          установке приложения на портал Битрикс24.
         </p>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <PlanCard title="Free" price={formatRubStr('0')} features={FREE_FEATURES} isCurrent={currentPlan === 'FREE' && !isDemo} footer={<p className="text-sm text-fg-tertiary">Бесплатно, до 3 активных проектов</p>} />
+        <PlanCard
+          title="Free"
+          price={formatRubStr('0')}
+          features={FREE_FEATURES}
+          isCurrent={currentPlan === 'FREE' && !isDemo}
+          footer={<p className="text-fg-tertiary text-sm">Бесплатно, до 3 активных проектов</p>}
+        />
         <PlanCard
           title="Pro"
           price={`${formatRubStr('5000')} / мес за портал`}
@@ -179,10 +222,10 @@ export function PricingPlans({ currentPlan, isDemo }: { currentPlan: Plan; isDem
         />
       </div>
 
-      <p className="mt-4 text-xs text-fg-tertiary">
-        Free — полноценный рабочий сценарий для небольшой команды. Pro снимает лимит
-        проектов и открывает графики, аналитику и импорт из CRM — оплачивается отдельно от
-        сертификата Битрикс24 Маркетплейс.
+      <p className="text-fg-tertiary mt-4 text-xs">
+        Free — полноценный рабочий сценарий для небольшой команды. Pro снимает лимит проектов и
+        открывает графики, аналитику и импорт из CRM — оплачивается отдельно от сертификата
+        Битрикс24 Маркетплейс.
       </p>
 
       <RequestProDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmitted={setPending} />

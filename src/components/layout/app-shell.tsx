@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { BarChart3, Menu, X } from 'lucide-react';
 import { useSession } from '@/lib/client/session';
 import { cn } from '@/lib/cn';
-import { Nav, NavFooter } from './nav';
+import { Nav, NavFooter, sectionLabel } from './nav';
 import { UserBadge } from './user-badge';
 import { DemoRoleSwitch } from './demo-role-switch';
 import { ThemeToggle } from './theme-toggle';
@@ -42,68 +43,79 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       ) : null}
 
-      {/* One sidebar: a static column on ≥ lg, a slide-in drawer below it. */}
+      {/* One sidebar: a floating dark panel on ≥ lg, a slide-in drawer below it. The panel is
+          dark in both themes, as in LifeRM (ADR-062), hence the `theme-dark` token scope. */}
       <aside
         className={cn(
-          'border-border bg-bg fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r transition-transform duration-200 print:hidden',
-          'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:transition-none',
+          'theme-dark fixed inset-y-0 left-0 z-50 w-64 shrink-0 p-2 transition-transform duration-200 print:hidden',
+          'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-60 lg:py-4 lg:pr-0 lg:pl-4 lg:transition-none',
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
         style={band ? { height: 'auto' } : undefined}
       >
-        <button
-          type="button"
-          onClick={closeDrawer}
-          aria-label="Закрыть меню"
-          className="text-fg-tertiary hover:bg-surface hover:text-fg absolute top-2 right-2 p-1.5 lg:hidden"
-        >
-          <X className="size-4" />
-        </button>
-
         <div
-          className="flex h-full flex-col gap-4 overflow-y-auto px-3 py-4"
+          className="text-fg relative flex h-full flex-col overflow-hidden rounded-[22px] border border-white/[0.07] bg-[#050505]"
           style={
             band
-              ? { position: 'absolute', left: 0, right: 0, top: band.top, height: band.height }
+              ? {
+                  position: 'absolute',
+                  left: 16,
+                  right: 0,
+                  top: band.top + 16,
+                  height: band.height - 32,
+                }
               : undefined
           }
         >
-          <Link href="/" className="flex items-center gap-3 px-2 py-1" onClick={closeDrawer}>
-            <BrandMark className="size-10" />
+          <button
+            type="button"
+            onClick={closeDrawer}
+            aria-label="Закрыть меню"
+            className="text-fg-tertiary hover:text-fg absolute top-4 right-3 rounded-lg p-1.5 hover:bg-white/5 lg:hidden"
+          >
+            <X className="size-4" />
+          </button>
+
+          <Link
+            href="/"
+            className="flex h-16 shrink-0 items-center gap-2.5 border-b border-white/[0.07] px-4"
+            onClick={closeDrawer}
+          >
+            <BrandMark />
             <div className="min-w-0">
-              <div className="font-display text-accent text-[15px] leading-tight font-bold uppercase">
-                Экономика проектов
-              </div>
-              <div className="tx-mark text-fg-tertiary mt-0.5 text-[10px]">Токсичная компания</div>
+              <div className="truncate text-sm leading-tight font-bold">Экономика проектов</div>
+              <div className="text-fg-tertiary mt-0.5 truncate text-[11px]">Токсичная компания</div>
             </div>
           </Link>
 
-          {loading ? (
-            <div className="flex flex-col gap-1 px-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="bg-surface/60 h-8 animate-pulse" />
-              ))}
-            </div>
-          ) : session ? (
-            <Nav
-              role={session.role}
-              disabled={session.disabledSections ?? []}
-              onNavigate={closeDrawer}
-            />
-          ) : null}
-
-          <div className="mt-auto flex flex-col gap-3">
-            <DemoRoleSwitch />
-            {session ? (
-              <NavFooter
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2.5 py-3">
+            {loading ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-[46px] animate-pulse rounded-2xl bg-white/5" />
+                ))}
+              </div>
+            ) : session ? (
+              <Nav
                 role={session.role}
                 disabled={session.disabledSections ?? []}
                 onNavigate={closeDrawer}
               />
             ) : null}
-            <ThemeToggle />
-            <div className="px-1">
-              <UserBadge />
+
+            <div className="mt-auto flex flex-col gap-2 border-t border-white/[0.07] pt-3">
+              {session ? (
+                <NavFooter
+                  role={session.role}
+                  disabled={session.disabledSections ?? []}
+                  onNavigate={closeDrawer}
+                />
+              ) : null}
+              <DemoRoleSwitch />
+              <ThemeToggle />
+              <div className="px-1 lg:hidden">
+                <UserBadge />
+              </div>
             </div>
           </div>
         </div>
@@ -117,17 +129,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onClick={() => setDrawerOpen(true)}
             aria-label="Открыть меню"
             aria-expanded={drawerOpen}
-            className="text-fg-secondary hover:bg-surface hover:text-fg -ml-1 p-1.5"
+            className="text-fg-secondary hover:bg-surface hover:text-fg -ml-1 rounded-lg p-1.5"
           >
             <Menu className="size-5" />
           </button>
-          <BrandMark className="size-7" />
-          <span className="font-display text-accent text-[15px] font-bold uppercase">
-            Экономика проектов
-          </span>
+          <BrandMark small />
+          <span className="text-[15px] font-bold">Экономика проектов</span>
         </header>
 
-        <main className="min-w-0 flex-1">
+        {/* Desktop top bar: the current section and the user, as in LifeRM. */}
+        {session ? <TopBar /> : null}
+
+        <main className="min-w-0 flex-1 lg:pr-4">
           {children}
           <TableSort />
         </main>
@@ -142,16 +155,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Mascot from toxick.ru — the app's brand mark. Plain <img>: tiny static asset. */
-function BrandMark({ className }: { className?: string }) {
-  // eslint-disable-next-line @next/next/no-img-element
+function TopBar() {
+  const pathname = usePathname();
+  const label = sectionLabel(pathname);
   return (
-    <img
-      src="/brand-mascot.png"
-      alt=""
+    <div className="hidden px-8 pt-4 pb-2 lg:block lg:pr-12 print:hidden">
+      <div className="border-border bg-surface flex h-[66px] items-center gap-4 rounded-[18px] border pr-2.5 pl-5">
+        <span aria-hidden className="bg-button-primary size-2 rounded-full" />
+        <span className="flex-1 truncate text-base font-bold">{label ?? 'Экономика проектов'}</span>
+        <div className="border-border bg-surface-muted rounded-[12px] border py-2 pr-3 pl-2">
+          <UserBadge />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Brand mark: the lime square with a chart, as the LifeRM logo tile (ADR-062). */
+function BrandMark({ small = false }: { small?: boolean }) {
+  return (
+    <span
       aria-hidden
-      className={cn('shrink-0 object-contain', className)}
-    />
+      className={cn(
+        'bg-button-primary text-button-primary-fg flex shrink-0 items-center justify-center rounded-[9px]',
+        small ? 'size-7' : 'size-8',
+      )}
+    >
+      <BarChart3 className={small ? 'size-4' : 'size-[18px]'} />
+    </span>
   );
 }
 
@@ -166,7 +197,7 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="border-border flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b px-4 py-4 sm:px-8">
+    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-8">
       <div>
         {/* The menu already names the section; the title stays for screen readers and the tab. */}
         <h1 className="sr-only">{title}</h1>

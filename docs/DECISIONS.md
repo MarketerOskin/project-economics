@@ -1006,3 +1006,16 @@ demand): fast-forward /opt/project-economics to origin/main, rebuild and restart
 service, then check the container is running. It logs in with the repository secret
 `DEPLOY_SSH_KEY`; `DEPLOY_KNOWN_HOSTS` optionally pins the host key. Without the key the run
 only warns and deploys nothing. Deploys never overlap (one concurrency group).
+
+## ADR-062 — LifeRM visual style
+
+**Context.** The owner's LifeRM app has a newer, softer take on the same black-and-lime look,
+and the Figma mockups of this app were restyled to match it.
+
+**Decision.** The app follows the LifeRM system: a floating dark side panel (dark in both
+themes) where every section is a translucent card and the open section lists its screens; a
+rounded top bar with the section name and the user; cards rounded to 22px with translucent
+borders; pill buttons, tabs and badges; Onest for all text and figures, JetBrains Mono only for
+table headers. Palette and radii live in `globals.css` tokens; the light theme keeps the lime
+primary button with dark ink and uses a near-black accent for text. Supersedes the sharp-corner,
+mono-caps direction of ADR-032 for visuals only; the dark-first theme choice stands.

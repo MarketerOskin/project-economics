@@ -22,7 +22,7 @@ export function ThemeToggle() {
       onClick={() => {
         applyTheme(next);
       }}
-      className="text-fg-secondary hover:bg-surface-muted hover:text-fg flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+      className="text-fg-tertiary hover:text-fg flex w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left text-[13px] hover:bg-white/5"
     >
       {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
       {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}

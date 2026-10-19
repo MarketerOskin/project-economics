@@ -29,16 +29,17 @@ export function KpiCard({
   const negative = factNum !== null && factNum < 0;
   return (
     <Box href={href}>
-      <div className="tx-mark text-accent">{label}</div>
+      <div aria-hidden className="bg-accent mb-3 h-[3px] w-9 rounded-full" />
+      <div className="tx-mark text-fg-tertiary text-sm">{label}</div>
       <div
         className={cn(
-          'font-display nums mt-3 text-[30px] leading-none font-bold tracking-tight',
+          'font-display nums mt-3 text-[32px] leading-none font-semibold tracking-tight',
           negative && 'text-negative',
         )}
       >
         {percent ? formatPercentStr(factValue) : formatRubStr(factValue)}
       </div>
-      <div className="text-fg-tertiary mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
+      <div className="text-fg-tertiary mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
         <span>План: {percent ? formatPercentStr(planValue) : formatRubStr(planValue)}</span>
         {points !== undefined ? (
           <DeviationBadge text={formatPointsStr(points)} value={points ? Number(points) : null} />
@@ -58,7 +59,8 @@ export function KpiCard({
 }
 
 function Box({ href, children }: { href?: string; children: React.ReactNode }) {
-  const cls = 'border border-border bg-surface p-5 transition-colors hover:border-accent';
+  const cls =
+    'border border-border bg-surface rounded-[22px] px-[22px] pt-[18px] pb-[22px] transition-colors hover:border-border-strong';
   return href ? (
     <Link href={href} className={cn(cls, 'block')}>
       {children}

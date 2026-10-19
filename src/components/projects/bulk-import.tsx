@@ -78,7 +78,7 @@ function DefaultsForm({ value, onChange }: { value: Defaults; onChange: (v: Defa
   return (
     <div className="border-border bg-surface flex flex-col gap-4 border p-4">
       <div>
-        <h2 className="tx-mark text-accent">Данные по умолчанию</h2>
+        <h2 className="tx-mark text-fg text-[15px]">Данные по умолчанию</h2>
         <p className="text-fg-tertiary mt-1 text-xs">
           Применятся ко всем проектам, которые создаются сейчас. Пустые поля не заполняются. Клиент
           из строки списка или из Битрикс24 важнее клиента по умолчанию.

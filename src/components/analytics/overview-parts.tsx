@@ -110,7 +110,7 @@ export function UpcomingMeetingsCard({
   return (
     <div className="border-border bg-surface border p-5">
       <div className="mb-4 flex items-baseline justify-between gap-3">
-        <h3 className="tx-mark text-accent">Ближайшие встречи</h3>
+        <h3 className="tx-mark text-fg text-[15px]">Ближайшие встречи</h3>
         {allHref ? (
           <Link
             href={allHref}
@@ -240,7 +240,7 @@ export function SectionHead({
 }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
-      <h2 className="tx-mark text-accent">{title}</h2>
+      <h2 className="tx-mark text-fg text-[15px]">{title}</h2>
       {href ? (
         <Link
           href={href}

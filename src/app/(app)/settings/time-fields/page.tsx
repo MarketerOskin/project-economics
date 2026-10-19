@@ -51,7 +51,9 @@ export default async function TimeFieldsPage() {
           </Way>
         </div>
         <section className="flex flex-col gap-3">
-          <h2 className="tx-mark text-accent">Разделы с пользовательскими полями времени</h2>
+          <h2 className="tx-mark text-fg text-[15px]">
+            Разделы с пользовательскими полями времени
+          </h2>
           <TimeFieldsManager />
         </section>
       </div>

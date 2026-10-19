@@ -23,7 +23,9 @@ const STATUS_LABELS = { ACTIVE: 'Активный', COMPLETED: 'Завершён
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-fg-tertiary font-mono text-[11px] tracking-[0.06em] uppercase">{label}</dt>
+      <dt className="text-fg-tertiary font-mono text-[11px] tracking-[0.06em] uppercase">
+        {label}
+      </dt>
       <dd className="text-fg mt-1 text-sm break-words">{children}</dd>
     </div>
   );
@@ -49,9 +51,14 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
     scope.user.findMany({ select: { id: true, firstName: true, lastName: true, photoUrl: true } }),
   ]);
   const people = Object.fromEntries(
-    users.map((u) => [u.id, { id: u.id, fullName: `${u.firstName} ${u.lastName}`.trim(), photoUrl: u.photoUrl }]),
+    users.map((u) => [
+      u.id,
+      { id: u.id, fullName: `${u.firstName} ${u.lastName}`.trim(), photoUrl: u.photoUrl },
+    ]),
   );
-  const dates = [project.startDate, project.endDate].map((d) => (d ? formatDate(new Date(d)) : null));
+  const dates = [project.startDate, project.endDate].map((d) =>
+    d ? formatDate(new Date(d)) : null,
+  );
   const pkg = project.support;
 
   return (
@@ -90,7 +97,8 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
               : '—'}
           </Fact>
           <Fact label="Доход / расход, факт">
-            {formatRubStr(project.economics.factIncome)} / {formatRubStr(project.economics.factExpense)}
+            {formatRubStr(project.economics.factIncome)} /{' '}
+            {formatRubStr(project.economics.factExpense)}
           </Fact>
           <Fact label="Создан">
             {formatDateTime(new Date(project.createdAt))}
@@ -110,7 +118,9 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
           {project.internalComment ? (
             <div className="sm:col-span-2 lg:col-span-4">
               <Fact label="Внутренний комментарий">
-                <span className="text-fg-secondary whitespace-pre-line">{project.internalComment}</span>
+                <span className="text-fg-secondary whitespace-pre-line">
+                  {project.internalComment}
+                </span>
               </Fact>
             </div>
           ) : null}
@@ -127,7 +137,7 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="tx-mark text-accent">Команда</h2>
+          <h2 className="tx-mark text-fg text-[15px]">Команда</h2>
           <Link href={`/projects/${id}/team`} className="text-accent text-sm hover:underline">
             Вся команда
           </Link>
@@ -137,7 +147,10 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
         ) : (
           <div className="flex flex-wrap gap-3">
             {project.members.map((m) => (
-              <div key={m.id} className="border-border bg-surface flex items-center gap-3 border py-2 pr-4 pl-2">
+              <div
+                key={m.id}
+                className="border-border bg-surface flex items-center gap-3 border py-2 pr-4 pl-2"
+              >
                 <Avatar className="size-8">
                   {m.photoUrl ? <AvatarImage src={m.photoUrl} alt="" /> : null}
                   <AvatarFallback className="text-[11px]">{initials(m.fullName)}</AvatarFallback>
@@ -167,7 +180,7 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="tx-mark text-accent">Последние операции</h2>
+          <h2 className="tx-mark text-fg text-[15px]">Последние операции</h2>
           <Link href={`/projects/${id}/finance`} className="text-accent text-sm hover:underline">
             Все операции
           </Link>
@@ -177,7 +190,11 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
             Операций пока нет
           </p>
         ) : (
-          <EntriesTable rows={recent.rows} canMutate={can.mutateFinance(session.actor)} showProject={false} />
+          <EntriesTable
+            rows={recent.rows}
+            canMutate={can.mutateFinance(session.actor)}
+            showProject={false}
+          />
         )}
       </section>
     </div>

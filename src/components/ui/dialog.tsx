@@ -22,7 +22,7 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/70" />
       <DialogPrimitive.Content
         className={cn(
-          'border-border bg-surface fixed top-1/2 left-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 border p-5 sm:p-6',
+          'border-border bg-surface fixed top-1/2 left-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-[22px] border p-5 sm:p-6',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 max-h-[88vh] overflow-y-auto',
           className,
         )}
@@ -44,7 +44,7 @@ export function DialogContent({
 export function DialogHeader({ title, description }: { title: string; description?: string }) {
   return (
     <div className="mb-4">
-      <DialogPrimitive.Title className="text-lg font-bold tracking-tight uppercase">
+      <DialogPrimitive.Title className="text-lg font-bold tracking-tight">
         {title}
       </DialogPrimitive.Title>
       {description ? (

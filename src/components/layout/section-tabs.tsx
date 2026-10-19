@@ -29,7 +29,7 @@ export function SectionTabs({
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <div className="border-border bg-surface flex items-center justify-between gap-4 overflow-x-auto border-b-2 px-4 sm:px-8">
+    <div className="flex items-center justify-between gap-4 overflow-x-auto px-4 pt-2 sm:px-8">
       <nav className="flex gap-1 sm:gap-2">
         {tabs.map((t) => (
           <Link
@@ -37,10 +37,10 @@ export function SectionTabs({
             href={qs ? `${t.href}?${qs}` : t.href}
             aria-current={t.href === active ? 'page' : undefined}
             className={cn(
-              '-mb-0.5 border-b-[3px] px-3 py-3.5 text-base font-medium whitespace-nowrap transition-colors sm:px-4',
+              'rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
               t.href === active
-                ? 'border-accent text-accent bg-accent/10'
-                : 'text-fg hover:bg-surface-muted hover:border-border border-transparent',
+                ? 'bg-surface-muted text-fg border-border border'
+                : 'text-fg-tertiary hover:text-fg hover:bg-surface-muted/60',
             )}
           >
             {t.label}

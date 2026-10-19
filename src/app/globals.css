@@ -1,57 +1,64 @@
 @import 'tailwindcss';
 
 /*
- * Design system — «Экономика проектов» в стиле сайта toxick.ru (Токсичная компания).
- * Direction: brutal / editorial. Почти чёрный фон, острые углы, один кислотно-лаймовый
- * акцент, моноширинные технические подписи, крупные цифры. Тени не используем — слои
- * разделяют тонкие границы. Тёмная тема — основная (как на сайте, ADR-032), светлая
- * включается переключателем в меню и живёт в `[data-theme='light']` ниже (ADR-044).
+ * Design system — «Экономика проектов» в стиле LifeRM (ADR-062).
+ * Почти чёрный фон, мягкие карточки со скруглением 22, полупрозрачные границы, один
+ * лаймовый акцент, шрифт Onest для текста и цифр. Тени не используем — слои разделяют
+ * тонкие границы. Боковая панель тёмная в обеих темах. Тёмная тема — основная (ADR-032),
+ * светлая живёт в `[data-theme='light']` ниже (ADR-044).
  */
 
-:root {
+:root,
+.theme-dark {
   color-scheme: dark;
 
-  --bg: #050505;
-  --surface: #0d0d0d;
-  --surface-muted: #161616;
+  --bg: #09090a;
+  --surface: #121213;
+  --surface-muted: #19191b;
+  --surface-sunken: #0d0d0e;
 
   --fg: #f4f4ef;
   --fg-secondary: #c3c2b7;
   --fg-tertiary: #8f8f86;
 
-  --border: #262626;
-  --border-strong: #3a3a38;
+  --border: rgb(255 255 255 / 0.07);
+  --border-strong: rgb(255 255 255 / 0.13);
 
-  --accent: #d6ff3f; /* кислотный лайм сайта */
+  --accent: #d6ff3f; /* лайм LifeRM */
   --accent-fg: #0a0a05;
-  --accent-soft: #1d2309;
+  --accent-soft: rgb(214 255 63 / 0.1);
 
-  --positive: #4fd14f;
-  --positive-soft: #0f2410;
-  --warning: #fab219;
-  --warning-soft: #2a2008;
-  --negative: #ff5c5c;
-  --negative-soft: #2c1010;
+  /* The primary button and the brand square stay lime in both themes, as in LifeRM. */
+  --button-primary: #d6ff3f;
+  --button-primary-fg: #0a0a05;
 
-  --chart-grid: #1f1f1e;
-  --chart-axis: #383835;
+  --positive: #9bff7a;
+  --positive-soft: rgb(155 255 122 / 0.12);
+  --warning: #ffb23f;
+  --warning-soft: rgb(255 178 63 / 0.12);
+  --negative: #ff6b6b;
+  --negative-soft: rgb(255 107 107 / 0.12);
 
-  --radius-sm: 0px;
-  --radius: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
+  --chart-grid: rgb(255 255 255 / 0.06);
+  --chart-axis: rgb(255 255 255 / 0.13);
+
+  --radius-sm: 10px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
 
   --shadow-sm: none;
   --shadow: none;
   --shadow-lg: none;
 
-  /* Space Grotesk / JetBrains Mono подключаются в layout.tsx через next/font. Кириллица
-   * у Space Grotesk нет — русские заголовки, как и на сайте, берут системный гротеск. */
-  --font-display: var(--font-space-grotesk), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
+  /* Onest (текст и цифры) и JetBrains Mono (заголовки таблиц) подключаются в layout.tsx
+   * через next/font. */
+  --font-display:
+    var(--font-onest), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
+    var(--font-onest), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
   --font-mono: var(--font-mono-tech), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Category accent palette (ТЗ §29) — dark steps of the validated data-viz categorical
@@ -65,41 +72,45 @@
   --cat-violet: #9085e9;
 }
 
-/* Light theme (ADR-044): the same editorial system on warm paper. The lime can't carry
- * text on white, so the accent darkens to olive and the primary button gets white ink. */
+/* Light theme (ADR-044): warm paper with white cards. The lime can't carry text on white,
+ * so the accent turns near-black; the primary button keeps the lime with dark ink. */
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --bg: #f6f6f1;
+  --bg: #f0f0eb;
   --surface: #ffffff;
-  --surface-muted: #ecece5;
+  --surface-muted: #f5f5f0;
+  --surface-sunken: #f5f5f0;
 
-  --fg: #0d0d0b;
+  --fg: #0b0b0b;
   --fg-secondary: #3d3d38;
-  --fg-tertiary: #6b6b63;
+  --fg-tertiary: #5d5d55;
 
-  --border: #dcdcd3;
-  --border-strong: #b9b9ae;
+  --border: rgb(0 0 0 / 0.07);
+  --border-strong: rgb(0 0 0 / 0.14);
 
-  --accent: #4f6d00;
+  --accent: #0b0b0b;
   --accent-fg: #ffffff;
-  --accent-soft: #eef6cf;
+  --accent-soft: rgb(214 255 63 / 0.4);
 
-  --positive: #1d7a1d;
-  --positive-soft: #e3f3e1;
-  --warning: #a86a00;
-  --warning-soft: #fbf0d6;
-  --negative: #c62828;
-  --negative-soft: #fbe5e3;
+  --positive: #2f7d0a;
+  --positive-soft: rgb(31 122 68 / 0.1);
+  --warning: #a76400;
+  --warning-soft: #fff1d9;
+  --negative: #c62f2f;
+  --negative-soft: rgb(192 69 58 / 0.1);
 
-  --chart-grid: #e6e6de;
-  --chart-axis: #c9c9bf;
+  --chart-grid: rgb(0 0 0 / 0.07);
+  --chart-axis: rgb(0 0 0 / 0.14);
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-button-primary: var(--button-primary);
+  --color-button-primary-fg: var(--button-primary-fg);
   --color-fg: var(--fg);
   --color-fg-secondary: var(--fg-secondary);
   --color-fg-tertiary: var(--fg-tertiary);
@@ -151,7 +162,7 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
-/* Display face for headings and big numbers (KPI, prices) — Space Grotesk, as on toxick.ru. */
+/* Display face for headings and big numbers (KPI, prices) — Onest, as in LifeRM. */
 h1,
 h2,
 .font-display {
@@ -159,13 +170,33 @@ h2,
   letter-spacing: -0.01em;
 }
 
-/* Technical label: mono, uppercase, wide tracking (`.tx-mark` on the site). */
+/* Card label (`.tx-mark`): a quiet semibold caption above a figure, as LifeRM card titles. */
 .tx-mark {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Table header: the one mono caps mark left, as in LifeRM. */
+main table thead th {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+}
+
+/* LifeRM cards: every bordered surface block in the content is rounded. `:where` keeps the
+ * rule at zero specificity, so an explicit `rounded-*` utility still wins. */
+main :where(.border.bg-surface, .border.bg-surface-muted) {
+  border-radius: var(--radius-xl);
+}
+main :where(.border.bg-surface:has(> table), .border.bg-surface:has(> div > table)) {
+  overflow: hidden;
+}
+main :where(input.border, select.border, textarea.border, button.border, [role='combobox'].border) {
+  border-radius: var(--radius);
 }
 
 ::selection {
@@ -179,9 +210,9 @@ h2,
   scrollbar-width: thin;
 }
 
-/* Chart axis ticks and labels read as technical marks, like the site's mono captions. */
+/* Chart axis ticks and labels: small Onest captions. */
 .recharts-wrapper text {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
 }
 
 /* Printing (the client report, ADR-034): paper is white, app chrome is hidden via print:hidden. */
