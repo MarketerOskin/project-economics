@@ -1019,3 +1019,12 @@ borders; pill buttons, tabs and badges; Onest for all text and figures, JetBrain
 table headers. Palette and radii live in `globals.css` tokens; the light theme keeps the lime
 primary button with dark ink and uses a near-black accent for text. Supersedes the sharp-corner,
 mono-caps direction of ADR-032 for visuals only; the dark-first theme choice stands.
+
+## ADR-063 — Section tabs in the top bar, pinned shell
+
+On desktop the screens of the open section (Обзор / Сотрудники / Встречи and so on) are tabs in
+the top bar next to the section name, the active one lit lime; the row under the bar keeps only
+its extras (the 1С request in «Финансы»). Outside Bitrix24 the shell is exactly one screen tall:
+the side menu and the top bar stay put and only the page area scrolls. Inside Bitrix24 the
+iframe is stretched to the page, so the menu keeps following the visible slice (ADR-059).
+Below lg the tabs stay in their row and the page scrolls as before.

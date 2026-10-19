@@ -10,7 +10,10 @@ const TABS = [
   { href: '/analytics/meetings', label: 'Встречи' },
 ];
 
-/** Sub-navigation of «Аналитика»; carries the period (not one-shot params) between tabs. */
+/**
+ * Sub-navigation of «Аналитика» below lg; on desktop the tabs sit in the top bar. Carries the
+ * period (not one-shot params) between tabs.
+ */
 export function AnalyticsTabs() {
   const pathname = usePathname();
   const params = useSearchParams();
@@ -22,7 +25,7 @@ export function AnalyticsTabs() {
   const qs = keep.toString();
 
   return (
-    <div className="overflow-x-auto px-4 pt-2 sm:px-8">
+    <div className="overflow-x-auto px-4 pt-2 sm:px-8 lg:hidden">
       <nav className="flex gap-1 sm:gap-2">
         {TABS.map((t) => {
           const active =

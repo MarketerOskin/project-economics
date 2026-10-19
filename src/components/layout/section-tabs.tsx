@@ -6,7 +6,8 @@ import { cn } from '@/lib/cn';
 
 /**
  * Sub-navigation of a section. The period (not one-shot params) carries between tabs; the
- * most specific tab whose href starts the path is the active one.
+ * most specific tab whose href starts the path is the active one. On desktop the tabs sit in
+ * the top bar, so only the aside stays in this row.
  */
 export function SectionTabs({
   tabs,
@@ -29,8 +30,13 @@ export function SectionTabs({
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <div className="flex items-center justify-between gap-4 overflow-x-auto px-4 pt-2 sm:px-8">
-      <nav className="flex gap-1 sm:gap-2">
+    <div
+      className={cn(
+        'flex items-center justify-between gap-4 overflow-x-auto px-4 pt-2 sm:px-8 lg:justify-end',
+        !aside && 'lg:hidden',
+      )}
+    >
+      <nav className="flex gap-1 sm:gap-2 lg:hidden">
         {tabs.map((t) => (
           <Link
             key={t.href}

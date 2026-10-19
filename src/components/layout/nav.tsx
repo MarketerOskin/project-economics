@@ -100,6 +100,21 @@ export function sectionLabel(pathname: string): string | null {
   return activeItem([...ITEMS, ...FOOTER_ITEMS], pathname)?.label ?? null;
 }
 
+/** The most specific sub-item that covers the path (Операции is /finance, a prefix of Обзор). */
+function activeSubItem(items: SubItem[], pathname: string): string | undefined {
+  return items
+    .filter((s) =>
+      s.exact ? pathname === s.href : pathname === s.href || pathname.startsWith(`${s.href}/`),
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+}
+
+/** Screens of the section the path is in, shown as tabs in the top bar. */
+export function sectionTabs(pathname: string): { tabs: SubItem[]; active?: string } {
+  const tabs = activeItem(ITEMS, pathname)?.items ?? [];
+  return { tabs, active: activeSubItem(tabs, pathname) };
+}
+
 export function Nav({
   role,
   disabled = [],
@@ -153,14 +168,7 @@ function NavList({
         const Icon = item.icon;
         const highlight = footer && item.href === '/pricing' && !active;
         const sub = active ? item.items : undefined;
-        // The most specific sub-item wins (Операции is /finance, a prefix of Обзор).
-        const activeSub = sub
-          ?.filter((s) =>
-            s.exact
-              ? pathname === s.href
-              : pathname === s.href || pathname.startsWith(`${s.href}/`),
-          )
-          .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+        const activeSub = sub ? activeSubItem(sub, pathname) : undefined;
         return (
           <div
             key={item.href}
