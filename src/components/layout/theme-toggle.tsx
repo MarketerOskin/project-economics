@@ -11,7 +11,7 @@ function subscribe(onChange: () => void) {
   return () => observer.disconnect();
 }
 
-/** Sidebar switch between the dark and the light theme (ADR-044). */
+/** Sidebar icon switch between the dark and the light theme (ADR-044, ADR-064). */
 export function ThemeToggle() {
   const theme = React.useSyncExternalStore(subscribe, currentTheme, (): Theme => 'dark');
 
@@ -22,10 +22,11 @@ export function ThemeToggle() {
       onClick={() => {
         applyTheme(next);
       }}
-      className="text-fg-tertiary hover:text-fg flex w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left text-[13px] hover:bg-white/5"
+      aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+      title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+      className="text-fg-secondary hover:text-fg flex size-8 items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.05] hover:bg-white/10"
     >
       {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
     </button>
   );
 }

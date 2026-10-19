@@ -120,7 +120,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               ) : null}
               <DemoRoleSwitch />
-              <ThemeToggle />
+              <div className="flex items-center justify-between gap-2 pr-1 pl-2">
+                <span className="text-fg-tertiary text-[11px]">Панель закреплена</span>
+                <ThemeToggle />
+              </div>
               <div className="px-1 lg:hidden">
                 <UserBadge />
               </div>
@@ -197,7 +200,8 @@ function TopBar() {
 /** The section's screens as tabs in the top bar; the active one is lit. Carries the period. */
 function TopBarTabs({ pathname }: { pathname: string }) {
   const params = useSearchParams();
-  const { tabs, active } = sectionTabs(pathname);
+  const { session } = useSession();
+  const { tabs, active } = sectionTabs(pathname, session?.role, session?.disabledSections ?? []);
   const keep = new URLSearchParams();
   for (const k of ['p', 'm', 'from', 'to', 'preset']) {
     const v = params.get(k);

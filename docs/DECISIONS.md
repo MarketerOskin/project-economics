@@ -1028,3 +1028,12 @@ its extras (the 1С request in «Финансы»). Outside Bitrix24 the shell i
 the side menu and the top bar stay put and only the page area scrolls. Inside Bitrix24 the
 iframe is stretched to the page, so the menu keeps following the visible slice (ADR-059).
 Below lg the tabs stay in their row and the page scrolls as before.
+
+## ADR-064 — Side menu as in the Figma mockups
+
+The side menu follows the Figma file. «Проекты» lists Список проектов and Новый проект (the
+latter for managers). «Настройки» holds Основные, Стадии CRM, История изменений and Тарифы, so
+/history and /pricing light up «Настройки» and show those tabs in the top bar. «Как это
+работает» and «Заявка на внедрение» moved under «Ещё» at the bottom; the top bar names the open
+screen there. The theme switch is an icon in the «Панель закреплена» row under the demo role.
+Supersedes the bottom «История / Тарифы» block of ADR-049.
