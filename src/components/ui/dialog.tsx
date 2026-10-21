@@ -19,10 +19,10 @@ export function DialogContent({
   const band = useViewportBand();
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/70" />
+      <DialogPrimitive.Overlay className="fade-in fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
       <DialogPrimitive.Content
         className={cn(
-          'border-border bg-surface fixed top-1/2 left-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-[22px] border p-5 sm:p-6',
+          'pop-in glass-popover fixed top-1/2 left-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-[22px] border p-5 sm:p-6',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 max-h-[88vh] overflow-y-auto',
           className,
         )}

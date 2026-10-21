@@ -11,7 +11,7 @@ export const CHART = {
   surface: 'var(--surface)',
 
   // Income wears the brand accent; expense a neutral warm gray (toxick.ru palette).
-  income: 'var(--accent)',
+  income: 'var(--chart-primary)',
   expense: 'var(--fg-tertiary)',
   positive: 'var(--positive)',
   negative: 'var(--negative)',

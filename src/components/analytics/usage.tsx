@@ -36,7 +36,7 @@ export function UsageBar({ used, limit }: { used: number; limit: number | null }
   return (
     <div className="bg-surface-muted h-1.5 w-full" aria-hidden>
       <div
-        className={cn('h-full', over ? 'bg-negative' : 'bg-accent')}
+        className={cn('h-full', over ? 'bg-negative' : 'bg-[var(--chart-primary)]')}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -60,7 +60,7 @@ function SplitBar({
   return (
     <div className="bg-surface-muted flex h-3 w-full overflow-hidden rounded-full" aria-hidden>
       <div
-        className={cn('h-full', over ? 'bg-negative' : 'bg-accent')}
+        className={cn('h-full', over ? 'bg-negative' : 'bg-[var(--chart-primary)]')}
         style={{ width: `${(task / base) * 100}%` }}
       />
       <div
@@ -131,7 +131,7 @@ export function UsageCards({ items, query }: { items: UsageCardData[]; query: st
           )}
           <div className="text-fg-tertiary flex flex-wrap gap-x-5 gap-y-1 text-sm">
             <span className="inline-flex items-center gap-2">
-              <span className="bg-accent size-3 rounded-full" aria-hidden />
+              <span className="size-3 rounded-full bg-[var(--chart-primary)]" aria-hidden />
               задачи {formatHours(c.taskSeconds)} ч
             </span>
             <span className="inline-flex items-center gap-2">

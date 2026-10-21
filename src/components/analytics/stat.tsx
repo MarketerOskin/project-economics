@@ -1,7 +1,11 @@
+'use client';
+
 import * as React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { AnimatedLabel } from '@/components/motion/animated-value';
+import { useSpotlight } from '@/components/motion/spotlight';
 
 /**
  * One analytics figure: counts and durations, not money (KpiCard is plan/fact money). With
@@ -20,6 +24,7 @@ export function Stat({
   tone?: 'negative';
   href?: string;
 }) {
+  const onPointerMove = useSpotlight<HTMLElement>();
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
@@ -34,20 +39,25 @@ export function Stat({
           tone === 'negative' && 'text-negative',
         )}
       >
-        {value}
+        <AnimatedLabel text={value} />
       </div>
       {hint ? <div className="text-fg-tertiary mt-2 font-mono text-[11px]">{hint}</div> : null}
     </>
   );
-  const cls = 'border border-border bg-surface p-4 transition-colors hover:border-accent';
+  const cls =
+    'spotlight border border-border bg-surface p-4 transition-[border-color,translate] duration-300 hover:-translate-y-0.5';
   if (href) {
     return (
-      <Link href={href} className={cn(cls, 'group block')}>
+      <Link href={href} onPointerMove={onPointerMove} className={cn(cls, 'group block')}>
         {body}
       </Link>
     );
   }
-  return <div className={cls}>{body}</div>;
+  return (
+    <div onPointerMove={onPointerMove} className={cls}>
+      {body}
+    </div>
+  );
 }
 
 const XL_COLS = { 4: 'xl:grid-cols-4', 5: 'xl:grid-cols-5', 6: 'xl:grid-cols-6' } as const;

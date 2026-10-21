@@ -24,7 +24,7 @@ const SOURCE_COLORS = [
   'var(--cat-burgundy)',
 ];
 const STAGE_COLORS = [
-  'var(--accent)',
+  'var(--chart-primary)',
   'var(--cat-blue)',
   'var(--cat-violet)',
   'var(--cat-orange)',
@@ -34,7 +34,7 @@ const STAGE_COLORS = [
 const STATUS_COLORS: Record<string, string> = {
   '1': 'var(--cat-blue)',
   '2': 'var(--warning)',
-  '3': 'var(--accent)',
+  '3': 'var(--chart-primary)',
   '4': 'var(--cat-cyan)',
   '5': 'var(--positive)',
   '6': 'var(--fg-tertiary)',
@@ -51,7 +51,7 @@ export function SourcesCard({ slices, href }: { slices: SourceSlice[]; href?: st
     href,
     color:
       s.key === 'tasks'
-        ? 'var(--accent)'
+        ? 'var(--chart-primary)'
         : s.key === 'meetings'
           ? 'var(--cat-blue)'
           : SOURCE_COLORS[crm++ % SOURCE_COLORS.length]!,
@@ -206,7 +206,7 @@ export function PeopleCards({
             </div>
             <div className="bg-surface-muted h-3 overflow-hidden rounded-full" aria-hidden>
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--cat-blue)]"
+                className="h-full rounded-full bg-gradient-to-r from-[var(--chart-primary)] to-[var(--cat-blue)]"
                 style={{ width: `${Math.round((r.totalSeconds / max) * 100)}%` }}
               />
             </div>

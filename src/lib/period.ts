@@ -1,10 +1,5 @@
 export type PeriodPreset =
-  | 'this_month'
-  | 'last_month'
-  | 'this_quarter'
-  | 'this_year'
-  | 'all_time'
-  | 'custom';
+  'this_month' | 'last_month' | 'this_quarter' | 'this_year' | 'all_time' | 'custom';
 
 export interface Period {
   from: Date | undefined;
@@ -59,4 +54,28 @@ export function granularityFor(from?: Date, to?: Date): 'day' | 'week' | 'month'
   if (days <= 62) return 'day';
   if (days <= 182) return 'week';
   return 'month';
+}
+
+/**
+ * The period of the same length right before [from, to], for «к прошлому периоду» (ADR-065).
+ * Whole calendar months shift by months (October → September, a year → the year before);
+ * any other range shifts by its length in days. Undefined for an open range.
+ */
+export function previousPeriod(from?: Date, to?: Date): { from: Date; to: Date } | undefined {
+  if (!from || !to) return undefined;
+  const dayAfterTo = utc(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() + 1);
+  if (from.getUTCDate() === 1 && dayAfterTo.getUTCDate() === 1) {
+    const months =
+      (dayAfterTo.getUTCFullYear() - from.getUTCFullYear()) * 12 +
+      (dayAfterTo.getUTCMonth() - from.getUTCMonth());
+    return {
+      from: utc(from.getUTCFullYear(), from.getUTCMonth() - months, 1),
+      to: utc(from.getUTCFullYear(), from.getUTCMonth(), 0),
+    };
+  }
+  const days = Math.round((dayAfterTo.getTime() - from.getTime()) / 86_400_000);
+  return {
+    from: utc(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate() - days),
+    to: utc(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate() - 1),
+  };
 }

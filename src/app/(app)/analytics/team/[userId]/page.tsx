@@ -17,7 +17,7 @@ import { formatDuration, formatHours } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const PROJECT_COLORS = [
-  'var(--accent)',
+  'var(--chart-primary)',
   'var(--cat-blue)',
   'var(--cat-orange)',
   'var(--cat-violet)',

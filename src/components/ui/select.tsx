@@ -41,7 +41,7 @@ export function SelectContent({
         position="popper"
         sideOffset={6}
         className={cn(
-          'border-border bg-surface z-50 max-h-72 min-w-[--radix-select-trigger-width] overflow-hidden rounded-[14px] border p-1',
+          'pop-in glass-popover z-50 max-h-72 min-w-[--radix-select-trigger-width] overflow-hidden rounded-[14px] border p-1',
           className,
         )}
         {...props}

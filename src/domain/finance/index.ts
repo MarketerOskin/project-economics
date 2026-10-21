@@ -4,16 +4,6 @@
  */
 export * from './money';
 export * from './types';
-export {
-  profit,
-  margin,
-  hoursRateAmount,
-  deviation,
-  marginDeltaPoints,
-} from './calculations';
-export {
-  aggregateProject,
-  aggregateCompany,
-  expenseStructure,
-  timeSeries,
-} from './aggregates';
+export { profit, margin, hoursRateAmount, deviation, marginDeltaPoints } from './calculations';
+export { aggregateProject, aggregateCompany, expenseStructure, timeSeries } from './aggregates';
+export { profitSeries, marginSeries, relativeChange } from './trends';
