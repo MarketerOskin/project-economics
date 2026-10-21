@@ -1037,3 +1037,26 @@ latter for managers). «Настройки» holds Основные, Стади�
 работает» and «Заявка на внедрение» moved under «Ещё» at the bottom; the top bar names the open
 screen there. The theme switch is an icon in the «Панель закреплена» row under the demo role.
 Supersedes the bottom «История / Тарифы» block of ADR-049.
+
+## ADR-065 — Glass and motion
+
+**Context.** The owner wants the interface to feel livelier — glassmorphism and smooth motion in
+the spirit of modern dashboard templates — without losing the readability of the figures or
+slowing down the Bitrix24 iframe.
+
+**Decision.** A slowly drifting mesh gradient (lime, violet, blue) sits behind the app; content
+cards are translucent glass (`--glass-*` tokens in `globals.css`, applied to every top-level
+`.border.bg-surface` in `<main>`), the sidebar, top bar, popovers and dialogs are frosted. Tables
+use a dense, nearly opaque surface without blur. Blur is dropped entirely inside an iframe
+(`html[data-embedded]`), with `prefers-reduced-transparency` and on print. Motion uses the
+`motion` package: page entrance (`(app)/template.tsx`), sliding active states in the menu and the
+tabs, KPI figures counting up (the settled frame always prints the exact Decimal string),
+spotlight hover, sparklines and drawn-in charts; CSS staggers card entrance. Everything honours
+`prefers-reduced-motion` (`MotionConfig reducedMotion="user"`, `useChartMotion`).
+
+KPI cards on the finance overview show a per-bucket sparkline and the change against the
+previous period of the same length (`previousPeriod` in `src/lib/period.ts`; `relativeChange`,
+`profitSeries`, `marginSeries` in `src/domain/finance/trends.ts`, margin change in п.п.).
+«Доходы и расходы» keeps `type="monotone"`, which never overshoots its points. «Прибыль по
+проектам» is a bar list with the sum and margin printed per row. `scripts/demo-enrich.ts`
+(local only, never run by the app) adds two years of operations to the demo portal.

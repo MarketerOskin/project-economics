@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
@@ -24,7 +25,7 @@ export function ProjectTabs({
   ];
 
   return (
-    <div className="overflow-x-auto border-b border-border px-4 sm:px-8">
+    <div className="border-border overflow-x-auto border-b px-4 sm:px-8">
       <nav className="flex gap-5 sm:gap-6">
         {tabs.map((t) => {
           const active = t.href === base ? pathname === base : pathname.startsWith(t.href);
@@ -33,13 +34,20 @@ export function ProjectTabs({
               key={t.href}
               href={t.href}
               className={cn(
-                '-mb-px border-b-2 py-2.5 text-sm transition-colors',
-                active
-                  ? 'border-accent font-medium text-fg'
-                  : 'border-transparent text-fg-secondary hover:text-fg',
+                'relative -mb-px py-2.5 text-sm transition-colors',
+                active ? 'text-fg font-medium' : 'text-fg-secondary hover:text-fg',
               )}
             >
               {t.label}
+              {/* The underline slides to the open tab (ADR-065). */}
+              {active ? (
+                <motion.span
+                  layoutId="project-tab"
+                  aria-hidden
+                  className="bg-accent absolute inset-x-0 -bottom-px h-0.5 rounded-full shadow-[0_0_10px_var(--accent)]"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                />
+              ) : null}
             </Link>
           );
         })}

@@ -14,7 +14,8 @@ import { DashboardProjectsTable } from '@/components/dashboard/dashboard-project
 import { EntryFormDialog } from '@/components/finance/entry-form-dialog';
 import { requirePageSession } from '@/server/page-session';
 import { loadDashboard } from '@/server/services/dashboard';
-import { resolvePeriod, type PeriodPreset } from '@/lib/period';
+import { previousPeriod, resolvePeriod, type PeriodPreset } from '@/lib/period';
+import { m, marginDeltaPoints, marginSeries, profitSeries, relativeChange } from '@/domain/finance';
 import { can } from '@/lib/permissions';
 import { getOnboardingProgress } from '@/lib/onboarding';
 import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist';
@@ -40,14 +41,50 @@ export default async function DashboardPage({
     to: get('to') ? new Date(get('to')!) : undefined,
   });
 
-  const data = await loadDashboard(scope, session.actor, session.plan, {
-    from: period.from,
-    to: period.to,
+  const filters = {
     projectId: get('projectId'),
     status: get('status') as 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'ALL' | undefined,
     employeeId: get('employeeId'),
     categoryId: get('categoryId'),
-  });
+  };
+  const prevRange = previousPeriod(period.from, period.to);
+  const [data, prev] = await Promise.all([
+    loadDashboard(scope, session.actor, session.plan, {
+      from: period.from,
+      to: period.to,
+      ...filters,
+    }),
+    prevRange
+      ? loadDashboard(scope, session.actor, session.plan, { ...prevRange, ...filters })
+      : Promise.resolve(null),
+  ]);
+
+  // KPI trends (ADR-065): sparkline per bucket and the change against the previous period.
+  const buckets = data.timeseries.map((p) => ({
+    factIncome: m(p.factIncome),
+    factExpense: m(p.factExpense),
+  }));
+  const spark = {
+    income: buckets.map((b) => b.factIncome.toNumber()),
+    expense: buckets.map((b) => b.factExpense.toNumber()),
+    profit: profitSeries(buckets).map((v) => v.toNumber()),
+    margin: marginSeries(buckets).map((v) => v?.toNumber() ?? null),
+  };
+  const vsPrev = (cur: string, before: string | undefined) => {
+    if (!prev || before === undefined) return undefined;
+    return relativeChange(m(cur), m(before))?.toFixed(1) ?? null;
+  };
+  const change = {
+    income: vsPrev(data.kpi.factIncome, prev?.kpi.factIncome),
+    expense: vsPrev(data.kpi.factExpense, prev?.kpi.factExpense),
+    profit: vsPrev(data.kpi.factProfit, prev?.kpi.factProfit),
+    margin: prev
+      ? (marginDeltaPoints(
+          data.kpi.factMargin === null ? null : m(data.kpi.factMargin),
+          prev.kpi.factMargin === null ? null : m(prev.kpi.factMargin),
+        )?.toFixed(1) ?? null)
+      : undefined,
+  };
 
   const canMutateFinance = can.mutateFinance(session.actor);
   /** The operations behind a KPI: same period and project filter, one direction (ADR-049). */
@@ -123,6 +160,8 @@ export default async function DashboardPage({
                 factValue={data.kpi.factIncome}
                 planValue={data.kpi.planIncome}
                 deviation={data.kpi.incomeDeviation}
+                spark={spark.income}
+                change={change.income}
               />
               <KpiCard
                 href={ops('EXPENSE')}
@@ -130,6 +169,9 @@ export default async function DashboardPage({
                 factValue={data.kpi.factExpense}
                 planValue={data.kpi.planExpense}
                 deviation={data.kpi.expenseDeviation}
+                spark={spark.expense}
+                change={change.expense}
+                invert
               />
               <KpiCard
                 href={ops()}
@@ -137,6 +179,8 @@ export default async function DashboardPage({
                 factValue={data.kpi.factProfit}
                 planValue={data.kpi.planProfit}
                 deviation={data.kpi.profitDeviation}
+                spark={spark.profit}
+                change={change.profit}
               />
               <KpiCard
                 label="Рентабельность"
@@ -144,6 +188,8 @@ export default async function DashboardPage({
                 planValue={data.kpi.planMargin ?? '0'}
                 percent
                 points={data.kpi.marginDeltaPoints}
+                spark={spark.margin}
+                change={change.margin}
               />
             </div>
 
@@ -161,7 +207,7 @@ export default async function DashboardPage({
                   </ChartCard>
                 </div>
 
-                <ChartCard title="Прибыль по проектам" hint="Клик по столбцу открывает проект">
+                <ChartCard title="Прибыль по проектам" hint="Клик по строке открывает проект">
                   <ProjectProfitChart data={data.projectBars} />
                 </ChartCard>
               </>

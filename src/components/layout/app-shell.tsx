@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { BarChart3, Menu, X } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useSession } from '@/lib/client/session';
 import { cn } from '@/lib/cn';
 import { Nav, NavFooter, sectionLabel, sectionTabs } from './nav';
@@ -27,6 +28,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Nav links and the logo call this on click, so the drawer closes on navigation.
   const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
 
+  // Inside the Bitrix24 iframe the glass drops its blur (globals.css): the portal page around
+  // the app already costs the GPU enough.
+  React.useEffect(() => {
+    if (window.self !== window.top) document.documentElement.dataset.embedded = '1';
+  }, []);
+
   // Close on Escape while the drawer is open.
   React.useEffect(() => {
     if (!drawerOpen) return;
@@ -38,16 +45,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        'bg-bg flex min-h-screen print:block print:h-auto print:min-h-0 print:overflow-visible print:bg-white',
+        'relative flex min-h-screen print:block print:h-auto print:min-h-0 print:overflow-visible print:bg-white',
         pinned && 'lg:h-screen lg:overflow-hidden',
       )}
     >
+      {/* Mesh gradient behind the glass (ADR-065). */}
+      <div aria-hidden className="mesh-bg print:hidden">
+        <span />
+      </div>
+
       {/* Backdrop — mobile only, only when the drawer is open. */}
       {drawerOpen ? (
         <div
           aria-hidden
           onClick={closeDrawer}
-          className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
         />
       ) : null}
 
@@ -62,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={band ? { height: 'auto' } : undefined}
       >
         <div
-          className="text-fg relative flex h-full flex-col overflow-hidden rounded-[22px] border border-white/[0.07] bg-[#050505]"
+          className="glass-chrome text-fg relative flex h-full flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#0b0b10]/75 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.7),inset_0_1px_0_0_rgb(255_255_255/0.06)] in-data-[theme=light]:bg-[#101015]/95"
           style={
             band
               ? {
@@ -134,12 +146,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div
         className={cn(
-          'flex min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible',
+          'relative flex min-w-0 flex-1 flex-col print:block print:h-auto print:overflow-visible',
           pinned && 'lg:h-screen',
         )}
       >
         {/* Mobile top bar (< lg) */}
-        <header className="border-border bg-bg/90 sticky top-0 z-30 flex items-center gap-3 border-b px-4 py-3 backdrop-blur lg:hidden print:hidden">
+        <header className="glass-chrome sticky top-0 z-30 flex items-center gap-3 border-b border-[var(--glass-border)] bg-[var(--glass-popover)] px-4 py-3 lg:hidden print:hidden">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -181,18 +193,26 @@ function TopBar() {
   const label = sectionLabel(pathname);
   return (
     <div className="hidden shrink-0 px-8 pt-4 pb-2 lg:block lg:pr-12 print:hidden">
-      <div className="border-border bg-surface flex h-[66px] items-center gap-4 rounded-[18px] border pr-2.5 pl-5">
-        <span aria-hidden className="bg-button-primary size-2 rounded-full" />
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="glass-chrome flex h-[66px] items-center gap-4 rounded-[18px] border border-[var(--glass-border)] pr-2.5 pl-5 shadow-[var(--glass-shadow)] [background:var(--glass-bg)]"
+      >
+        <span aria-hidden className="relative flex size-2">
+          <span className="bg-button-primary absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:hidden" />
+          <span className="bg-button-primary relative inline-flex size-2 rounded-full" />
+        </span>
         <span className="shrink-0 truncate text-base font-bold">
           {label ?? 'Экономика проектов'}
         </span>
         <React.Suspense fallback={<span className="flex-1" />}>
           <TopBarTabs pathname={pathname} />
         </React.Suspense>
-        <div className="border-border bg-surface-muted rounded-[12px] border py-2 pr-3 pl-2">
+        <div className="rounded-[12px] border border-[var(--glass-border)] bg-white/[0.04] py-2 pr-3 pl-2">
           <UserBadge />
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -210,19 +230,26 @@ function TopBarTabs({ pathname }: { pathname: string }) {
   const qs = keep.toString();
   if (tabs.length === 0) return <span className="flex-1" />;
   return (
-    <nav className="border-border flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l pl-4">
+    <nav className="border-border relative isolate flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l pl-4">
       {tabs.map((t) => (
         <Link
           key={t.href}
           href={qs ? `${t.href}?${qs}` : t.href}
           aria-current={t.href === active ? 'page' : undefined}
           className={cn(
-            'rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
-            t.href === active
-              ? 'bg-button-primary text-button-primary-fg'
-              : 'text-fg-tertiary hover:text-fg hover:bg-surface-muted',
+            'relative rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
+            t.href === active ? 'text-button-primary-fg' : 'text-fg-tertiary hover:text-fg',
           )}
         >
+          {/* The lit pill slides from tab to tab. */}
+          {t.href === active ? (
+            <motion.span
+              layoutId="topbar-tab"
+              aria-hidden
+              className="bg-button-primary absolute inset-0 -z-10 rounded-full shadow-[0_6px_20px_-6px_rgb(214_255_63/0.55)]"
+              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            />
+          ) : null}
           {t.label}
         </Link>
       ))}
@@ -236,7 +263,7 @@ function BrandMark({ small = false }: { small?: boolean }) {
     <span
       aria-hidden
       className={cn(
-        'bg-button-primary text-button-primary-fg flex shrink-0 items-center justify-center rounded-[9px]',
+        'bg-button-primary text-button-primary-fg flex shrink-0 items-center justify-center rounded-[9px] shadow-[0_0_24px_-4px_rgb(214_255_63/0.6)]',
         small ? 'size-7' : 'size-8',
       )}
     >

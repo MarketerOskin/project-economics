@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import { CHART } from '@/components/charts/chart-theme';
+import { useChartMotion } from '@/components/charts/use-chart-motion';
+import { AnimatedLabel } from '@/components/motion/animated-value';
 
 export interface DonutItem {
   key: string;
@@ -25,6 +26,7 @@ export function Donut({
   center: string;
   empty: string;
 }) {
+  const anim = useChartMotion();
   const shown = items.filter((i) => i.value > 0);
   if (shown.length === 0)
     return <p className="text-fg-tertiary py-8 text-center text-sm">{empty}</p>;
@@ -40,9 +42,9 @@ export function Donut({
               innerRadius={52}
               outerRadius={78}
               paddingAngle={shown.length > 1 ? 2 : 0}
-              stroke={CHART.surface}
-              strokeWidth={2}
-              isAnimationActive={false}
+              cornerRadius={4}
+              stroke="none"
+              {...anim}
             >
               {shown.map((i) => (
                 <Cell key={i.key} fill={i.color} />
@@ -51,7 +53,7 @@ export function Donut({
           </PieChart>
         </ResponsiveContainer>
         <div className="font-display nums pointer-events-none absolute inset-0 flex items-center justify-center text-[22px] font-bold">
-          {center}
+          <AnimatedLabel text={center} />
         </div>
       </div>
       <ul className="min-w-0 flex-1 space-y-2">
@@ -59,7 +61,10 @@ export function Donut({
           <li key={i.key} className="text-sm">
             {i.href ? (
               <Link href={i.href} className="group flex items-center gap-2">
-                <span className="size-2.5 shrink-0" style={{ backgroundColor: i.color }} />
+                <span
+                  className="size-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: i.color, boxShadow: `0 0 8px ${i.color}` }}
+                />
                 <span className="text-fg-secondary group-hover:text-accent min-w-0 flex-1 truncate group-hover:underline">
                   {i.label}
                 </span>
@@ -67,7 +72,10 @@ export function Donut({
               </Link>
             ) : (
               <span className="flex items-center gap-2">
-                <span className="size-2.5 shrink-0" style={{ backgroundColor: i.color }} />
+                <span
+                  className="size-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: i.color, boxShadow: `0 0 8px ${i.color}` }}
+                />
                 <span className="text-fg-secondary min-w-0 flex-1 truncate">{i.label}</span>
                 <span className="nums text-fg-tertiary">{i.display}</span>
               </span>

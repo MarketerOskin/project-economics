@@ -1,10 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { CHART, axisProps } from './chart-theme';
-import { ChartTooltip } from './tooltip';
-import { formatRubStr } from '@/lib/format';
+import Link from 'next/link';
+import { motion, useReducedMotion } from 'motion/react';
+import { formatPercentStr, formatRubStr } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 interface ProfitBar {
@@ -14,87 +12,63 @@ interface ProfitBar {
   margin: string | null;
 }
 
-const compact = (v: number) =>
-  Math.abs(v) >= 1_000_000
-    ? `${(v / 1_000_000).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} млн`
-    : `${Math.round(v / 1000).toLocaleString('ru-RU')} тыс`;
-
-function TruncatedTick(props: { x?: number; y?: number; payload?: { value?: string } }) {
-  const { x = 0, y = 0, payload } = props;
-  const text = payload?.value ?? '';
-  const clipped = text.length > 22 ? `${text.slice(0, 21)}…` : text;
-  return (
-    <text x={x} y={y} dy={4} textAnchor="end" fill={CHART.inkSecondary} fontSize={CHART.fontSize}>
-      {clipped}
-    </text>
-  );
-}
-
+/**
+ * Profit per project as a bar list (ADR-065): the name sits on its bar, the sum and margin at
+ * the right, so every figure is read rather than estimated from an axis. A loss is a red bar
+ * of its own size. The row opens the project.
+ */
 export function ProjectProfitChart({ data }: { data: ProfitBar[] }) {
-  const router = useRouter();
+  const reduce = useReducedMotion();
   const rows = data.slice(0, 10).map((b) => ({ ...b, value: Number(b.profit) }));
+  const max = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
 
-  const rawMax = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
-  // Round the axis bound up to a clean step so ticks read nicely.
-  const step = Math.pow(10, Math.floor(Math.log10(rawMax)));
-  const maxAbs = Math.ceil(rawMax / step) * step;
+  if (rows.length === 0) {
+    return <p className="text-fg-tertiary py-8 text-center text-sm">Нет проектов за период</p>;
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      <ResponsiveContainer width="100%" height={Math.max(170, rows.length * 36)}>
-        <BarChart
-          layout="vertical"
-          data={rows}
-          margin={{ top: 4, right: 12, bottom: 4, left: 8 }}
-          barCategoryGap={10}
-        >
-          <XAxis
-            type="number"
-            domain={[-maxAbs, maxAbs]}
-            tickFormatter={compact}
-            {...axisProps}
-          />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={168}
-            interval={0}
-            {...axisProps}
-            tick={<TruncatedTick />}
-          />
-          <Tooltip cursor={{ fill: CHART.grid }} content={<ChartTooltip />} />
-          <Bar
-            dataKey="value"
-            name="Прибыль"
-            barSize={16}
-            radius={2}
-            isAnimationActive={false}
-            onClick={(d: { id?: string }) => d.id && router.push(`/projects/${d.id}`)}
-            cursor="pointer"
-          >
-            {rows.map((r) => (
-              <Cell key={r.id} fill={r.value < 0 ? CHART.negative : CHART.positive} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-
-      <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
-        {rows.map((r) => (
-          <li key={r.id} className="flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span
-                className="size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: r.value < 0 ? CHART.negative : CHART.positive }}
-              />
-              <span className="truncate text-fg-secondary">{r.name}</span>
-            </span>
-            <span className={cn('nums shrink-0', r.value < 0 ? 'text-negative' : 'text-fg')}>
-              {formatRubStr(r.profit)}
-            </span>
+    <ul className="flex flex-col gap-2">
+      {rows.map((r, i) => {
+        const loss = r.value < 0;
+        const width = `${Math.max(2, (Math.abs(r.value) / max) * 100)}%`;
+        return (
+          <li key={r.id}>
+            <Link
+              href={`/projects/${r.id}`}
+              className="group flex items-center gap-3 rounded-xl px-1 py-0.5 transition-colors hover:bg-white/[0.03] sm:gap-4"
+            >
+              <div className="relative h-9 min-w-0 flex-1">
+                <motion.div
+                  aria-hidden
+                  className={cn(
+                    'absolute inset-y-0 left-0 rounded-[10px] border transition-[filter] group-hover:brightness-125',
+                    loss
+                      ? 'border-[var(--negative)]/30 bg-[linear-gradient(90deg,rgb(255_107_107/0.38),rgb(255_107_107/0.14))]'
+                      : 'border-[var(--accent)]/25 bg-[linear-gradient(90deg,rgb(214_255_63/0.34),rgb(214_255_63/0.08))]',
+                  )}
+                  initial={reduce ? { width } : { width: 0 }}
+                  whileInView={{ width }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.9, delay: 0.06 * i, ease: [0.16, 1, 0.3, 1] }}
+                />
+                <span className="text-fg relative flex h-full items-center px-3 text-[13px] font-medium">
+                  <span className="truncate">{r.name}</span>
+                </span>
+              </div>
+              <div className="w-[104px] shrink-0 text-right sm:w-[132px]">
+                <div
+                  className={cn('nums text-sm font-semibold', loss ? 'text-negative' : 'text-fg')}
+                >
+                  {formatRubStr(r.profit)}
+                </div>
+                <div className="nums text-fg-tertiary text-[11px]">
+                  маржа {formatPercentStr(r.margin)}
+                </div>
+              </div>
+            </Link>
           </li>
-        ))}
-      </ul>
-    </div>
+        );
+      })}
+    </ul>
   );
 }

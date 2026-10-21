@@ -12,6 +12,7 @@ import {
   BarChart3,
   ChevronDown,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { sectionOfPath } from '@/lib/sections';
 
@@ -223,13 +224,21 @@ function NavList({
           <div
             key={item.href}
             className={cn(
-              'overflow-hidden rounded-2xl border transition-colors',
+              'relative isolate overflow-hidden rounded-2xl border transition-colors duration-300',
               active
-                ? 'border-white/[0.14] bg-white/[0.09]'
-                : 'border-white/[0.08] bg-white/[0.05]',
-              !active && 'hover:bg-white/[0.08]',
+                ? 'border-[#d6ff3f]/25'
+                : 'border-white/[0.07] bg-white/[0.035] hover:border-white/[0.12] hover:bg-white/[0.07]',
             )}
           >
+            {/* The lit card glides from section to section (ADR-065). */}
+            {active ? (
+              <motion.span
+                layoutId={`nav-active-${items[0]?.href ?? ''}`}
+                aria-hidden
+                className="absolute inset-0 -z-10 bg-[linear-gradient(140deg,rgb(214_255_63/0.13),rgb(255_255_255/0.06)_45%,rgb(124_92_255/0.1))]"
+                transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+              />
+            ) : null}
             <Link
               href={item.href}
               onClick={onNavigate}
@@ -240,36 +249,65 @@ function NavList({
                 active ? 'text-fg' : 'text-fg-tertiary hover:text-fg',
               )}
             >
-              <Icon className="size-4 shrink-0" />
+              <Icon
+                className={cn(
+                  'size-4 shrink-0 transition-[color,transform] duration-300',
+                  active && 'scale-110 text-[#d6ff3f]',
+                )}
+              />
               <span className="min-w-0 flex-1 leading-tight">{item.label}</span>
               {subs.length > 0 ? (
                 <ChevronDown
-                  className={cn('size-3.5 shrink-0 transition-transform', active && 'rotate-180')}
+                  className={cn(
+                    'size-3.5 shrink-0 transition-transform duration-300',
+                    active && 'rotate-180',
+                  )}
                 />
               ) : active ? (
                 <span aria-hidden className="bg-button-primary size-1.5 rounded-full" />
               ) : null}
             </Link>
-            {sub ? (
-              <div className="flex flex-col gap-0.5 border-t border-white/[0.06] p-1.5">
-                {sub.map((s) => (
-                  <Link
-                    key={s.href}
-                    href={s.href}
-                    onClick={onNavigate}
-                    aria-current={s.href === activeSub ? 'page' : undefined}
-                    className={cn(
-                      'rounded-[10px] py-2 pr-2.5 pl-9 text-[13px] transition-colors',
-                      s.href === activeSub
-                        ? 'text-fg bg-white/10 font-medium'
-                        : 'text-fg-tertiary hover:text-fg hover:bg-white/[0.05]',
-                    )}
-                  >
-                    {s.label}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
+            <AnimatePresence initial={false}>
+              {sub ? (
+                <motion.div
+                  key="sub"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-col gap-0.5 border-t border-white/[0.06] p-1.5">
+                    {sub.map((s) => (
+                      <Link
+                        key={s.href}
+                        href={s.href}
+                        onClick={onNavigate}
+                        aria-current={s.href === activeSub ? 'page' : undefined}
+                        className={cn(
+                          'relative rounded-[10px] py-2 pr-2.5 pl-9 text-[13px] transition-colors',
+                          s.href === activeSub
+                            ? 'text-fg font-medium'
+                            : 'text-fg-tertiary hover:text-fg hover:bg-white/[0.05]',
+                        )}
+                      >
+                        {s.href === activeSub ? (
+                          <motion.span
+                            layoutId={`nav-sub-${item.href}`}
+                            aria-hidden
+                            className="absolute inset-0 -z-10 rounded-[10px] bg-white/10"
+                            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                          >
+                            <span className="absolute top-1/2 left-4 size-1.5 -translate-y-1/2 rounded-full bg-[#d6ff3f] shadow-[0_0_8px_rgb(214_255_63/0.8)]" />
+                          </motion.span>
+                        ) : null}
+                        {s.label}
+                      </Link>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         );
       })}
