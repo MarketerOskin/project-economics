@@ -74,7 +74,7 @@ export function KpiCard({
       {spark && spark.length > 1 ? (
         <Sparkline
           values={spark}
-          color={negative ? 'var(--negative)' : invert ? 'var(--fg-tertiary)' : 'var(--accent)'}
+          color={negative ? 'var(--negative)' : invert ? 'var(--fg-tertiary)' : 'var(--chart-primary)'}
           className="mt-3 h-9 w-full"
         />
       ) : null}

@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 /** A small trend line under a KPI: drawn left to right, with a soft gradient below. */
 export function Sparkline({
   values,
-  color = 'var(--accent)',
+  color = 'var(--chart-primary)',
   className,
 }: {
   values: (number | null)[];

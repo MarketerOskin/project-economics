@@ -55,6 +55,8 @@
   --negative: #ff6b6b;
   --negative-soft: rgb(255 107 107 / 0.12);
 
+  /* The brand series in charts (task time, income, sparklines): lime on dark. */
+  --chart-primary: #d6ff3f;
   --chart-grid: rgb(255 255 255 / 0.06);
   --chart-axis: rgb(255 255 255 / 0.13);
 
@@ -132,6 +134,9 @@
   --negative: #c0453a;
   --negative-soft: rgb(192 69 58 / 0.1);
 
+  /* Graphite charts read as black blocks on white: the brand series turns a deeper lime that
+   * holds on white, the rest of the palette stays as is. */
+  --chart-primary: #7fba00;
   --chart-grid: rgb(0 0 0 / 0.06);
   --chart-axis: rgb(0 0 0 / 0.12);
 }
