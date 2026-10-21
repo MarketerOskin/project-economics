@@ -55,7 +55,7 @@ export function KpiCard({
         <div>
           <div
             aria-hidden
-            className="bg-accent mb-3 h-[3px] w-9 rounded-full shadow-[0_0_12px_var(--accent)]"
+            className="bg-accent mb-3 h-[3px] w-9 rounded-full shadow-[0_0_12px_var(--accent)] in-data-[theme=light]:shadow-none"
           />
           <div className="tx-mark text-fg-tertiary text-sm">{label}</div>
         </div>
@@ -142,7 +142,7 @@ function ChangeBadge({
       className={cn(
         'nums inline-flex shrink-0 items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
         good === null
-          ? 'text-fg-tertiary bg-white/5'
+          ? 'text-fg-tertiary bg-white/5 in-data-[theme=light]:bg-black/5'
           : good
             ? 'text-positive bg-positive-soft'
             : 'text-negative bg-negative-soft',

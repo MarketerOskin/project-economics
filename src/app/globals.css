@@ -91,46 +91,65 @@
 /* Light theme (ADR-044): warm paper with white cards. The lime can't carry text on white,
  * so the accent turns near-black; the primary button keeps the lime with dark ink. */
 :root[data-theme='light'] {
+  /* Light theme as in LifeRM (ADR-066): a flat cool-grey page, white cards with a hairline
+   * border and a soft shadow, graphite ink. No mesh and no frost: the calm is the point. */
   color-scheme: light;
 
-  --bg: #eef0ea;
+  --bg: #f5f5f7;
   --surface: #ffffff;
-  --surface-muted: #f4f4ef;
-  --surface-sunken: #f4f4ef;
+  --surface-muted: #f2f2f5;
+  --surface-sunken: #f2f2f5;
 
-  --fg: #0b0b0b;
-  --fg-secondary: #3d3d38;
-  --fg-tertiary: #5d5d55;
+  --fg: #1d1d1f;
+  --fg-secondary: #424245;
+  --fg-tertiary: #6e6e73;
 
-  --border: rgb(0 0 0 / 0.07);
-  --border-strong: rgb(0 0 0 / 0.14);
+  --border: rgb(0 0 0 / 0.06);
+  --border-strong: rgb(0 0 0 / 0.12);
 
-  --accent: #0b0b0b;
+  /* The lime can't carry text on white: the accent turns graphite, the lime stays on the
+   * primary button and as a soft highlight. */
+  --accent: #1d1d1f;
   --accent-fg: #ffffff;
-  --accent-soft: rgb(214 255 63 / 0.4);
+  --accent-soft: rgb(214 255 63 / 0.45);
 
-  --glass-bg: linear-gradient(155deg, rgb(255 255 255 / 0.78), rgb(255 255 255 / 0.55));
-  --glass-bg-dense: rgb(255 255 255 / 0.94);
-  --glass-border: rgb(255 255 255 / 0.9);
-  --glass-highlight: inset 0 1px 0 0 rgb(255 255 255 / 0.9);
-  --glass-shadow:
-    0 1px 2px rgb(20 20 40 / 0.04), 0 12px 32px -14px rgb(40 40 80 / 0.18), var(--glass-highlight);
-  --glass-popover: rgb(255 255 255 / 0.88);
-  --spotlight: rgb(124 92 255 / 0.08);
+  --glass-bg: #ffffff;
+  --glass-bg-dense: #ffffff;
+  --glass-border: rgb(0 0 0 / 0.06);
+  --glass-highlight: 0 0 #0000;
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 6px 20px rgb(0 0 0 / 0.04);
+  --glass-popover: rgb(255 255 255 / 0.96);
+  --spotlight: rgb(214 255 63 / 0.22);
 
-  --mesh-1: rgb(190 240 30 / 0.28);
-  --mesh-2: rgb(150 120 255 / 0.22);
-  --mesh-3: rgb(90 150 255 / 0.18);
+  --mesh-1: transparent;
+  --mesh-2: transparent;
+  --mesh-3: transparent;
 
-  --positive: #2f7d0a;
+  --positive: #1f7a44;
   --positive-soft: rgb(31 122 68 / 0.1);
-  --warning: #a76400;
-  --warning-soft: #fff1d9;
-  --negative: #c62f2f;
+  --warning: #a9781f;
+  --warning-soft: #f6f0e5;
+  --negative: #c0453a;
   --negative-soft: rgb(192 69 58 / 0.1);
 
-  --chart-grid: rgb(0 0 0 / 0.07);
-  --chart-axis: rgb(0 0 0 / 0.14);
+  --chart-grid: rgb(0 0 0 / 0.06);
+  --chart-axis: rgb(0 0 0 / 0.12);
+}
+
+/* The side panel is light too in the light theme (LifeRM, 2026-10-20): white, graphite ink. */
+:root[data-theme='light'] .theme-dark {
+  color-scheme: light;
+  --surface: #ffffff;
+  --surface-muted: #f2f2f5;
+  --surface-sunken: #f2f2f5;
+  --fg: #1d1d1f;
+  --fg-secondary: #424245;
+  --fg-tertiary: #6e6e73;
+  --border: rgb(0 0 0 / 0.06);
+  --border-strong: rgb(0 0 0 / 0.12);
+  --accent: #1d1d1f;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(214 255 63 / 0.45);
 }
 
 @theme inline {
@@ -238,9 +257,6 @@ main
 }
 main :where(.border.bg-surface-muted) {
   background: rgb(255 255 255 / 0.04);
-}
-:root[data-theme='light'] main :where(.border.bg-surface-muted) {
-  background: rgb(255 255 255 / 0.55);
 }
 /* Tables: dense, no blur — readable figures and cheap scrolling. */
 main :where(.border.bg-surface:has(table), .glass-dense) {
@@ -404,8 +420,27 @@ main .grid > :nth-child(n + 7) {
 .spotlight:hover {
   border-color: rgb(214 255 63 / 0.28) !important;
 }
+
+/* Light theme details (ADR-066). */
+:root[data-theme='light'] .mesh-bg::before,
+:root[data-theme='light'] .mesh-bg::after,
+:root[data-theme='light'] .mesh-bg > span {
+  display: none;
+}
+:root[data-theme='light'] main :where(.border.bg-surface-muted) {
+  background: #fbfbfd;
+}
+:root[data-theme='light'] .glass-popover {
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.08);
+}
 :root[data-theme='light'] .spotlight:hover {
-  border-color: rgb(124 92 255 / 0.3) !important;
+  border-color: rgb(0 0 0 / 0.12) !important;
+}
+:root[data-theme='light'] .recharts-area-area {
+  opacity: 0.45;
+}
+:root[data-theme='light'] .btn-glow:hover {
+  box-shadow: 0 6px 18px -6px rgb(150 190 0 / 0.55);
 }
 
 /* Popovers, menus and dialogs scale in from where they open. `scale` is its own property, so

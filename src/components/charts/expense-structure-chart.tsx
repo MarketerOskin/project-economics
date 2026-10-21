@@ -118,7 +118,7 @@ export function ExpenseStructureChart({ data }: { data: Slice[] }) {
                   {formatPercent(share)}
                 </span>
               </div>
-              <div className="mt-1 ml-[18px] h-1 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="mt-1 ml-[18px] h-1 overflow-hidden rounded-full bg-white/[0.06] in-data-[theme=light]:bg-black/[0.05]">
                 <motion.div
                   className="h-full rounded-full"
                   style={{ backgroundColor: s.color }}

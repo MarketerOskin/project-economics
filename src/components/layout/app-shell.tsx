@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={band ? { height: 'auto' } : undefined}
       >
         <div
-          className="glass-chrome text-fg relative flex h-full flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#0b0b10]/75 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.7),inset_0_1px_0_0_rgb(255_255_255/0.06)] in-data-[theme=light]:bg-[#101015]/95"
+          className="glass-chrome text-fg relative flex h-full flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#0b0b10]/75 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.7),inset_0_1px_0_0_rgb(255_255_255/0.06)] in-data-[theme=light]:border-black/[0.06] in-data-[theme=light]:bg-white in-data-[theme=light]:shadow-[0_1px_2px_rgb(0_0_0/0.03),0_8px_24px_rgb(0_0_0/0.05)]"
           style={
             band
               ? {
@@ -91,14 +91,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={closeDrawer}
             aria-label="Закрыть меню"
-            className="text-fg-tertiary hover:text-fg absolute top-4 right-3 rounded-lg p-1.5 hover:bg-white/5 lg:hidden"
+            className="text-fg-tertiary hover:text-fg absolute top-4 right-3 rounded-lg p-1.5 hover:bg-white/5 in-data-[theme=light]:hover:bg-black/5 lg:hidden"
           >
             <X className="size-4" />
           </button>
 
           <Link
             href="/"
-            className="flex h-16 shrink-0 items-center gap-2.5 border-b border-white/[0.07] px-4"
+            className="flex h-16 shrink-0 items-center gap-2.5 border-b border-white/[0.07] px-4 in-data-[theme=light]:border-black/[0.06]"
             onClick={closeDrawer}
           >
             <BrandMark />
@@ -112,7 +112,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {loading ? (
               <div className="flex flex-col gap-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-[46px] animate-pulse rounded-2xl bg-white/5" />
+                  <div
+                    key={i}
+                    className="h-[46px] animate-pulse rounded-2xl bg-white/5 in-data-[theme=light]:bg-black/5"
+                  />
                 ))}
               </div>
             ) : session ? (
@@ -123,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
             ) : null}
 
-            <div className="mt-auto flex flex-col gap-2 border-t border-white/[0.07] pt-3">
+            <div className="mt-auto flex flex-col gap-2 border-t border-white/[0.07] pt-3 in-data-[theme=light]:border-black/[0.06]">
               {session ? (
                 <NavFooter
                   role={session.role}
@@ -209,7 +212,7 @@ function TopBar() {
         <React.Suspense fallback={<span className="flex-1" />}>
           <TopBarTabs pathname={pathname} />
         </React.Suspense>
-        <div className="rounded-[12px] border border-[var(--glass-border)] bg-white/[0.04] py-2 pr-3 pl-2">
+        <div className="rounded-[12px] border border-[var(--glass-border)] bg-white/[0.04] py-2 pr-3 pl-2 in-data-[theme=light]:bg-white">
           <UserBadge />
         </div>
       </motion.div>
@@ -238,7 +241,9 @@ function TopBarTabs({ pathname }: { pathname: string }) {
           aria-current={t.href === active ? 'page' : undefined}
           className={cn(
             'relative rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
-            t.href === active ? 'text-button-primary-fg' : 'text-fg-tertiary hover:text-fg',
+            t.href === active
+              ? 'text-button-primary-fg in-data-[theme=light]:text-white'
+              : 'text-fg-tertiary hover:text-fg',
           )}
         >
           {/* The lit pill slides from tab to tab. */}
@@ -246,7 +251,7 @@ function TopBarTabs({ pathname }: { pathname: string }) {
             <motion.span
               layoutId="topbar-tab"
               aria-hidden
-              className="bg-button-primary absolute inset-0 -z-10 rounded-full shadow-[0_6px_20px_-6px_rgb(214_255_63/0.55)]"
+              className="bg-button-primary absolute inset-0 -z-10 rounded-full shadow-[0_6px_20px_-6px_rgb(214_255_63/0.55)] in-data-[theme=light]:bg-[#1d1d1f] in-data-[theme=light]:shadow-none"
               transition={{ type: 'spring', stiffness: 420, damping: 34 }}
             />
           ) : null}
@@ -263,7 +268,7 @@ function BrandMark({ small = false }: { small?: boolean }) {
     <span
       aria-hidden
       className={cn(
-        'bg-button-primary text-button-primary-fg flex shrink-0 items-center justify-center rounded-[9px] shadow-[0_0_24px_-4px_rgb(214_255_63/0.6)]',
+        'bg-button-primary text-button-primary-fg flex shrink-0 items-center justify-center rounded-[9px] shadow-[0_0_24px_-4px_rgb(214_255_63/0.6)] in-data-[theme=light]:shadow-none',
         small ? 'size-7' : 'size-8',
       )}
     >

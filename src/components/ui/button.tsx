@@ -10,7 +10,7 @@ const buttonVariants = cva(
       variant: {
         primary: 'btn-glow bg-button-primary text-button-primary-fg hover:brightness-110',
         secondary:
-          'border border-border-strong bg-white/[0.03] text-fg backdrop-blur-sm hover:bg-white/[0.07]',
+          'border border-border-strong bg-white/[0.03] text-fg backdrop-blur-sm hover:bg-white/[0.07] in-data-[theme=light]:bg-white in-data-[theme=light]:hover:bg-[#f2f2f5]',
         ghost: 'text-fg-secondary hover:bg-surface-muted hover:text-fg',
         destructive: 'bg-negative text-bg hover:brightness-110',
       },

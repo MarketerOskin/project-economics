@@ -35,7 +35,7 @@ export function ProjectProfitChart({ data }: { data: ProfitBar[] }) {
           <li key={r.id}>
             <Link
               href={`/projects/${r.id}`}
-              className="group flex items-center gap-3 rounded-xl px-1 py-0.5 transition-colors hover:bg-white/[0.03] sm:gap-4"
+              className="group flex items-center gap-3 rounded-xl px-1 py-0.5 transition-colors hover:bg-white/[0.03] in-data-[theme=light]:hover:bg-black/[0.025] sm:gap-4"
             >
               <div className="relative h-9 min-w-0 flex-1">
                 <motion.div
@@ -44,7 +44,7 @@ export function ProjectProfitChart({ data }: { data: ProfitBar[] }) {
                     'absolute inset-y-0 left-0 rounded-[10px] border transition-[filter] group-hover:brightness-125',
                     loss
                       ? 'border-[var(--negative)]/30 bg-[linear-gradient(90deg,rgb(255_107_107/0.38),rgb(255_107_107/0.14))]'
-                      : 'border-[var(--accent)]/25 bg-[linear-gradient(90deg,rgb(214_255_63/0.34),rgb(214_255_63/0.08))]',
+                      : 'border-[var(--accent)]/25 bg-[linear-gradient(90deg,rgb(214_255_63/0.34),rgb(214_255_63/0.08))] in-data-[theme=light]:border-[rgb(140_175_0/0.35)] in-data-[theme=light]:bg-[linear-gradient(90deg,rgb(214_255_63/0.6),rgb(214_255_63/0.18))]',
                   )}
                   initial={reduce ? { width } : { width: 0 }}
                   whileInView={{ width }}

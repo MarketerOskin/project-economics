@@ -1060,3 +1060,14 @@ previous period of the same length (`previousPeriod` in `src/lib/period.ts`; `re
 «Доходы и расходы» keeps `type="monotone"`, which never overshoots its points. «Прибыль по
 проектам» is a bar list with the sum and margin printed per row. `scripts/demo-enrich.ts`
 (local only, never run by the app) adds two years of operations to the demo portal.
+
+## ADR-066 — Light theme as in LifeRM
+
+The light theme follows LifeRM's (life-crm `light-theme.css`, 2026-10-20): a flat cool-grey page
+(#f5f5f7) with no mesh and no frost, white cards with a hairline border (black 6 %) and a soft
+shadow, graphite ink (#1d1d1f / #424245 / #6e6e73). The side panel turns white too, with grey
+section cards and a grey active pill; the active tab in the top bar is a graphite pill with
+white text. The lime stays on the primary button and as a soft highlight (profit bars, demo
+badge); income and expense tones are LifeRM's green #1f7a44 and red #c0453a. The dark theme is
+untouched: every change sits under `:root[data-theme='light']` or an `in-data-[theme=light]:`
+variant.

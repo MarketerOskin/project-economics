@@ -14,7 +14,7 @@ export function UserBadge() {
   const { session, loading } = useSession();
 
   if (loading) {
-    return <div className="h-9 w-40 animate-pulse bg-surface-muted" />;
+    return <div className="bg-surface-muted h-9 w-40 animate-pulse" />;
   }
   if (!session) return null;
 
@@ -26,7 +26,7 @@ export function UserBadge() {
       </Avatar>
       <div className="leading-tight">
         <div className="text-sm font-medium">{session.user.fullName}</div>
-        <div className="text-xs text-fg-tertiary">
+        <div className="text-fg-tertiary text-xs">
           {session.user.position ?? ROLE_LABEL[session.role]}
         </div>
       </div>

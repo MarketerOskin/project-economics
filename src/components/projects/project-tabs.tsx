@@ -44,7 +44,7 @@ export function ProjectTabs({
                 <motion.span
                   layoutId="project-tab"
                   aria-hidden
-                  className="bg-accent absolute inset-x-0 -bottom-px h-0.5 rounded-full shadow-[0_0_10px_var(--accent)]"
+                  className="bg-accent absolute inset-x-0 bottom-0 h-0.5 rounded-full shadow-[0_0_10px_var(--accent)] in-data-[theme=light]:shadow-none"
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                 />
               ) : null}

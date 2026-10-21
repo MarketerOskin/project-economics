@@ -24,7 +24,7 @@ export function ThemeToggle() {
       }}
       aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
       title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-      className="text-fg-secondary hover:text-fg flex size-8 items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.05] hover:bg-white/10"
+      className="text-fg-secondary hover:text-fg flex size-8 items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.05] hover:bg-white/10 in-data-[theme=light]:border-black/[0.06] in-data-[theme=light]:bg-black/[0.02] in-data-[theme=light]:hover:bg-black/[0.05]"
     >
       {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>
