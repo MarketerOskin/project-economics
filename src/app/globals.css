@@ -203,20 +203,6 @@ html {
   text-rendering: optimizeLegibility;
 }
 
-/* The page itself never rubber-bands: on a Mac trackpad the elastic bounce dragged the pinned
- * menu and top bar along with it. Only the page area scrolls, and its bounce stays inside it.
- * Inside a stretched Bitrix24 iframe the wheel has to chain on to the portal page, so the rule
- * holds there only once the frame is fitted to the screen (ADR-068). */
-:root:not([data-embedded]),
-:root:not([data-embedded]) body,
-:root[data-fitted],
-:root[data-fitted] body {
-  overscroll-behavior: none;
-}
-main {
-  overscroll-behavior-y: contain;
-}
-
 body {
   background-color: var(--bg);
   color: var(--fg);

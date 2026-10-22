@@ -13,7 +13,7 @@ import { DemoRoleSwitch } from './demo-role-switch';
 import { ThemeToggle } from './theme-toggle';
 import { TableSort } from './table-sort';
 import { BugReportButton } from '@/components/support/bug-report-button';
-import { useBandEffect, useFrameFitted, useInBand } from '@/lib/client/viewport-band';
+import { useViewportBand } from '@/lib/client/viewport-band';
 import { useSmoothScroll } from '@/components/motion/smooth-scroll';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,33 +21,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   // Inside Bitrix24 the iframe is as tall as the page, so `h-screen`/sticky pin the menu to
   // the whole page; keep the menu in the slice the user actually sees instead (ADR-059).
-  const inBand = useInBand();
-  // On a real portal the iframe is fitted to the screen (ADR-068) and the shell is pinned just
-  // like outside Bitrix24. Only when it can't be fitted (stretched frame) does the menu follow
-  // the visible slice — imperatively, since a React render per scroll step lagged and jerked.
-  const fitted = useFrameFitted();
-  const embedded = inBand && !fitted;
-  const menuRef = React.useRef<HTMLDivElement>(null);
-  useBandEffect((b) => {
-    const el = menuRef.current;
-    if (!el) return;
-    if (!b || fitted) {
-      el.style.cssText = '';
-      return;
-    }
-    el.style.position = 'absolute';
-    el.style.left = '16px';
-    el.style.right = '0';
-    el.style.top = '0';
-    el.style.transform = `translate3d(0, ${b.top + 16}px, 0)`;
-    el.style.height = `${b.height - 32}px`;
-  });
+  const band = useViewportBand();
   // On desktop outside Bitrix24 the shell is exactly one screen tall: the menu and the top bar
   // stay put and only the page area scrolls.
-  const pinned = !embedded;
-  React.useEffect(() => {
-    if (fitted && menuRef.current) menuRef.current.style.cssText = '';
-  }, [fitted]);
+  const pinned = !band;
   const mainRef = React.useRef<HTMLElement>(null);
   const lenis = useSmoothScroll(mainRef, pinned);
   const pathname = usePathname();
@@ -102,11 +79,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-60 lg:py-4 lg:pr-0 lg:pl-4 lg:transition-none',
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
-        style={embedded ? { height: 'auto' } : undefined}
+        style={band ? { height: 'auto' } : undefined}
       >
         <div
           className="glass-chrome text-fg relative flex h-full flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[#0b0b10]/75 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.7),inset_0_1px_0_0_rgb(255_255_255/0.06)] in-data-[theme=light]:border-black/[0.06] in-data-[theme=light]:bg-white in-data-[theme=light]:shadow-[0_1px_2px_rgb(0_0_0/0.03),0_8px_24px_rgb(0_0_0/0.05)]"
-          ref={menuRef}
+          style={
+            band
+              ? {
+                  position: 'absolute',
+                  left: 16,
+                  right: 0,
+                  top: band.top + 16,
+                  height: band.height - 32,
+                }
+              : undefined
+          }
         >
           <button
             type="button"
