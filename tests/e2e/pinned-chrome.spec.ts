@@ -85,37 +85,70 @@ test('inside a stretched iframe the menu stays in the visible slice', async ({ p
   await expect.poll(menuTopOnScreen).toBe(16);
 });
 
+/**
+ * A stand-in for the portal: 120 px of portal chrome, the app's iframe, a footer. Inside the
+ * frame BX24 behaves like the real SDK (api.bitrix24.com/api/v1): `resizeWindow` runs both
+ * sizes through parseInt, `fitWindow` sends `width: '100%'` and the height from
+ * `getScrollSize()`; the "portal" applies what it is sent to the iframe, as Bitrix24 does.
+ */
+async function openPortal(page: Page, baseURL: string | undefined, frameWidth = '100%') {
+  await page.addInitScript(() => {
+    if (window === window.top) return;
+    const apply = (size: { width: number | string; height: number }) => {
+      const f = window.frameElement as HTMLIFrameElement;
+      f.style.width = typeof size.width === 'number' ? `${size.width}px` : size.width;
+      f.style.height = `${size.height}px`;
+    };
+    const bx = {
+      init: (cb: () => void) => cb(),
+      getScrollSize: () => ({
+        scrollWidth: Math.max(
+          document.documentElement.scrollWidth,
+          document.documentElement.offsetWidth,
+        ),
+        scrollHeight: Math.max(
+          document.documentElement.scrollHeight,
+          document.documentElement.offsetHeight,
+        ),
+      }),
+      resizeWindow: (w: unknown, h: unknown, cb?: () => void) => {
+        const width = parseInt(String(w));
+        const height = parseInt(String(h));
+        if (width > 0 && height > 0) apply({ width, height });
+        cb?.();
+      },
+      fitWindow: (cb?: () => void) => {
+        apply({ width: '100%', height: bx.getScrollSize().scrollHeight });
+        cb?.();
+      },
+    };
+    (window as unknown as { BX24: typeof bx }).BX24 = bx;
+  });
+  await page.route(`${baseURL}/__portal`, (r) =>
+    r.fulfill({
+      contentType: 'text/html',
+      body: `<body style="margin:0"><div style="height:120px"></div><iframe id="app" src="/finance" style="display:block;width:${frameWidth};height:600px;border:0"></iframe><div style="height:40px"></div></body>`,
+    }),
+  );
+  await page.goto('/__portal');
+  return page.frames()[1]!;
+}
+
+const frameBox = (page: Page) =>
+  page.evaluate(() => {
+    const r = document.getElementById('app')!.getBoundingClientRect();
+    return { width: r.width, height: r.height };
+  });
+
 test('on a portal the frame is fitted to the screen and only the page area scrolls', async ({
   page,
   baseURL,
 }) => {
   await page.setViewportSize({ width: 1440, height: 800 });
-  // A stand-in for BX24 inside the app's frame: resizeWindow sets the iframe's height.
-  await page.addInitScript(() => {
-    if (window === window.top) return;
-    const frame = () => window.frameElement as HTMLIFrameElement;
-    (window as unknown as { BX24: unknown }).BX24 = {
-      init: (cb: () => void) => cb(),
-      resizeWindow: (_w: unknown, h: number, cb?: () => void) => {
-        frame().style.height = `${h}px`;
-        cb?.();
-      },
-      fitWindow: () => {
-        frame().style.height = `${document.documentElement.scrollHeight}px`;
-      },
-    };
-  });
-  await page.route(`${baseURL}/__portal`, (r) =>
-    r.fulfill({
-      contentType: 'text/html',
-      body: '<body style="margin:0"><div style="height:120px"></div><iframe id="app" src="/finance" style="display:block;width:100%;height:600px;border:0"></iframe><div style="height:40px"></div></body>',
-    }),
-  );
-  await page.goto('/__portal');
-  const frame = page.frames()[1]!;
-  await expect
-    .poll(() => page.evaluate(() => document.getElementById('app')!.getBoundingClientRect().height))
-    .toBe(680);
+  const frame = await openPortal(page, baseURL);
+  await expect.poll(async () => (await frameBox(page)).height).toBe(680);
+  // The width stays the portal's: #39 squeezed the app into a 100 px column.
+  expect((await frameBox(page)).width).toBe(1440);
   await frame.waitForFunction(
     () => (document.querySelector('main')?.previousElementSibling?.clientWidth ?? 0) > 0,
   );
@@ -142,4 +175,20 @@ test('on a portal the frame is fitted to the screen and only the page area scrol
   await page.mouse.wheel(0, 600);
   await page.waitForTimeout(500);
   expect(await rects()).toEqual(before);
+
+  // A wider window: fitted again, still full width.
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await expect.poll(async () => (await frameBox(page)).height).toBe(780);
+  expect((await frameBox(page)).width).toBe(1600);
+});
+
+test('a narrow portal frame is left stretched as before, never squeezed', async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 560, height: 800 });
+  await openPortal(page, baseURL);
+  // Stretched to the content (taller than the screen) and as wide as the portal.
+  await expect.poll(async () => (await frameBox(page)).height).toBeGreaterThan(1000);
+  expect((await frameBox(page)).width).toBe(560);
 });

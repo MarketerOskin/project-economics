@@ -65,14 +65,33 @@ describe('Bx24Init (Bitrix24 embed handshake)', () => {
   });
 
   it('tries to fit the frame to the screen first and stretches it only when that fails', async () => {
-    const resizeWindow = vi.fn((_w: number | string, _h: number, cb?: () => void) => cb?.());
-    window.BX24 = { init: (cb) => cb(), fitWindow: vi.fn(), resizeWindow };
+    const getScrollSize = vi.fn(() => ({ scrollWidth: 1200, scrollHeight: 3000 }));
+    const fitWindow = vi.fn((cb?: () => void) => cb?.());
+    window.BX24 = { init: (cb) => cb(), fitWindow, getScrollSize };
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
 
     mockSession({ demo: false });
     render(<Bx24Init />);
 
-    // Outside a real iframe the visible slice can't be measured, so it falls back to fitWindow.
-    await waitFor(() => expect(window.BX24?.fitWindow).toHaveBeenCalledTimes(1), { timeout: 2000 });
-    expect(resizeWindow).toHaveBeenCalledWith('100%', expect.any(Number), expect.any(Function));
+    // Outside a real iframe the visible slice can't be measured: after the first (tall) fit it
+    // gives up and stretches the frame as before.
+    await waitFor(() => expect(fitWindow).toHaveBeenCalledTimes(2), { timeout: 2000 });
+    // The swapped getScrollSize is put back.
+    expect(window.BX24?.getScrollSize).toBe(getScrollSize);
+  });
+
+  it('leaves a narrow frame stretched, without fitting it', async () => {
+    const fitWindow = vi.fn((cb?: () => void) => cb?.());
+    window.BX24 = {
+      init: (cb) => cb(),
+      fitWindow,
+      getScrollSize: () => ({ scrollWidth: 500, scrollHeight: 3000 }),
+    };
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
+
+    mockSession({ demo: false });
+    render(<Bx24Init />);
+
+    await waitFor(() => expect(fitWindow).toHaveBeenCalledTimes(1));
   });
 });
