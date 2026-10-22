@@ -30,7 +30,8 @@ let started = false;
  * viewport (the whole stretched page) without adding to the page height.
  */
 const STEP = 40;
-const THRESHOLDS = [0, 0.25, 0.5, 0.75, 1];
+// Every 5 % of a sentinel (2 px): the band moves in small steps, not in 10 px jumps.
+const THRESHOLDS = Array.from({ length: 21 }, (_, i) => i / 20);
 
 function embedded(): boolean {
   try {
@@ -100,6 +101,31 @@ function subscribe(cb: () => void) {
   };
 }
 
+/** Whether there is a band at all (inside an iframe); re-renders only when that flips. */
+export function useInBand(): boolean {
+  return React.useSyncExternalStore(
+    subscribe,
+    () => band !== null,
+    () => false,
+  );
+}
+
+/**
+ * Calls `apply` with every new band, straight from the observer, without a React render: an
+ * element that follows the portal's scroll (the side menu) keeps up within the same frame.
+ */
+export function useBandEffect(apply: (b: Band | null) => void) {
+  const latest = React.useRef(apply);
+  React.useLayoutEffect(() => {
+    latest.current = apply;
+  });
+  React.useLayoutEffect(() => {
+    const run = () => latest.current(band);
+    run();
+    return subscribe(run);
+  }, []);
+}
+
 export function useViewportBand(): Band | null {
   return React.useSyncExternalStore(
     subscribe,
@@ -118,4 +144,52 @@ export function centeredIn(b: Band | null): React.CSSProperties | undefined {
 export function bottomOf(b: Band | null, gap = 16): React.CSSProperties | undefined {
   if (!b) return undefined;
   return { top: b.top + b.height - gap, bottom: 'auto', transform: 'translateY(-100%)' };
+}
+
+/*
+ * Fitted frame (ADR-068). Inside a real Bitrix24 portal the app no longer stretches its iframe
+ * to the whole content height: Bx24Init sizes it to the part of the portal window below the
+ * iframe's top, so the portal page stays still and the app scrolls inside, exactly as when it
+ * is opened on its own — the menu and the top bar are pinned for real, not chasing the scroll.
+ * The band machinery above stays as the fallback when the frame cannot be fitted.
+ */
+let fitted = false;
+const fittedListeners = new Set<() => void>();
+
+export function setFrameFitted(v: boolean) {
+  if (fitted === v) return;
+  fitted = v;
+  if (v) document.documentElement.dataset.fitted = '1';
+  else delete document.documentElement.dataset.fitted;
+  for (const l of fittedListeners) l();
+}
+
+export function useFrameFitted(): boolean {
+  return React.useSyncExternalStore(
+    (cb) => {
+      fittedListeners.add(cb);
+      return () => {
+        fittedListeners.delete(cb);
+      };
+    },
+    () => fitted,
+    () => false,
+  );
+}
+
+/** The band once the observer has settled after a resize (or `null` outside an iframe). */
+export function settledBand(wait = 400): Promise<Band | null> {
+  start();
+  return new Promise((resolve) => {
+    let timer = setTimeout(done, wait);
+    function done() {
+      listeners.delete(onChange);
+      resolve(band);
+    }
+    function onChange() {
+      clearTimeout(timer);
+      timer = setTimeout(done, 120);
+    }
+    listeners.add(onChange);
+  });
 }

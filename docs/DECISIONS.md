@@ -1095,3 +1095,24 @@ and menus are portaled outside `<main>`. A new page starts at the top.
 theme, a white card in the light one (`.app-toast`), errors stay 6 s. Inside the iframe the stack
 sits at the bottom of the visible slice. `ConfirmDialog` reports a failed action itself, so a
 throwing `onConfirm` no longer fails silently.
+
+## ADR-068 — The menu and the top bar stay put inside Bitrix24 too
+
+**Context.** Outside Bitrix24 the shell is one screen tall and only the page area scrolls
+(PR #35). On a portal the app called `BX24.fitWindow()`, which stretches the iframe to the whole
+content height, so the portal page scrolled and the menu had to chase the visible slice
+(ADR-059): an IntersectionObserver noticed the scroll in 10 px steps, a React render moved the
+menu a frame or more later, and the menu jerked instead of standing still.
+
+**Decision.** `Bx24Init` no longer stretches the frame. It sizes it with `BX24.resizeWindow` to
+the part of the portal window below the iframe's top (first tall enough to pass the bottom of the
+screen, then down to the visible slice measured by `useViewportBand`), keeps it fitted when the
+window gets shorter and fits it again after a resize. Once fitted (`useFrameFitted`,
+`html[data-fitted]`) the shell is pinned exactly as outside Bitrix24: the portal page has nothing
+to scroll, `<main>` scrolls (with Lenis where it is on), and the page does not rubber-band. If the
+frame cannot be fitted (no `resizeWindow`, nothing measured) it falls back to `fitWindow()` and
+the old following menu, which now tracks the slice in 2 px steps and moves imperatively, without
+a React render per step. On a desktop outside Bitrix24 the page itself never rubber-bands either
+(`overscroll-behavior: none`), so a trackpad bounce can't drag the menu and the top bar along.
+`tests/e2e/pinned-chrome.spec.ts` checks that neither moves by a pixel while the page scrolls,
+directly and inside a stand-in portal.
