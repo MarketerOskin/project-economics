@@ -14,6 +14,7 @@ import { ThemeToggle } from './theme-toggle';
 import { TableSort } from './table-sort';
 import { BugReportButton } from '@/components/support/bug-report-button';
 import { useViewportBand } from '@/lib/client/viewport-band';
+import { useSmoothScroll } from '@/components/motion/smooth-scroll';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSession();
@@ -24,6 +25,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // On desktop outside Bitrix24 the shell is exactly one screen tall: the menu and the top bar
   // stay put and only the page area scrolls.
   const pinned = !band;
+  const mainRef = React.useRef<HTMLElement>(null);
+  const lenis = useSmoothScroll(mainRef, pinned);
+  const pathname = usePathname();
+  // A new page starts at the top, even if the old one was still gliding.
+  React.useEffect(() => {
+    lenis?.scrollTo(0, { immediate: true, force: true });
+  }, [lenis, pathname]);
 
   // Nav links and the logo call this on click, so the drawer closes on navigation.
   const closeDrawer = React.useCallback(() => setDrawerOpen(false), []);
@@ -172,6 +180,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {session ? <TopBar /> : null}
 
         <main
+          ref={mainRef}
           className={cn(
             'min-w-0 flex-1 lg:pr-4 print:overflow-visible',
             pinned && 'lg:min-h-0 lg:overflow-y-auto',

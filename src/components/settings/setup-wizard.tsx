@@ -39,7 +39,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   return (
     <section className="flex flex-col gap-3">
       <h2 className="flex items-center gap-2 font-medium">
-        <span className="bg-accent text-accent-fg flex size-6 items-center justify-center text-xs font-bold">
+        <span className="bg-accent text-accent-fg flex size-6 items-center justify-center rounded-full text-xs font-bold">
           {n}
         </span>
         {title}

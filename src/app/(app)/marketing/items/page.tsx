@@ -68,7 +68,7 @@ export default async function MarketingItemsPage({ searchParams }: { searchParam
             key={k}
             href={drillHref('/marketing/items', periodQuery, { kind: k, source, manager })}
             className={cn(
-              'border px-3 py-1.5 text-sm transition-colors',
+              'rounded-full border px-3 py-1.5 text-sm transition-colors',
               k === kind
                 ? 'border-accent bg-accent text-accent-fg font-medium'
                 : 'border-border bg-surface text-fg-secondary hover:border-accent hover:text-accent',

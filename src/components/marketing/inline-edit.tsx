@@ -119,7 +119,7 @@ export function SpendCell({
           </span>
           <span className="flex gap-2">
             {empty ? null : (
-              <span className="border-border inline-flex border">
+              <span className="border-border inline-flex overflow-hidden rounded-full border">
                 <button
                   type="button"
                   aria-label="Прибавить"

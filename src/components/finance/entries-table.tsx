@@ -95,7 +95,7 @@ export function EntriesTable({
                 <td className="px-4 py-3">
                   <span
                     className={cn(
-                      'px-2 py-0.5 text-xs',
+                      'rounded-full px-2 py-0.5 text-xs',
                       e.budgetType === 'FACT'
                         ? 'bg-accent-soft text-accent'
                         : 'bg-surface-muted text-fg-tertiary',

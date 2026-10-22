@@ -1,16 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { CheckCircle2, AlertCircle, X } from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { bottomOf, useViewportBand } from '@/lib/client/viewport-band';
+import { Toaster, toast as sonner } from 'sonner';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { useViewportBand } from '@/lib/client/viewport-band';
 
 type ToastKind = 'success' | 'error';
-interface Toast {
-  id: number;
-  kind: ToastKind;
-  message: string;
-}
 
 interface ToastContextValue {
   toast: (message: string, kind?: ToastKind) => void;
@@ -18,56 +13,42 @@ interface ToastContextValue {
 
 const ToastContext = React.createContext<ToastContextValue | null>(null);
 
+/** A confirmation after a save, the reason after a failure (sonner, ADR-067). */
+function show(message: string, kind: ToastKind = 'success') {
+  if (kind === 'error') sonner.error(message, { duration: 6000 });
+  else sonner.success(message);
+}
+
+const GAP = 16;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = React.useState<Toast[]>([]);
-  const nextId = React.useRef(0);
-
-  const dismiss = React.useCallback((id: number) => {
-    setToasts((list) => list.filter((t) => t.id !== id));
-  }, []);
-
-  const toast = React.useCallback(
-    (message: string, kind: ToastKind = 'success') => {
-      const id = nextId.current++;
-      setToasts((list) => [...list, { id, kind, message }]);
-      setTimeout(() => dismiss(id), 4500);
-    },
-    [dismiss],
-  );
-
+  // Inside the Bitrix24 iframe the toasts sit at the bottom of the slice on screen (ADR-053).
   const band = useViewportBand();
+  const offset = band
+    ? { right: GAP, bottom: Math.max(GAP, window.innerHeight - band.top - band.height + GAP) }
+    : GAP;
+  const value = React.useMemo(() => ({ toast: show }), []);
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <ToastContext.Provider value={value}>
       {children}
-      <div
-        className="pointer-events-none fixed right-4 bottom-4 z-[100] flex w-80 flex-col gap-2"
-        style={bottomOf(band)}
-      >
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            role="status"
-            className={cn(
-              'pointer-events-auto flex items-start gap-2.5 border bg-surface px-3.5 py-3 text-sm',
-              t.kind === 'success' ? 'border-border' : 'border-negative/30',
-            )}
-          >
-            {t.kind === 'success' ? (
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" />
-            ) : (
-              <AlertCircle className="mt-0.5 size-4 shrink-0 text-negative" />
-            )}
-            <span className="flex-1 text-fg">{t.message}</span>
-            <button
-              onClick={() => dismiss(t.id)}
-              className="text-fg-tertiary hover:text-fg"
-              aria-label="Закрыть"
-            >
-              <X className="size-3.5" />
-            </button>
-          </div>
-        ))}
-      </div>
+      <Toaster
+        position="bottom-right"
+        offset={offset}
+        mobileOffset={offset}
+        closeButton
+        visibleToasts={4}
+        gap={8}
+        icons={{
+          success: <CheckCircle2 className="text-positive size-4" />,
+          error: <AlertCircle className="text-negative size-4" />,
+        }}
+        toastOptions={{
+          unstyled: true,
+          duration: 4500,
+          closeButtonAriaLabel: 'Закрыть',
+          classNames: { toast: 'app-toast', title: 'flex-1' },
+        }}
+      />
     </ToastContext.Provider>
   );
 }
