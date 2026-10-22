@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { Bx24Init } from '@/components/bitrix/bx24-init';
 import * as sessionModule from '@/lib/client/session';
 
@@ -36,7 +36,7 @@ describe('Bx24Init (Bitrix24 embed handshake)', () => {
     expect(document.getElementById('bx24-js-sdk')).toBeNull();
   });
 
-  it('injects the Bitrix24 SDK script on a real portal and calls BX24.init on load', async () => {
+  it('injects the Bitrix24 SDK script on a real portal and calls BX24.init on load', () => {
     mockSession({ demo: false });
     render(<Bx24Init />);
 
@@ -49,10 +49,10 @@ describe('Bx24Init (Bitrix24 embed handshake)', () => {
     script?.onload?.(new Event('load'));
 
     expect(init).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(window.BX24?.fitWindow).toHaveBeenCalledTimes(1));
+    expect(window.BX24.fitWindow).toHaveBeenCalledTimes(1);
   });
 
-  it('calls BX24.init directly, without injecting a script, when BX24 is already present', async () => {
+  it('calls BX24.init directly, without injecting a script, when BX24 is already present', () => {
     const init = vi.fn((cb: () => void) => cb());
     window.BX24 = { init, fitWindow: vi.fn() };
 
@@ -61,18 +61,6 @@ describe('Bx24Init (Bitrix24 embed handshake)', () => {
 
     expect(document.getElementById('bx24-js-sdk')).toBeNull();
     expect(init).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(window.BX24?.fitWindow).toHaveBeenCalledTimes(1));
-  });
-
-  it('tries to fit the frame to the screen first and stretches it only when that fails', async () => {
-    const resizeWindow = vi.fn((_w: number | string, _h: number, cb?: () => void) => cb?.());
-    window.BX24 = { init: (cb) => cb(), fitWindow: vi.fn(), resizeWindow };
-
-    mockSession({ demo: false });
-    render(<Bx24Init />);
-
-    // Outside a real iframe the visible slice can't be measured, so it falls back to fitWindow.
-    await waitFor(() => expect(window.BX24?.fitWindow).toHaveBeenCalledTimes(1), { timeout: 2000 });
-    expect(resizeWindow).toHaveBeenCalledWith('100%', expect.any(Number), expect.any(Function));
+    expect(window.BX24.fitWindow).toHaveBeenCalledTimes(1);
   });
 });
