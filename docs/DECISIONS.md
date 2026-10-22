@@ -1071,3 +1071,27 @@ white text. The lime stays on the primary button and as a soft highlight (profit
 badge); income and expense tones are LifeRM's green #1f7a44 and red #c0453a. The dark theme is
 untouched: every change sits under `:root[data-theme='light']` or an `in-data-[theme=light]:`
 variant.
+
+## ADR-067 — Press feedback, inertial scroll, sonner toasts
+
+**Press feedback.** Until now only the `Button` component sank on press (`active:scale-[0.97]`);
+chips, tabs, period switches, menu items, icon buttons and links are plain `button`/`a` with
+`transition-colors` and had no feedback at all. `globals.css` now gives every clickable element
+(`button`, `a[href]`, `summary` and the button-like ARIA roles) `scale: var(--press-scale)` on
+`:active` — 0.97, or 0.985 for wide targets (cards, menu rows, full-width links). The rule sits
+outside the Tailwind layers on purpose, together with a `transition-property` list that is a
+superset of what the utilities animate: otherwise `transition-colors` would drop `scale` and the
+press would snap. Off with `prefers-reduced-motion`; `data-no-press` opts an element out. iOS
+needs a passive `touchstart` listener for `:active`, `MotionProvider` adds it.
+
+**Inertial scroll.** Lenis drives the page area (`<main>`, the only scroller on desktop; the menu
+and the top bar stay put) — `useSmoothScroll` in `src/components/motion/smooth-scroll.ts`. Only
+on ≥1024 px with a fine pointer, outside the Bitrix24 iframe (the portal page scrolls there,
+ADR-053) and without reduced motion; touch scrolls natively. `allowNestedScroll` leaves wide
+tables, chip rows and textareas their own scroll, `data-lenis-prevent` opts out by hand; dialogs
+and menus are portaled outside `<main>`. A new page starts at the top.
+
+**Toasts.** `useToast()` keeps its API and now renders through sonner: frosted glass in the dark
+theme, a white card in the light one (`.app-toast`), errors stay 6 s. Inside the iframe the stack
+sits at the bottom of the visible slice. `ConfirmDialog` reports a failed action itself, so a
+throwing `onConfirm` no longer fails silently.

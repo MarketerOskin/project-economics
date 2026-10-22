@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Check, Search } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/client/api';
+import { useToast } from '@/lib/client/toast';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/segmented';
@@ -328,7 +329,7 @@ function FromBitrix({
                 >
                   <span
                     className={cn(
-                      'border-border flex size-4 shrink-0 items-center justify-center border',
+                      'border-border flex size-4 shrink-0 items-center justify-center rounded-[5px] border',
                       on && 'border-accent bg-accent text-accent-fg',
                     )}
                   >
@@ -364,6 +365,7 @@ function FromBitrix({
 
 /** Many projects at once: picked from a Bitrix24 section or typed as a list (ADR-043). */
 export function BulkImport() {
+  const { toast } = useToast();
   const [mode, setMode] = React.useState<'bitrix' | 'list'>('bitrix');
   const [linked, setLinked] = React.useState<Set<string>>(new Set());
   const [selected, setSelected] = React.useState<Map<string, Draft>>(new Map());
@@ -470,6 +472,8 @@ export function BulkImport() {
     }
     setCreated(ok);
     setFailures(errors);
+    if (ok > 0) toast(`Создано проектов: ${ok}`);
+    if (ok === 0 && errors.length > 0) toast('Не удалось создать проекты', 'error');
     setLinked((prev) => new Set([...prev, ...done]));
     setSelected((prev) => new Map([...prev].filter(([k]) => !done.has(k))));
     if (mode === 'list' && errors.length === 0) setText('');

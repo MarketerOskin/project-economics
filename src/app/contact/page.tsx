@@ -25,7 +25,7 @@ export default function ContactPage() {
 
         <a
           href="mailto:MarketerOskin@yandex.ru"
-          className="bg-accent text-accent-fg inline-block px-4 py-2 font-mono text-[12px] font-bold uppercase hover:brightness-110"
+          className="bg-accent text-accent-fg inline-block rounded-full px-4 py-2 font-mono text-[12px] font-bold uppercase hover:brightness-110"
         >
           MarketerOskin@yandex.ru
         </a>

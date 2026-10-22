@@ -39,7 +39,7 @@ function PlanBadge({ plan, effective }: { plan: string; effective: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
         effective === 'PRO' ? 'bg-accent-soft text-accent' : 'bg-surface-muted text-fg-tertiary',
       )}
     >

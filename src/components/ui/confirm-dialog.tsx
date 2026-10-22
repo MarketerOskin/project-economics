@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader } from './dialog';
 import { Button } from './button';
 
@@ -38,6 +39,11 @@ export function ConfirmDialog({
               try {
                 await onConfirm();
                 onOpenChange(false);
+              } catch (e) {
+                // Callers that report their own failure don't rethrow; the rest land here.
+                toast.error(
+                  e instanceof Error && e.message ? e.message : 'Не удалось выполнить действие',
+                );
               } finally {
                 setBusy(false);
               }

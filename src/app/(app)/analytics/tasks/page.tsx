@@ -66,7 +66,7 @@ export default async function AnalyticsTasksPage({ searchParams }: { searchParam
               view: v === 'all' ? undefined : v,
             })}
             className={cn(
-              'border px-3 py-1.5 text-sm transition-colors',
+              'rounded-full border px-3 py-1.5 text-sm transition-colors',
               v === view
                 ? 'border-accent bg-accent text-accent-fg font-medium'
                 : 'border-border bg-surface text-fg-secondary hover:border-accent hover:text-accent',

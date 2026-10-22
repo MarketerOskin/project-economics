@@ -50,6 +50,7 @@ export function ExportButton({
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast('Выгрузка готова');
     } catch {
       toast('Не удалось сформировать выгрузку', 'error');
     } finally {
